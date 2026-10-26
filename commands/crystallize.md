@@ -1,0 +1,954 @@
+---
+description: "After a session or an incident, turn what happened into reusable knowledge — `learn` captures this session's lessons, review/approve promotes incident patterns into agent improvements, `skill` turns a repeating procedure into a skill."
+argument-hint: '[learn [focus] | approve GP-NNNN [--no-eval "reason"] | reject GP-NNNN <reason> | rollback GP-NNNN | prune | status | skill [name]]'
+user-invocable: true
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Task
+model: sonnet
+---
+<!-- great_cto-managed -->
+
+You are the great_cto knowledge crystallization command. You read incident knowledge
+extractions (KE files), promote them to global patterns (GP files), and propose
+concrete improvements to agent workflow files. Human approves every agent change.
+`learn` feeds this flow from the current session (continuous-learner → `lessons.md`);
+`skill` captures a repeating procedure as a skill.
+
+**Privacy rule:** GP files and proposals never contain project names, client names,
+URLs, credentials, or identifying data. Generic technology descriptors only.
+See `skills/great_cto/references/knowledge-extraction.md` for the full privacy checklist.
+
+---
+
+## Setup
+
+```bash
+KE_DIR=~/.great_cto/extractions
+GP_DIR=~/.great_cto/global-patterns
+PROPOSAL_DIR=~/.great_cto/proposals
+METRICS_DIR=~/.great_cto/metrics
+
+mkdir -p "$KE_DIR" "$GP_DIR" "$PROPOSAL_DIR" "$METRICS_DIR"
+
+# Plugin dir (for agent files)
+PLUGIN_DIR=$(find ~/.claude -name "ARCHETYPES.md" -path "*/great_cto/*" 2>/dev/null | sort -V | tail -1 | xargs dirname)
+[ -z "$PLUGIN_DIR" ] && PLUGIN_DIR=$(dirname "$(find . .great_cto \
+  -name "ARCHETYPES.md" 2>/dev/null | head -1)" 2>/dev/null)
+
+TODAY=$(date +%Y-%m-%d)
+```
+
+---
+
+## Dispatch by argument
+
+```bash
+ARG="${1:-status}"
+case "$ARG" in
+  # `approve GP-NNNN [--no-eval "<reason>"]` — the flag is the ONLY way to
+  # activate a pattern that carries no eval evidence, and the reason is logged.
+  approve)   SUBCOMMAND=approve; GP_ID="$2"
+             if [ "$3" = "--no-eval" ]; then NO_EVAL_REASON="${*:4}"; fi ;;
+  reject)    SUBCOMMAND=reject;  GP_ID="$2"; REASON="${@:3}" ;;
+  rollback)  SUBCOMMAND=rollback; GP_ID="$2" ;;
+  propose)   SUBCOMMAND=propose; GP_ID="$2" ;;   # NEW: Sprint 3 — PR-gate
+  prune)     SUBCOMMAND=prune ;;
+  skill)     SUBCOMMAND=skill; SKILL_ARG="${*:2}" ;;   # a repeating procedure → skills/<name>/SKILL.md (was /skillify)
+  learn)     SUBCOMMAND=learn; FOCUS="${*:2}" ;;       # run continuous-learner on this session → .great_cto/lessons.md (was /learn)
+  status)    SUBCOMMAND=status ;;
+  *)         SUBCOMMAND=review ;;  # default: show pending KEs + proposals
+esac
+```
+
+---
+
+## Subcommand: status / review (default)
+
+Show all pending KE files not yet promoted + all proposals awaiting approval.
+
+```bash
+echo "=== CRYSTALLIZE STATUS ==="
+echo ""
+
+# Pending KE files
+PENDING_KE=$(ls "$KE_DIR"/KE-*.yaml 2>/dev/null | while read f; do
+  if ! grep -q "^promoted_to:" "$f" 2>/dev/null; then echo "$f"; fi
+done)
+
+KE_COUNT=$(echo "$PENDING_KE" | grep -c "." 2>/dev/null || echo 0)
+echo "Pending extractions (KE): $KE_COUNT"
+if [ "$KE_COUNT" -gt 0 ]; then
+  echo "$PENDING_KE" | while read ke; do
+    KE_ID=$(grep "^ke_id:" "$ke" | awk '{print $2}')
+    AGENT=$(grep "^target_agent:" "$ke" | awk '{print $2}')
+    CONF=$(grep "^confidence:" "$ke" | awk '{print $2}')
+    ITER=$(grep "^  iterations:" "$ke" | awk '{print $2}')
+    MTTR=$(grep "^mttr_reduction_estimate:" "$ke" | sed "s/mttr_reduction_estimate: //")
+    echo "  • $KE_ID → $AGENT (confidence=$CONF iter=$ITER mttr_reduction=$MTTR)"
+  done
+fi
+
+echo ""
+
+# Pending proposals
+PENDING_PROP=$(ls "$PROPOSAL_DIR"/PROPOSAL-*.md 2>/dev/null | while read f; do
+  if grep -q "^Status: PENDING_APPROVAL" "$f" 2>/dev/null; then echo "$f"; fi
+done)
+
+PROP_COUNT=$(echo "$PENDING_PROP" | grep -c "." 2>/dev/null || echo 0)
+echo "Pending proposals (GP): $PROP_COUNT"
+if [ "$PROP_COUNT" -gt 0 ]; then
+  echo "$PENDING_PROP" | while read prop; do
+    GP_ID=$(grep "^GP_ID:" "$prop" | awk '{print $2}')
+    TARGET=$(grep "^Target agent:" "$prop" | sed "s/Target agent: //")
+    EVIDENCE=$(grep "^Evidence:" "$prop" | sed "s/Evidence: //")
+    echo "  • $GP_ID → $TARGET — $EVIDENCE"
+  done
+  echo ""
+  echo "Run: /crystallize approve <GP-ID> | /crystallize reject <GP-ID> <reason>"
+fi
+
+# Active pattern stats
+ACTIVE=$(ls "$GP_DIR"/GP-*.md 2>/dev/null | \
+  xargs grep -l "^status: active" 2>/dev/null | wc -l | tr -d ' ')
+TOTAL_HITS=$(grep -rh "^hits:" "$GP_DIR" 2>/dev/null | \
+  awk -F': ' '{sum+=$2} END{print sum+0}')
+echo ""
+echo "Active patterns: ${ACTIVE:-0} | Total hits: ${TOTAL_HITS:-0}"
+echo "Run /crystallize (no args) to review, or /crystallize prune to archive stale patterns"
+```
+
+---
+
+## Subcommand: review (promote KE → GP + generate proposals)
+
+Run when there are pending KE files. For each qualifying KE:
+1. Check noise filter (confidence + iterations thresholds)
+2. Check deduplication (slug already in GP_DIR?)
+3. Generate GP-NNNN file
+4. Generate PROPOSAL-*.md with concrete agent diff
+
+```bash
+# Noise filter thresholds
+MIN_ITERATIONS_MEDIUM=5   # medium confidence requires 5+ iterations
+MIN_ITERATIONS_LOW=8      # low confidence requires 8+ iterations
+
+echo "=== REVIEWING KE FILES ==="
+echo ""
+
+ls "$KE_DIR"/KE-*.yaml 2>/dev/null | while read ke_file; do
+  # Skip already promoted
+  grep -q "^promoted_to:" "$ke_file" 2>/dev/null && continue
+
+  KE_ID=$(grep "^ke_id:" "$ke_file" | awk '{print $2}')
+  CONFIDENCE=$(grep "^confidence:" "$ke_file" | awk '{print $2}')
+  ITERATIONS=$(grep "^  iterations:" "$ke_file" | awk '{print $2}')
+  IS_CANDIDATE=$(grep "^  pattern_candidate:" "$ke_file" | awk '{print $2}')
+  TARGET_AGENT=$(grep "^target_agent:" "$ke_file" | awk '{print $2}')
+  TARGET_SKILL=$(grep "^target_skill:" "$ke_file" | awk '{print $2}')
+  SLUG=$(echo "$KE_ID" | sed 's/KE-[0-9-]*-//')
+
+  # Validate routing: must have exactly one of target_agent / target_skill
+  if [ -z "$TARGET_AGENT" ] && [ -z "$TARGET_SKILL" ]; then
+    echo "  SKIP: KE has no target_agent or target_skill"; continue
+  fi
+
+  echo "Processing: $KE_ID"
+
+  # Noise filter
+  PROMOTE=false
+  case "$CONFIDENCE" in
+    high)   PROMOTE=true ;;
+    medium) [ "${ITERATIONS:-0}" -ge "$MIN_ITERATIONS_MEDIUM" ] && PROMOTE=true ;;
+    low)    [ "${ITERATIONS:-0}" -ge "$MIN_ITERATIONS_LOW" ] && PROMOTE=true ;;
+  esac
+  [ "$IS_CANDIDATE" != "true" ] && PROMOTE=false
+
+  if [ "$PROMOTE" != "true" ]; then
+    echo "  SKIP: below promotion threshold (confidence=$CONFIDENCE iter=$ITERATIONS)"
+    continue
+  fi
+
+  # Deduplication — check if slug already in GP library
+  EXISTING_GP=$(ls "$GP_DIR"/GP-*-"$SLUG".md 2>/dev/null | head -1)
+  if [ -n "$EXISTING_GP" ]; then
+    EXISTING_ID=$(grep "^id:" "$EXISTING_GP" | awk '{print $2}')
+    echo "  DEDUP: slug '$SLUG' matches existing $EXISTING_ID — incrementing hits counter"
+    CURRENT_HITS=$(grep "^hits:" "$EXISTING_GP" | awk '{print $2}')
+    sed -i.bak "s/^hits: ${CURRENT_HITS}/hits: $((CURRENT_HITS+1))/" "$EXISTING_GP" 2>/dev/null
+    sed -i.bak "s/^confidence: .*/confidence: validated/" "$EXISTING_GP" 2>/dev/null
+    rm -f "${EXISTING_GP}.bak"
+    # Knowledge versioning (AgentSpace #4): a re-occurrence means the pattern
+    # evolved — version it + record history, don't silently overwrite.
+    GPS="$PLUGIN_DIR/shared/gp-schema.mjs"; [ -f "$GPS" ] || GPS="$(pwd)/shared/gp-schema.mjs"
+    GPS_ABS="$(cd "$(dirname "$GPS")" 2>/dev/null && pwd)/$(basename "$GPS")"
+    GP_FILE="$EXISTING_GP" GP_DATE="$TODAY" GP_KE="$KE_ID" GPS_ABS="$GPS_ABS" node -e '
+      import("file://" + process.env.GPS_ABS).then(async (m) => {
+        const fs = await import("node:fs");
+        const f = process.env.GP_FILE;
+        const r = m.bumpGpVersion(fs.readFileSync(f, "utf8"), { date: process.env.GP_DATE, source_ke: process.env.GP_KE, reason: "re-occurred (hits incremented)" });
+        fs.writeFileSync(f, r.text);
+        console.log("  VERSIONED " + f + " v" + r.from + " -> v" + r.to);
+      }).catch(() => {});
+    ' 2>/dev/null || true
+    printf "promoted_to: %s\n" "$EXISTING_ID" >> "$ke_file"
+    echo "  MERGED into $EXISTING_ID (hits now $((CURRENT_HITS+1)))"
+    continue
+  fi
+
+  # Assign new GP number
+  LAST_NUM=$(ls "$GP_DIR"/GP-*.md 2>/dev/null | \
+    grep -oE "GP-[0-9]+" | sort -V | tail -1 | grep -oE "[0-9]+")
+  NEXT_NUM=$(printf "%04d" $((${LAST_NUM:-0} + 1)))
+  GP_ID="GP-${NEXT_NUM}"
+  GP_FILE="$GP_DIR/${GP_ID}-${SLUG}.md"
+
+  # Extract fields from KE for GP file (read from YAML)
+  SYMPTOM=$(grep -A3 "^  observable:" "$ke_file" | grep -v "observable:" | head -2 | tr -d '>' | xargs)
+  STACK=$(grep "^  stack_fingerprint:" "$ke_file" | sed "s/.*: //")
+  FIX=$(grep -A3 "^  fix:" "$ke_file" | grep -v "fix:" | head -2 | tr -d '>' | xargs)
+  VERIFICATION=$(grep -A3 "^  verification:" "$ke_file" | grep -v "verification:" | head -2 | tr -d '>' | xargs)
+  BREAKTHROUGH_TOOL=$(grep "^  breakthrough_tool:" "$ke_file" | awk '{print $2}')
+  DETECTION_WORKED=$(grep "^  detection_method_that_worked:" "$ke_file" | awk '{print $2}')
+  MTTR_EST=$(grep "^mttr_reduction_estimate:" "$ke_file" | sed "s/mttr_reduction_estimate: //")
+  SOURCE_DATE=$(grep "^date:" "$ke_file" | awk '{print $2}')
+  APPLIES_TO=$(grep -A5 "^  pattern_applies_to:" "$ke_file" | grep "^    -" | sed "s/    - //" | tr '\n' ',' | sed 's/,$//')
+
+  # Write GP file (privacy-safe: no project names)
+  cat > "$GP_FILE" <<GPEOF
+---
+id: ${GP_ID}
+slug: ${SLUG}
+status: active
+version: 1
+created: ${SOURCE_DATE}
+last_validated: ${SOURCE_DATE}
+source_ke: ${KE_ID}
+target_agents: [${TARGET_AGENT}]
+applies_to: [${APPLIES_TO}]
+stack_fingerprint: ${STACK}
+symptom: ${SYMPTOM}
+fix: ${FIX}
+verification: ${VERIFICATION}
+detection_order:
+  - ${BREAKTHROUGH_TOOL} — works where standard tools give false negatives
+  - Check stack-specific configuration fields (see Fix below)
+  - Standard diagnostic chain (only if the above are clean)
+confidence: ${CONFIDENCE}
+hits: 1
+mttr_reduction: ${MTTR_EST}
+---
+
+### ${GP_ID} — $(echo "$SLUG" | tr '-' ' ' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
+
+**Stack** — ${STACK}
+**Tell** — ${SYMPTOM}
+**Detection order (fastest to root cause)**
+1. ${BREAKTHROUGH_TOOL} — this is what works; standard tools give false negatives
+2. Check configuration fields specific to this stack (see Fix below)
+3. Only if both clean → standard diagnostic chain
+
+**False negatives** — ${DETECTION_WORKED} was the breakthrough; the following gave NO SIGNAL:
+$(grep -A10 "^  detection_methods_that_failed:" "$ke_file" | grep "^    -" | sed "s/    - /- /")
+
+**Why standard checks fail**
+$(grep -A5 "^  why_standard_checks_missed_it:" "$ke_file" | grep -v "why_standard_checks_missed_it:" | tr -d '>' | xargs)
+
+**Fix template**
+${FIX}
+
+**Verification**
+${VERIFICATION}
+
+**Applies to** — ${APPLIES_TO}
+
+## Rejection history
+<!-- populated by /crystallize reject -->
+
+## Hit log
+<!-- populated by SessionStart pattern matcher -->
+${TODAY} — initial crystallization from ${KE_ID}
+GPEOF
+
+  echo "  CREATED: $GP_FILE"
+
+  # Generate proposal
+  PROPOSAL_FILE="$PROPOSAL_DIR/PROPOSAL-${GP_ID}.md"
+  PROPOSED_CHANGE=$(grep -A5 "^proposed_change:" "$ke_file" | grep -v "proposed_change:" | tr -d '>' | xargs)
+  TARGET_SECTION=$(grep "^target_section:" "$ke_file" | sed "s/target_section: //")
+
+  # Routing line — agent OR skill
+  if [ -n "$TARGET_SKILL" ]; then
+    ROUTING_LINE="Target skill: ${TARGET_SKILL}"
+  else
+    ROUTING_LINE="Target agent: ${TARGET_AGENT}"
+  fi
+
+  cat > "$PROPOSAL_FILE" <<PROPEOF
+# Agent Evolution Proposal — ${GP_ID}
+
+Date: ${TODAY}
+Source: ${KE_ID}
+GP_ID: ${GP_ID}
+${ROUTING_LINE}
+Target section: ${TARGET_SECTION}
+Status: PENDING_APPROVAL
+Evidence: MTTR reduction ${MTTR_EST}, confidence=${CONFIDENCE}, iterations=${ITERATIONS:-?}
+
+## Proposed change
+
+${PROPOSED_CHANGE}
+
+## Risk assessment
+
+- Change is additive (new step before existing steps, not replacing them)
+- Guarded by technology check (only activates when relevant stack detected)
+- Rollback: \`/crystallize rollback ${GP_ID}\`
+
+## Approve
+
+  /crystallize approve ${GP_ID}
+
+## Reject
+
+  /crystallize reject ${GP_ID} <reason>
+PROPEOF
+
+  # Mark KE as promoted
+  printf "promoted_to: %s\n" "$GP_ID" >> "$ke_file"
+  echo "  PROPOSAL: $PROPOSAL_FILE"
+  echo "  → Run: /crystallize approve $GP_ID"
+done
+
+# Update INDEX.md
+echo "" > /tmp/gp_index_new.md
+printf '# Global Pattern Index\n\nAuto-maintained by /crystallize. Do not edit manually.\n\n' > "$GP_DIR/INDEX.md"
+printf '| ID | Slug | Status | Hits | Target | MTTR reduction |\n' >> "$GP_DIR/INDEX.md"
+printf '|----|------|--------|------|--------|----------------|\n' >> "$GP_DIR/INDEX.md"
+ls "$GP_DIR"/GP-*.md 2>/dev/null | while read f; do
+  ID=$(grep "^id:" "$f" | awk '{print $2}')
+  SLUG=$(grep "^slug:" "$f" | awk '{print $2}')
+  STATUS=$(grep "^status:" "$f" | awk '{print $2}')
+  HITS=$(grep "^hits:" "$f" | awk '{print $2}')
+  TARGET=$(grep "^target_agents:" "$f" | sed "s/.*\[//;s/\].*//")
+  MTTR=$(grep "^mttr_reduction:" "$f" | sed "s/.*: //")
+  printf '| %s | %s | %s | %s | %s | %s |\n' "$ID" "$SLUG" "$STATUS" "$HITS" "$TARGET" "$MTTR"
+done >> "$GP_DIR/INDEX.md"
+echo "INDEX.md updated"
+```
+
+---
+
+## Subcommand: approve GP-NNNN
+
+Apply the proposed change. **Two target modes**:
+- `Target agent: <name>` — pattern is matched at runtime via Step 0 Pattern Lookup (no file edit needed)
+- `Target skill: <relative-path>` — pattern is **appended** to the skill doc as a new entry
+
+```bash
+# Find proposal
+PROP_FILE=$(ls "$PROPOSAL_DIR"/PROPOSAL-"${GP_ID}".md 2>/dev/null | head -1)
+if [ -z "$PROP_FILE" ]; then
+  echo "ERROR: No proposal found for $GP_ID"
+  exit 1
+fi
+
+grep -q "PENDING_APPROVAL" "$PROP_FILE" || { echo "ERROR: $GP_ID is not pending"; exit 1; }
+
+# ── gate:learn — evidence check BEFORE activation ───────────────────────────
+# Approving edits an agent's behaviour for every future run. This used to happen
+# on the strength of the proposal's own claim: the backing eval was printed as a
+# recipe AFTER activation and never run. The gate requires the evidence to EXIST,
+# not to be generated now — so it costs nothing when a stamp is already there.
+#   • stamped regression → blocked, no override
+#   • no evidence        → blocked unless --no-eval "<reason>" (recorded)
+#   • improvement/noisy  → allowed
+GP_FILE_PRE=$(ls "$GP_DIR"/"${GP_ID}"-*.md 2>/dev/null | head -1)
+_GATE=$(ls ~/.claude/plugins/cache/*/great_cto/*/scripts/lib/gp-approve-gate.mjs 2>/dev/null | awk -F'/plugins/cache/' '{split($NF,p,"/"); print p[3], $0}' | sort -V | tail -1 | cut -d' ' -f2-)
+[ -z "$_GATE" ] && _GATE="scripts/lib/gp-approve-gate.mjs"
+if [ -n "$GP_FILE_PRE" ] && [ -f "$_GATE" ]; then
+  if [ -n "$NO_EVAL_REASON" ]; then
+    GATE_OUT=$(node "$_GATE" "$GP_FILE_PRE" --no-eval "$NO_EVAL_REASON" 2>&1); GATE_RC=$?
+  else
+    GATE_OUT=$(node "$_GATE" "$GP_FILE_PRE" 2>&1); GATE_RC=$?
+  fi
+  echo "gate:learn — $GATE_OUT"
+  if [ "$GATE_RC" -ne 0 ]; then
+    echo "BLOCKED: $GP_ID not activated."
+    printf '%s BLOCKED %s reason="gate:learn"\n' "$TODAY" "$GP_ID" >> "$METRICS_DIR/crystallize.log"
+    exit 1
+  fi
+  # An override is a decision, so it goes in the audit trail next to the approval.
+  case "$GATE_OUT" in *"explicit override"*)
+    printf '%s EVAL_BYPASS %s reason="%s"\n' "$TODAY" "$GP_ID" "$NO_EVAL_REASON" \
+      >> "$METRICS_DIR/crystallize.log" ;;
+  esac
+fi
+
+# Detect target mode (agent vs skill)
+TARGET_AGENT=$(grep "^Target agent:" "$PROP_FILE" 2>/dev/null | sed "s/Target agent: //")
+TARGET_SKILL=$(grep "^Target skill:" "$PROP_FILE" 2>/dev/null | sed "s/Target skill: //")
+GP_FILE=$(ls "$GP_DIR"/"${GP_ID}"-*.md 2>/dev/null | head -1)
+PROPOSED_CHANGE=$(awk '/^## Proposed change/{f=1;next} /^## /{f=0} f' "$PROP_FILE" | sed '/^$/d' | head -10)
+
+echo "=== APPROVING $GP_ID ==="
+
+if [ -n "$TARGET_SKILL" ]; then
+  # === SKILL TARGET ===
+  SKILL_FILE="$PLUGIN_DIR/$TARGET_SKILL"
+  [ ! -f "$SKILL_FILE" ] && SKILL_FILE="$TARGET_SKILL"
+  if [ ! -f "$SKILL_FILE" ]; then
+    echo "ERROR: Skill file not found: $TARGET_SKILL"
+    exit 1
+  fi
+  echo "Target skill: $SKILL_FILE"
+  echo "Proposed change:"
+  echo "$PROPOSED_CHANGE"
+  echo ""
+  echo "Appending crystallized pattern to $SKILL_FILE..."
+
+  # Append a new entry block at the end of the skill file with the proposed change
+  cat >> "$SKILL_FILE" <<SKILLEOF
+
+<!-- Crystallized from $GP_ID on $TODAY (source KE: $(grep "^source_ke:" "$GP_FILE" | awk '{print $2}')) -->
+### Pattern $GP_ID — $(grep "^slug:" "$GP_FILE" | awk '{print $2}')
+
+$PROPOSED_CHANGE
+
+**Detection** — $(grep -A 2 "^detection_order:" "$GP_FILE" | grep "^  - " | head -1 | sed 's/^  - //')
+**Fix** — $(grep "^fix:" "$GP_FILE" | sed 's/fix: //')
+**Verification** — $(grep "^verification:" "$GP_FILE" | sed 's/verification: //')
+**Source** — $GP_ID (confidence=$(grep "^confidence:" "$GP_FILE" | awk '{print $2}'), MTTR reduction $(grep "^mttr_reduction:" "$GP_FILE" | sed 's/mttr_reduction: //'))
+SKILLEOF
+
+  echo "  ✓ Skill file extended"
+  TARGET_DESC="skill:$TARGET_SKILL"
+
+  # Commit
+  git -C "$PLUGIN_DIR" add "$SKILL_FILE" 2>/dev/null
+  git -C "$PLUGIN_DIR" commit -m "feat(skill): crystallize ${GP_ID} into $(basename "$SKILL_FILE")" 2>/dev/null \
+    && echo "  ✓ Committed to plugin repo"
+
+elif [ -n "$TARGET_AGENT" ]; then
+  # === AGENT TARGET ===
+  AGENT_FILE="$PLUGIN_DIR/agents/${TARGET_AGENT}.md"
+  [ ! -f "$AGENT_FILE" ] && AGENT_FILE="agents/${TARGET_AGENT}.md"
+  if [ ! -f "$AGENT_FILE" ]; then
+    echo "ERROR: Agent file not found: $TARGET_AGENT"
+    exit 1
+  fi
+  echo "Target agent: $AGENT_FILE"
+  echo "Proposed change:"
+  echo "$PROPOSED_CHANGE"
+  echo ""
+
+  if grep -q "## Step 0: Pattern Lookup" "$AGENT_FILE" 2>/dev/null; then
+    echo "  ✓ Step 0 present — $GP_ID will be matched at runtime via global-patterns dir"
+  else
+    echo "  ⚠ Step 0 not yet in $AGENT_FILE — run v1.0.113+ agent update first"
+  fi
+  TARGET_DESC="agent:$TARGET_AGENT"
+
+  # Copy updated agent to ~/.claude/agents/
+  cp "$AGENT_FILE" ~/.claude/agents/great_cto-${TARGET_AGENT}.md 2>/dev/null \
+    && echo "  ✓ Agent file synced to ~/.claude/agents/"
+
+else
+  echo "ERROR: proposal has neither 'Target agent:' nor 'Target skill:' field"
+  exit 1
+fi
+
+# Mark proposal approved
+sed -i.bak "s/^Status: PENDING_APPROVAL/Status: APPROVED\nApproved: $TODAY/" "$PROP_FILE" 2>/dev/null
+rm -f "${PROP_FILE}.bak"
+
+# Update GP file last_validated
+sed -i.bak "s/^last_validated: .*/last_validated: $TODAY/" "$GP_FILE" 2>/dev/null
+rm -f "${GP_FILE}.bak"
+
+# Log metric
+printf '%s APPROVED %s target=%s\n' "$TODAY" "$GP_ID" "$TARGET_DESC" \
+  >> "$METRICS_DIR/crystallize.log"
+
+echo ""
+echo "DONE: $GP_ID approved. Pattern is now active."
+[ -n "$TARGET_AGENT" ] && echo "Next matching incident: Step 0 will surface it before investigation starts."
+[ -n "$TARGET_SKILL" ] && echo "Skill doc updated; agents that read this skill will see the new pattern next session."
+
+# Close the loop: back the claimed mttr_reduction with a MEASURED eval delta.
+# Not auto-run (evals cost real tokens) — print the two-command recipe instead.
+if [ -n "$TARGET_AGENT" ]; then
+  echo ""
+  echo "→ Measure the impact (DEEPEN W2.4 — backs the estimate with a real eval delta):"
+  echo "   node tests/eval/runner.mjs --agent $TARGET_AGENT --split holdout --samples 5 --out /tmp/base.jsonl"
+  echo "   # apply the pattern to a candidate prompt, then:"
+  echo "   node tests/eval/runner.mjs --agent $TARGET_AGENT --split holdout --samples 5 --prompt-file cand.md --out /tmp/cand.jsonl"
+  echo "   node scripts/lib/gp-eval-trace.mjs stamp --gp $GP_FILE --baseline /tmp/base.jsonl --candidate /tmp/cand.jsonl --agent $TARGET_AGENT --ke ${KE_ID:-?} --commit \$(git rev-parse --short HEAD)"
+  echo "   (variance-aware: a delta inside the noise band is stamped 'noisy', not an improvement)"
+fi
+```
+
+---
+
+## Subcommand: reject GP-NNNN
+
+```bash
+PROP_FILE=$(ls "$PROPOSAL_DIR"/PROPOSAL-"${GP_ID}".md 2>/dev/null | head -1)
+[ -z "$PROP_FILE" ] && echo "ERROR: No proposal for $GP_ID" && exit 1
+
+sed -i.bak "s/^Status: PENDING_APPROVAL/Status: REJECTED\nRejected: $TODAY\nRejection reason: ${REASON}/" \
+  "$PROP_FILE" 2>/dev/null && rm -f "${PROP_FILE}.bak"
+
+GP_FILE=$(ls "$GP_DIR"/"${GP_ID}"-*.md 2>/dev/null | head -1)
+if [ -n "$GP_FILE" ]; then
+  # Record rejection in GP file
+  cat >> "$GP_FILE" <<REJEOF
+
+### Rejection — $TODAY
+Reason: ${REASON}
+Status: rolled back to archived after rejection.
+REJEOF
+  sed -i.bak "s/^status: active/status: rejected/" "$GP_FILE" 2>/dev/null
+  rm -f "${GP_FILE}.bak"
+fi
+
+printf '%s REJECTED %s reason="%s"\n' "$TODAY" "$GP_ID" "$REASON" \
+  >> "$METRICS_DIR/crystallize.log"
+
+echo "DONE: $GP_ID rejected. Reason recorded. Pattern will not be injected."
+```
+
+---
+
+## Subcommand: rollback GP-NNNN
+
+```bash
+GP_FILE=$(ls "$GP_DIR"/"${GP_ID}"-*.md 2>/dev/null | head -1)
+TARGET_AGENT=$(grep "^target_agents:" "$GP_FILE" | sed "s/.*\[//;s/\].*//;s/ //g")
+
+AGENT_FILE="$PLUGIN_DIR/agents/${TARGET_AGENT}.md"
+COMMIT=$(git -C "$PLUGIN_DIR" log --oneline "$AGENT_FILE" 2>/dev/null | \
+  grep "$GP_ID" | head -1 | awk '{print $1}')
+
+if [ -n "$COMMIT" ]; then
+  git -C "$PLUGIN_DIR" revert "$COMMIT" --no-edit 2>/dev/null && \
+    echo "Reverted commit $COMMIT for $GP_ID"
+  cp "$AGENT_FILE" ~/.claude/agents/great_cto-${TARGET_AGENT}.md 2>/dev/null
+fi
+
+sed -i.bak "s/^status: active/status: rolled-back/" "$GP_FILE" 2>/dev/null
+rm -f "${GP_FILE}.bak"
+
+printf '%s ROLLBACK %s target=%s commit=%s\n' "$TODAY" "$GP_ID" "$TARGET_AGENT" "${COMMIT:-no-commit}" \
+  >> "$METRICS_DIR/crystallize.log"
+
+echo "DONE: $GP_ID rolled back."
+```
+
+---
+
+## Subcommand: propose GP-NNNN
+
+**Sprint 3 — PR-gate for crystallize** (the self-evolution pattern).
+
+Creates a git branch `evolve/<agent>-<timestamp>`, applies the proposed agent
+change, runs the EVAL suite for that agent to measure before/after improvement,
+then opens a GitHub PR with the diff and score. Human review is mandatory —
+this command never merges.
+
+```bash
+GP_FILE=$(ls "$GP_DIR"/"${GP_ID}"-*.md 2>/dev/null | head -1)
+[ -z "$GP_FILE" ] && echo "ERROR: No GP file for $GP_ID" && exit 1
+
+# Read the proposal details
+TARGET_AGENT=$(grep "^target_agents:" "$GP_FILE" 2>/dev/null | sed 's/target_agents: \[//;s/\]//' | tr -d ' ' | cut -d, -f1)
+TARGET_FILE=$(grep "^proposed-fix:" "$GP_FILE" 2>/dev/null | grep -oE '[a-zA-Z/_-]+\.md' | head -1)
+[ -z "$TARGET_AGENT" ] && echo "ERROR: No target_agents in $GP_FILE" && exit 1
+
+# Plugin source dir (the committed source, not the cache)
+REPO_DIR=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
+AGENT_SRC="$REPO_DIR/agents/${TARGET_AGENT}.md"
+[ ! -f "$AGENT_SRC" ] && echo "ERROR: agent file not found: $AGENT_SRC" && exit 1
+```
+
+### 1. Measure baseline EVAL score (before)
+
+```bash
+EVAL_PATTERN="EVAL-${TARGET_AGENT}"
+EVAL_COUNT=$(ls "$REPO_DIR/tests/eval/${EVAL_PATTERN}"*.md 2>/dev/null | wc -l | tr -d ' ')
+
+if [ "$EVAL_COUNT" -gt 0 ] && [ -n "$ANTHROPIC_API_KEY" ]; then
+  echo "Running baseline eval for $TARGET_AGENT ($EVAL_COUNT files)..."
+  BEFORE_SCORE=$(cd "$REPO_DIR" && node tests/eval/runner.mjs \
+    --filter "$EVAL_PATTERN" --dry-run 2>/dev/null | grep "pass rate" | \
+    grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "no-eval")
+  echo "Baseline score: ${BEFORE_SCORE:-no-eval}"
+else
+  BEFORE_SCORE="no-eval"
+  [ "$EVAL_COUNT" -eq 0 ] && echo "No EVAL files found for $TARGET_AGENT — run /agent evals $TARGET_AGENT first for scored PRs"
+fi
+```
+
+### 2. Create evolve branch and apply change
+
+```bash
+BRANCH="evolve/${TARGET_AGENT}-$(date +%Y%m%d-%H%M)"
+cd "$REPO_DIR"
+git checkout -b "$BRANCH" 2>&1
+
+# The proposed change is described in the GP file — apply it
+# For shape F (recurring tool failure), the proposed-fix: field has file:line
+PROPOSED_FIX=$(grep "^Proposed-fix\|proposed-fix\|proposed_fix" "$GP_FILE" | head -1 | sed 's/.*: //')
+echo ""
+echo "Proposed fix from $GP_ID:"
+echo "  $PROPOSED_FIX"
+echo ""
+echo "Apply the proposed change to $AGENT_SRC now."
+echo "(Edit the file to implement the fix described above.)"
+echo ""
+echo "When done, press Enter to continue..."
+```
+
+You (the agent) must now apply the proposed change to `$AGENT_SRC`. Read the
+`proposed-fix:` field from the GP file and make the minimal targeted edit
+described. Do not expand scope — only the change stated in the GP.
+
+### 3. Measure AFTER score
+
+```bash
+if [ -n "$ANTHROPIC_API_KEY" ] && [ "$EVAL_COUNT" -gt 0 ]; then
+  echo "Running post-change eval..."
+  AFTER_SCORE=$(cd "$REPO_DIR" && node tests/eval/runner.mjs \
+    --filter "$EVAL_PATTERN" --dry-run 2>/dev/null | grep "pass rate" | \
+    grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "no-eval")
+else
+  AFTER_SCORE="no-eval"
+fi
+echo "Before: ${BEFORE_SCORE} → After: ${AFTER_SCORE}"
+```
+
+### 4. Commit and open PR
+
+```bash
+git add "agents/${TARGET_AGENT}.md"
+git commit -m "$(cat <<CMSG
+evolve(${TARGET_AGENT}): apply ${GP_ID} — ${PROPOSED_FIX%%:*}
+
+Pattern: $(grep '^## pattern:' "$GP_FILE" | sed 's/## pattern: //')
+Confidence: $(grep '^confidence:' "$GP_FILE" | awk '{print $2}')
+Occurrences: $(grep '^occurrences:' "$GP_FILE" | awk '{print $2}')
+Eval before: ${BEFORE_SCORE} → after: ${AFTER_SCORE}
+GP source: $GP_FILE
+CMSG
+)"
+
+# Open PR (requires gh CLI)
+PR_BODY="## Crystallize PR — $GP_ID
+
+### Proposed change
+\`\`\`
+$PROPOSED_FIX
+\`\`\`
+
+### Pattern
+$(grep -A5 '^## pattern:' "$GP_FILE" | head -6)
+
+### Eval scores
+| Agent | Before | After | Delta |
+|-------|--------|-------|-------|
+| $TARGET_AGENT | ${BEFORE_SCORE} | ${AFTER_SCORE} | $([ "$BEFORE_SCORE" != "no-eval" ] && echo "computed" || echo "no EVAL files — run /agent evals $TARGET_AGENT") |
+
+### Evidence
+$(grep -A10 '^Evidence\|^\*\*Evidence' "$GP_FILE" | head -10)
+
+### Review checklist
+- [ ] Change is minimal and targeted (no scope creep)
+- [ ] Agent still passes its core responsibility after change
+- [ ] Proposed fix matches the pattern evidence
+- [ ] EVAL scores improved or held (or no EVAL files exist yet)
+
+**Gate: human approve required. Never merge this automatically.**
+
+🤖 Generated by \`/crystallize propose $GP_ID\`"
+
+git push -u origin "$BRANCH" 2>&1
+gh pr create \
+  --title "evolve(${TARGET_AGENT}): $GP_ID" \
+  --body "$PR_BODY" \
+  --label "evolve,needs-review" 2>&1 || \
+  echo "gh CLI unavailable — push succeeded, open PR manually from branch $BRANCH"
+
+printf '%s PROPOSED %s target=%s before=%s after=%s branch=%s\n' \
+  "$(date +%Y-%m-%d)" "$GP_ID" "$TARGET_AGENT" \
+  "${BEFORE_SCORE}" "${AFTER_SCORE}" "$BRANCH" \
+  >> "$METRICS_DIR/crystallize.log"
+
+echo ""
+echo "DONE: Branch $BRANCH → PR opened. Human review required before merge."
+echo "To reject: /crystallize reject $GP_ID <reason>"
+echo "To approve and merge: review the PR, then: /crystallize approve $GP_ID"
+```
+
+---
+
+## Subcommand: prune
+
+Archive zero-hit patterns older than 90 days.
+
+```bash
+echo "=== PRUNING stale patterns ==="
+NINETY_DAYS_AGO=$(date -v-90d +%Y-%m-%d 2>/dev/null || date -d "90 days ago" +%Y-%m-%d)
+PRUNED=0
+
+ls "$GP_DIR"/GP-*.md 2>/dev/null | while read f; do
+  STATUS=$(grep "^status:" "$f" | awk '{print $2}')
+  HITS=$(grep "^hits:" "$f" | awk '{print $2}')
+  CREATED=$(grep "^created:" "$f" | awk '{print $2}')
+
+  [ "$STATUS" != "active" ] && continue
+  [ "${HITS:-0}" -gt 0 ] && continue
+  [ "$CREATED" \> "$NINETY_DAYS_AGO" ] && continue
+
+  GP_ID=$(grep "^id:" "$f" | awk '{print $2}')
+  sed -i.bak "s/^status: active/status: archived/" "$f" 2>/dev/null
+  rm -f "${f}.bak"
+  echo "  ARCHIVED: $GP_ID (0 hits, created $CREATED)"
+  PRUNED=$((PRUNED+1))
+done
+
+echo "Pruned: $PRUNED patterns archived (hits=0, age>90d)"
+```
+
+---
+
+## Subcommand: learn [focus] — capture this session's lessons
+
+The first step of the knowledge flow: `learn` → `review` → `approve` (and `skill` for a
+procedure). Trigger the **continuous-learner** subagent to extract lessons from the
+current session and write to `.great_cto/lessons.md`. This was `/learn` until 3.40.
+
+### When to use this subcommand
+
+The continuous-learner runs automatically on session end (via the SessionEnd hook). Use
+`/crystallize learn` manually when:
+
+- A session ends without invoking the hook (e.g. force-quit, crash recovery)
+- You just made a notable decision and want to capture it before context drifts
+- You want a focused extraction (e.g. only cost-related lessons): `/crystallize learn cost`
+- You're debugging the learner itself
+
+Optional focus: `cost`, `security`, `architecture`, etc. — narrows the learner's scope.
+
+### Learn step 1 — Validate context
+
+```bash
+# Must be in a great_cto-managed project
+[ -f .great_cto/PROJECT.md ] || { echo "ERROR: no .great_cto/PROJECT.md — not a great_cto project"; exit 1; }
+
+# Need *some* session activity to learn from
+COMMITS=$(git log --oneline --since="8 hours ago" 2>/dev/null | wc -l | tr -d ' ')
+WRITES=$(wc -l < .great_cto/agent-writes.log 2>/dev/null || echo 0)
+[ "$COMMITS" -eq 0 ] && [ "$WRITES" -eq 0 ] && { echo "No session activity detected — nothing to learn from."; exit 0; }
+```
+
+### Learn step 2 — Invoke continuous-learner subagent
+
+Use the Task tool to spawn the subagent. Pass the user's optional focus (`$FOCUS`, the
+words after `learn`):
+
+```
+Task(subagent_type="continuous-learner", description="Extract session lessons", prompt="""
+Extract lessons from the current session. Read recent commits, agent writes,
+cost log, beads activity, and reviewer verdicts. Apply quality gates strictly —
+silence > noise.
+
+Focus: $FOCUS
+
+If the user said "cost", emphasize cost-outlier patterns (shape B).
+If the user said "security", emphasize reviewer-catch patterns (shape A).
+If the user said "architecture", emphasize tool/library decisions (shape E).
+Otherwise apply all 5 shapes.
+
+Output one summary line at the end.
+""")
+```
+
+### Learn step 3 — Surface results
+
+After the subagent completes, show the user:
+
+```
+✓ Continuous-learner finished
+
+  Wrote:    <N> new lessons → .great_cto/lessons.md
+  Rejected: <M> candidates (didn't pass quality gates)
+  Promoted: <P> patterns → ~/.great_cto/decisions.md
+
+  Latest lesson preview:
+  ─────────────────────
+  $(tail -25 .great_cto/lessons.md 2>/dev/null)
+```
+
+If `N=0`:
+```
+No new lessons this session — quality gates rejected all candidates. This is normal.
+
+To inspect what was considered, check the SessionEnd snapshot:
+  ls -t .great_cto/logs/session-*-end.md | head -1 | xargs cat
+```
+
+### Learn notes
+
+- The learner is **append-only** to `lessons.md` — it never edits or removes existing entries
+- De-duplication is by `pattern:` slug — the learner skips slugs already present
+- Promotion to global `~/.great_cto/decisions.md` requires ≥3 occurrences across projects (auto-counted)
+- See `docs/LEARNING.md` for the full architecture
+- See `agents/continuous-learner.md` for the agent's quality gates
+
+---
+
+## Subcommand: skill [name] — capture a repeating procedure as a skill
+
+The other half of the same job. `review`/`approve` promote what incidents taught into
+global patterns; `skill` captures a procedure the operator keeps walking agents through.
+Trigger: the same 5+ steps appearing 3+ times across sessions or agents (look in session
+logs, agent outputs, or the operator saying so). This was `/skillify` until 3.39; one
+command now covers both, so "where does repeated knowledge go" has one answer.
+
+A skill written here is local to the project and reversible (delete the directory), so it
+needs no eval gate; a change to a shipped agent still goes through `review` → `approve`.
+
+### Skill step 1 — Identify the pattern
+
+If a name follows `skill` (`/crystallize skill <name>`), use it as the skill name/topic.
+
+Otherwise, scan for candidates:
+```bash
+# Find repeated patterns in session logs
+grep -h "Step\|1\.\|2\.\|3\." .great_cto/logs/session-*.md 2>/dev/null | sort | uniq -c | sort -rn | head -20
+# Find repeated command sequences in lessons.md
+cat .great_cto/lessons.md 2>/dev/null | head -50
+# Recent agent outputs that looked procedural
+ls .great_cto/verdicts/*.log 2>/dev/null | tail -5 | xargs grep -l "Step\|Procedure\|Checklist" 2>/dev/null
+```
+
+Present top 3 candidates to user. Ask: "Which pattern should I capture?"
+
+### Skill step 2 — Interview (one question at a time)
+
+Ask these questions in order. Wait for an answer before asking the next.
+
+**Q1**: "What triggers this pattern? Describe the situation where you'd reach for it — what keyword or signal in a request would make an agent apply this skill?"
+
+**Q2**: "Walk me through the steps. Number them — I'll turn them into the skill body."
+
+**Q3**: "What's the output? What artifact, verdict, or state change does completing this pattern produce?"
+
+**Q4**: "Who runs this? Which agent(s) in the pipeline would apply it? (architect / pm / senior-dev / qa-engineer / security-officer / l3-support / devops / all)"
+
+**Q5**: "What's the effort level? (low = <10 min of LLM work / medium = 10-30 min / high = >30 min)"
+
+**Q6**: "Any anti-patterns — things this skill should actively prevent agents from doing?"
+
+After all answers: show a draft and ask "Does this look right? Anything to add or change?"
+
+### Skill step 3 — Generate SKILL.md
+
+Derive the skill slug from the name: lowercase, hyphen-separated, no special chars.
+
+```bash
+SKILL_NAME=$(echo "$SKILL_ARG" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')
+SKILL_DIR="skills/$SKILL_NAME"
+mkdir -p "$SKILL_DIR"
+```
+
+Write `skills/<slug>/SKILL.md`:
+
+```markdown
+---
+name: <slug>
+description: <one sentence — what this skill does and when it's needed>
+when_to_use: |
+  Apply when:
+  - <trigger condition 1 from Q1>
+  - <trigger condition 2>
+  Do NOT apply when:
+  - <negative condition — when NOT to use this>
+effort: <low | medium | high>
+allowed-tools: <from Q4 — Read/Write/Bash/Glob/Grep/Agent as needed>
+paths:
+  - "<primary path this skill operates on>"
+---
+
+# <Skill Name>
+
+<Two-sentence description of what this skill accomplishes and why it matters.>
+
+## When to apply
+
+<Expand on the trigger conditions. What signal in a request or situation activates this skill?>
+
+### Skill steps
+
+<Numbered steps from Q2. Be specific — include file paths, commands, and format requirements.>
+
+1. <step 1>
+2. <step 2>
+3. <step 3>
+
+## Output
+
+<What the skill produces — file format, verdict shape, or state change from Q3.>
+
+## Anti-patterns
+
+<From Q6 — what agents must NOT do when this skill is active.>
+
+| Anti-pattern | Why it fails | Correct approach |
+|---|---|---|
+| <bad pattern> | <consequence> | <good pattern> |
+```
+
+### Skill step 4 — Register the skill
+
+Add a routing entry to `skills/great_cto/SKILL.md` under the subagent routing table:
+
+```bash
+# Show the current routing table for context
+grep -A2 "<relevant agent from Q4>" skills/great_cto/SKILL.md | head -5
+```
+
+Propose the routing entry:
+```
+| <trigger keyword or file pattern from Q1> | apply <slug> skill |
+```
+
+Ask: "Should I add this to the routing table in SKILL.md? (yes/no)"
+
+If yes — add it. If no — leave for manual.
+
+### Skill step 5 — Confirm
+
+Show the created file path and content summary:
+
+```
+✅ Skill created → skills/<slug>/SKILL.md
+
+  Trigger:  <when_to_use summary>
+  Agent(s): <from Q4>
+  Effort:   <level>
+  Steps:    <N>
+
+To use: agents will auto-load this skill when the trigger condition is met.
+To test: start a new session and describe a situation matching the trigger — confirm the agent applies it.
+```
+
+---
+
+### Skill quality gates (self-check before writing)
+
+Before writing the file, verify:
+- [ ] `when_to_use` has at least 2 positive triggers AND at least 1 "Do NOT apply" guard
+- [ ] Steps are numbered, specific, and reference actual file paths or commands
+- [ ] Output section describes a concrete artifact (not "the agent will do X")
+- [ ] `effort` is one of: `low`, `medium`, `high`
+- [ ] Skill name slug is `kebab-case`, `[a-z0-9-]` only

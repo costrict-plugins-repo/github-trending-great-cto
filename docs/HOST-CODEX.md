@@ -1,0 +1,490 @@
+# Controlled Codex and Claude Code hosts (experimental)
+
+The plugin provides an explicit controller in `scripts/codex-pipeline.mjs`.
+Each worker receives a controller-owned, side-effect-free Codex role profile and runs through Codex CLI
+in read-only mode. The controller validates and writes its JSON file proposals,
+then routes the next role using the installed `shared/pipeline.toml`.
+
+The same controller can route selected roles to Claude Code. The role profile,
+proposal validation, verifier, run cursor and gate policy stay controller-owned.
+Claude Code runs with safe mode, restricted mode and only Read/Glob/Grep tools;
+it cannot use project hooks or its normal write-capable agent prompt in this mode.
+
+## Usage
+
+Run through the version-pinned npm entrypoint. Installing the Codex plugin does
+not add an executable to `PATH`:
+
+```sh
+npx --yes great-cto@3.70.1 codex-host doctor
+npx --yes great-cto@3.70.1 codex-host start --dir /path/to/project --allow src,docs --prompt 'Implement the specified feature'
+npx --yes great-cto@3.70.1 codex-host status <run-uuid>
+npx --yes great-cto@3.70.1 codex-host approve <run-uuid> --token <pending-token>
+npx --yes great-cto@3.70.1 codex-host resume <run-uuid>
+npx --yes great-cto@3.70.1 codex-host recover <run-uuid>
+npx --yes great-cto@3.70.1 codex-host cancel <run-uuid>
+npx --yes great-cto@3.70.1 codex-host list --dir /path/to/project
+```
+
+For a mixed run from a source checkout, assign roles at start. Unlisted roles
+use Codex. The version-pinned npm entrypoint gains this option in the next
+package release:
+
+```sh
+node scripts/codex-pipeline.mjs start \
+  --dir /path/to/project --allow src,docs \
+  --prompt 'Implement and review the specified feature' \
+  --routes qa-engineer=claude-code,security-officer=codex
+```
+
+Both CLIs must be installed and authenticated. `claude auth status --json` must
+report `loggedIn: true`; the controller refuses a mixed start otherwise. The
+two symmetric join roles above inspect the same frozen tree concurrently. The
+controller checks both proposals and rejects overlapping paths before writing
+either one. It then applies each proposal in graph order, verifies the actual
+files, and raises the declared human gates. A failed host, a changed input tree
+or an overlapping proposal blocks the wave. A persisted fetched wave can resume
+without invoking either model again. A crash while workers are still running is
+held for operator inspection; it cannot silently dispatch them twice.
+Concurrent roles may create new `docs/` evidence files only. Implementation
+changes stay sequential so both reviewers always assess the same code tree.
+
+`--routes` selects an execution host per role. It is not an instruction to let
+Claude Code and Codex write into one worktree at the same time. Only roles with
+a symmetric `join` and the same downstream edge form a concurrent wave; other
+roles run in dependency order. The run state and `list` projection record each
+role's host and wave status.
+
+## Keeping the installed Codex plugin current
+
+The Codex plugin cache and the npm CLI are separate artifacts. A configured
+Git marketplace can be refreshed manually with
+`codex plugin marketplace upgrade great-cto`. On macOS, the opt-in updater can
+schedule that supported command every six hours and at login:
+
+```sh
+sh scripts/codex-auto-update.sh enable
+sh scripts/codex-auto-update.sh status
+sh scripts/codex-auto-update.sh disable
+```
+
+The per-user scheduling agent lives at
+`~/Library/LaunchAgents/com.great-cto.codex-auto-update.plist`. Enable it from a
+stable checkout that will remain on disk: the timer pins that script's path.
+The timer captures the resolved Node directory for npm-installed Codex, rather
+than relying on launchd to inherit your shell's PATH. It only runs
+when the `great-cto` marketplace points to this project's GitHub repository,
+revalidated before every scheduled refresh, not only when enabling the timer;
+it does not edit Codex's cache directly. The updater follows the marketplace's
+configured Git ref (`main` by default), which can move ahead of the npm release.
+Codex must load the refreshed plugin in a new session; new or changed hooks
+still need the host's review. The updater does not auto-approve gates, publish
+artifacts, merge code, deploy a service, or update the npm CLI.
+
+`status` reports scheduling, not a successful refresh. Inspect
+`~/.great_cto/codex-auto-update.log` and `~/.great_cto/codex-auto-update.err.log`
+for the command result. Removing the checkout requires disabling the timer first.
+
+The entry role defaults to `product-owner`. `--entry architect` can be used when
+the product decision was already made. Explicit allowed paths apply to all roles
+in this run. Review them before starting. Approve only after inspecting the
+stage's artifacts. Approving does not itself execute the next stage.
+
+For an opt-in live source-checkout smoke on a disposable Git fixture, run
+`GREAT_CTO_LIVE_MIXED=1 node --test tests/lib/mixed-host-live.test.mjs` after
+authenticating both CLIs. It routes QA to Claude Code and security to Codex,
+first obtains real code-reviewer evidence required by the three-reviewer join,
+retains the project and run store under a printed private durable path, checks both
+independent verifier results and report hashes, and stops at the first human
+gate. The test never approves a gate. A verified smoke is evidence for this
+source checkout only; it is not evidence that the feature has shipped in npm
+or in an installed plugin.
+
+To check an extracted npm package or installed plugin instead, set
+`GREAT_CTO_LIVE_PLUGIN_ROOT` to its plugin root (the `package/board` directory
+for an npm tarball). Both the controller and graph are loaded from that root:
+
+```sh
+GREAT_CTO_LIVE_MIXED=1 GREAT_CTO_LIVE_PLUGIN_ROOT=/absolute/extracted/package/board \
+  node --test tests/lib/mixed-host-live.test.mjs
+```
+
+An unreleased tarball is package-candidate evidence, not a published-version
+claim. The smoke keeps the normal three-attempt rework limit and never approves
+the resulting human gates.
+
+Run state lives in `~/.great_cto/codex-runs/<uuid>.json`, outside the worker's
+workspace. An exclusive lock prevents concurrent resume or approval. An in-flight
+marker is persisted before spawning: a crash or partial write blocks replay.
+Inspect partially applied files before starting a replacement run. A crash that
+leaves a lock directory requires operator inspection before removing that lock.
+
+## Implemented controls
+
+### Recorded execution graph (3.70.0)
+
+New controlled runs record an additive `executionTrace` in the same operator-owned
+state JSON. `status`, `list` and the board's Work → Execution expose a bounded,
+read-only graph: dispatch intent, supplied context, checks, verifier outcomes,
+selected transitions, joins, gates, rework, recovery and artifact publication.
+Each dispatch binds a workflow snapshot and input receipt digest. Supplied context
+does not prove the model read or used it. Parallel siblings share a frozen input;
+serialized report application does not create a sibling dependency.
+The stage-context digest covers inline stage context, not separately admitted
+private domain packets. Historical scoped reuse has its own report digest and
+explicit `reuse` node: no domain worker was invoked, and fresh verification and
+current gates remain required. Rework clears every affected scheduling frontier
+while retaining the invalidated nodes as history.
+
+Node details show attempt/host identity and recorded digests. Inspection, zoom and
+keyboard navigation do not approve or resume a run. A recorded gate approval does
+not establish deployment, acceptance or correct model output. Publication remains
+an artifact operation with `activation: none`.
+
+The trace is bounded to 512 nodes, 2048 edges and 64 workflow snapshots. Reaching a
+limit explicitly marks history incomplete without changing execution authority.
+Each snapshot has at most 256 rules and 16 values per transition field; malformed
+stored arrays are refused before their entries are traversed by the projection.
+A dispatch intent without an outcome is unknown, not proof of a currently live
+worker. Legacy runs have no trace; native sessions retain partial observations.
+No edges are reconstructed from timestamps, matching role names or task titles.
+The operator-owned JSON is not tamper-proof against the same OS user.
+
+This requires a 3.70.0 installation and a newly created controlled run; upgrading
+does not reconstruct earlier history. No model benchmark or quality-uplift result
+follows from graph availability.
+
+- Explicit specialist prompts; graph-based dispatch, verdict branches and joins.
+- Read-only Codex workers with plugins, apps and subagents disabled; user config
+  and host skill discovery disabled to avoid unrelated tools and context overflow.
+  Projects with `.codex/config.toml` in their ancestry are refused.
+- Whole-proposal validation before writes: allowed paths, symlinks (including
+  dangling links), protected configuration and instruction files, content size,
+  duplicate paths, shared high-confidence secret patterns and base SHA256.
+- All declared transition gates, including terminal edges, require a per-run
+  token. Model output cannot approve gates. Artifact drift invalidates approval.
+- Missing artifacts, invalid output, unsuccessful processes and runtime warnings
+  stop the run. Joins cannot proceed on an unsuccessful partner result.
+
+## Boundaries
+
+The controller's gates apply only to work executed by this controller; ordinary
+Codex sessions get the six safety guards and the two edit hints (edit-impact, lesson-tripwire) the plugin ships as Codex hooks
+(`.codex-plugin/hooks.json`, reviewed once in Codex's terminal UI before they run — run `codex` in a terminal and choose Trust all and continue at "Hooks need review"; the ChatGPT/Codex app does not show that screen), not the
+pipeline. It trusts
+the local operator and Codex's read-only sandbox; it is not a security boundary
+against another process running as the same OS user.
+
+This initial mode accepts full text file proposals only. It does not delete files,
+apply binary patches or deploy a production service. Optional offline Docker checks
+can run write-requiring tests/builds (see below). Devops can release an approved
+local or GitHub Release artifact bundle when configured; otherwise it stops with `manual-action`.
+Infra-provisioner and migration-import-engineer still require manual action.
+It limits a run to 32 worker stages.
+A verifier `rework` retries the same stage, except code-reviewer, QA and security
+return to a previously completed senior-dev in their dependency chain. Reviewer
+`FAIL`/`REJECTED` follows that repair route without applying the negative
+proposal's files. `BLOCKED` remains a stop. Declared verdict back-edges such as
+`SPEC-OBJECTION` reopen their target after the declared gate. Dependent results
+and approvals are archived and invalidated; QA/security must complete again.
+There are three total attempts per role by default (`start --max-attempts 1..5`).
+Each attempt has a unique ID, timestamps, receipt and verification evidence;
+findings are passed to the next attempt. Exhaustion blocks. Existing saved runs
+without an attempt policy retain single-attempt behavior. Process failures,
+invalid evidence and `unverifiable` do not automatically retry.
+
+Structural artifact checks establish existence and content. File and
+directory output contracts are checked; Git receipts are generated by the
+controller and checked for drift at approval. Receipt-requiring roles need a Git
+repository with at least one commit and a nonempty changed-file set. A separate
+read-only Codex verifier inspects actual files after each stage; `rework` and
+`unverifiable` block downstream dispatch. Same-stage repair does not approve any
+gate. Artifact hashes are checked before the next attempt or resumed stage and
+after verification. Its findings and checks are retained.
+Parallel-wave reports additionally require a workflow attestation bound to the
+exact wave ID and role list. Workers and verifiers receive bounded controller
+invocation observations; queued roles are not running, and wave membership does
+not establish successful execution or measured overlap. Missing or mismatched
+attestation cannot verify a report; unsupported factual workflow claims require
+rework. This is semantic inspection, not a deterministic proof of every sentence.
+This is a fresh session, not a guarantee of a different model family. It is not
+the legacy `independent-verify` scoring/board integration. Test execution is
+limited to commands the read-only sandbox permits; a model's `verified` verdict
+is not a production certification.
+
+Beads gate approvals and board journals are separate from this controller's
+run-bound tokens. Existing approval-level reductions and skip directives are not
+applied: every gate declared on a selected edge is enforced. The new skill is
+available after the installed plugin is refreshed and the Codex task reloads its
+skill catalogue.
+
+Validation: `node --test tests/lib/codex-pipeline.test.mjs` covers guarded writes,
+gates and resume, terminal gates, joins, stale approvals, unsafe paths, missing
+evidence, runtime failures and interrupted execution with fake workers. A real
+Codex run is a separate integration check; passing these tests is not evidence
+that an entire product was built and deployed.
+
+---
+
+## Recovery and cancellation
+
+The persisted attempt phase distinguishes worker execution, file application,
+checks and verification. `recover` permits an explicit retry only for unchanged
+Git stages before writes, or fully applied candidates with a persisted receipt.
+It does not execute a worker; call `resume` afterwards. Partial writes, truncated
+receipts, non-Git projects, exhausted budgets and tree drift require inspection.
+`cancel` invalidates a pending gate, not files already written. Both commands
+take the existing exclusive lock: cancellation does not interrupt a running CLI.
+
+An operator can reject an unchanged, pending sequential gate for controlled
+same-role rework, without approving it:
+
+```bash
+node <plugin-root>/scripts/codex-pipeline.mjs reject <run-uuid> --token <pending-token> --reason 'Explain the concrete defect'
+node <plugin-root>/scripts/codex-pipeline.mjs resume <run-uuid>
+```
+
+`reject` binds the pending token, result, complete Git receipt and managed file
+hashes exactly as approval does. It archives the rejected result and affected
+descendant approvals, retains unaffected ancestors and existing file bytes,
+and queues the same role within the existing repair budget. The rejection log
+retains the old pending decision and actual controller module path/SHA256.
+It does not dispatch a model, alter frozen policies or grant an approval.
+Parallel-wave and active-stage rejection are refused; release approval is a
+separate operation, not a sequential stage gate. Exhausted budgets block rework.
+Workers and verifiers receive frozen check/release configuration separately
+from execution evidence, including exact commands and a policy snapshot digest.
+Configured commands must not be presented as executed checks or different smoke.
+
+## Build/test backends
+
+Docker is optional for the product, not silently optional for a pinned run.
+Policies without `backend` retain the existing Docker behavior. Explicit
+`"backend": "docker"` also requires a pinned image. There is no automatic
+fallback when Docker is unavailable. Start a new run to change the policy;
+existing approval and policy digests must not be rewritten.
+
+For small **trusted** projects, an operator-owned local policy can be used:
+
+```json
+{
+  "backend": "local",
+  "trusted": true,
+  "inputs": ["src", "tests"],
+  "commands": [["node", "--test", "tests/test.mjs"]],
+  "timeoutMs": 60000
+}
+```
+
+Local commands execute as the current OS user, without a shell, in a private
+temporary copy of selected inputs. `node` resolves to the controller's Node;
+other executables require absolute paths. Dependencies are not installed or
+copied implicitly. Commands receive only PATH (controller Node directory),
+HOME/TMPDIR (temporary work directory), LANG and LC_ALL, not the inherited
+credential environment. Selected inputs and exported outputs have the same
+path/secret/size validation as Docker. The total command deadline is bounded;
+each command has bounded captured output and same-process-group descendants
+are terminated on POSIX. Code that escapes that group is not contained.
+
+**Local is not a sandbox.** Code can access the user's filesystem, credentials
+stored on disk, network and other processes. Snapshotting and environment
+filtering prevent accidental exposure, not malicious access. Use Docker or
+another separately implemented/verified sandbox for untrusted code. Local
+evidence reports `backend: local`, `isolation: none`, `image: null`, Node/OS/arch
+and executable SHA256 identities; these observed identities are not immutable
+runtime pins or container-equivalence claims. No CPU/memory/network isolation
+is asserted. Trust is explicit operator consent, not inferred from project size.
+
+Release policy can independently select `backend: local, trusted: true` for
+its smoke commands (omit `image`); release adapter `local` describes artifact
+publication, **not** execution backend. Release approval remains mandatory.
+
+The disposable mixed-host full-graph harness supports explicit trusted local
+acceptance without Docker. It starts a fresh run and stops at the first human
+gate; it never inherits or automatically grants approvals:
+
+```sh
+GREAT_CTO_LIVE_CHECKS_BACKEND=local GREAT_CTO_TRUST_LOCAL_FIXTURE=1 node tests/eval/mixed-host-release-live.mjs /absolute/private/install/node_modules/great-cto/board
+```
+
+Omitting those variables retains the pinned Docker acceptance contract. The
+harness checks controller, pipeline, checks and release module hashes before
+and after execution. This command incurs actual model usage; fixture trust
+does not authorize public release or execution of an untrusted product.
+
+### Offline Docker executor
+
+At `start`, pass `--checks-policy /absolute/operator-owned/checks.json`. The JSON
+must be outside the target workspace; its content is snapshotted into run state.
+The operator selects the image and commands, not the worker. Example shape:
+
+```json
+{
+  "image": "node@sha256:<actual 64-character lowercase hex digest>",
+  "inputs": ["src", "tests", "package.json"],
+  "commands": [["node", "--test"], ["npm", "run", "build"]],
+  "timeoutMs": 60000
+}
+```
+
+Inputs must also be inside `--allow` paths. Only selected files are copied into
+a temporary read-only snapshot. Symlinks, protected paths and detected secrets
+are rejected. Input is limited to 2000 files / 20 MiB. Docker receives no host
+project, home, credential or daemon-socket mount. Commands run as nonroot with
+no network, no capabilities, read-only root and bounded writable tmpfs.
+
+The approved image must already exist locally (`--pull=never`). Dependencies must
+be included in that image or installable offline; network package installation
+is not implemented. Without `outputs`, build outputs remain temporary. A policy
+can export 1..50 explicit files via `"outputs": ["dist/add.mjs"]`. Export-enabled
+images require Node. The exporter rejects symlinks, limits combined data to
+8 MiB and returns bytes through bounded stdout, without a writable host export
+mount. Controller validation checks paths, detected secrets and SHA256 digests;
+artifact data is retained separately from logs in the run state. Secret scanning
+decodes content as UTF-8 and covers text only. It does **not** establish that a
+binary, compressed file or archive contains no secret; embedded data can pass
+undetected. Such formats need a format-aware scanner before they can carry that
+claim. Directory exports and executable mode preservation are not supported.
+
+Checks run on senior-dev and QA stages before semantic verification. Failing
+checks request repair. Timeouts and Docker/runtime unavailability are
+`unverifiable`, not code defects. Semantic verification cannot override mandatory
+failed checks. Commands, output, exit status and policy/input digests are retained
+on the attempt. No policy means no deterministic checks, not passing checks.
+
+To exercise the real sandbox with an approved preloaded image:
+
+```sh
+GREAT_CTO_LIVE_DOCKER_IMAGE=node@sha256:<digest> node --test tests/lib/codex-checks.test.mjs
+```
+
+Without the variable, the live test is explicitly skipped, not simulated.
+
+## Local artifact release
+
+`start --release-policy /absolute/operator-owned/release.json` opts into a
+release adapter. As with checks policy, this file must be outside the project.
+The `local` adapter's release root must already exist outside the project and contain the exact
+operator-created marker `.great-cto-release-root` with content
+`great-cto-release-root:v1` followed by a newline. This prevents a project parent
+or sibling-project directory from becoming a release target merely because it is
+outside the workspace. Example:
+
+```json
+{
+  "adapter": "local",
+  "releaseRoot": "/absolute/local/releases",
+  "image": "node@sha256:<actual 64-character lowercase hex digest>",
+  "smokeCommands": [["node", "dist/add.mjs"]],
+  "timeoutMs": 60000
+}
+```
+
+Choose smoke commands that actually assert your artifact's behavior; the example
+only demonstrates invocation. The controller requires released/verified developer,
+reviewer, QA and security results, QA-exported artifacts and unchanged QA inputs.
+The ordinary graph gates must complete first. Devops then prepares an additional
+`awaiting-release` gate showing release root and artifact digest. Approve it with:
+
+```sh
+node <plugin-root>/scripts/codex-pipeline.mjs approve-release <run-uuid> --token <release-token>
+node <plugin-root>/scripts/codex-pipeline.mjs resume <run-uuid>
+```
+
+Approval binds the operation ID, candidate bytes, source receipt, destination and
+smoke policy. The local adapter writes a private staging directory, checks bytes,
+then renames it into an operation-specific release directory. Post-release smoke
+runs on a snapshot of the published files, not rebuilt source. Only then is the
+devops result recorded and l3-support scheduled. Post-release workers are read-only;
+an INCIDENT reopens implementation and invalidates the previous release identity.
+
+On failure, the candidate is retained for inspection, not silently removed or
+overwritten. `recover` / `resume` reconciles the same operation and candidate;
+tampering causes refusal. An interrupted operation can leave a private staging
+directory requiring operator cleanup.
+
+The `github-release` adapter uses a pre-existing repository and an explicit tag
+and 40-character target commit. It creates a draft, uploads assets without
+clobbering, downloads every asset and compares it with the approved SHA-256,
+runs smoke against those downloaded bytes, and only then publishes the release:
+
+```json
+{
+  "adapter": "github-release",
+  "repository": "owner/repository",
+  "tag": "v1.2.3",
+  "targetCommitish": "0123456789abcdef0123456789abcdef01234567",
+  "title": "Release 1.2.3",
+  "notes": "Approval-bound release.",
+  "image": "node@sha256:<actual 64-character lowercase hex digest>",
+  "smokeCommands": [["node", "dist/add.mjs"]],
+  "timeoutMs": 60000
+}
+```
+
+Authentication and repository authorization belong to `gh`; the controller
+never accepts a token in its policy or run state. Recovery reuses the same draft
+and uploads only missing assets. An unexpected asset, target change or byte
+mismatch blocks publication. The adapter never uses `--clobber` and never
+deletes a release.
+
+Both shipped adapters declare `activation: none`: publishing an immutable
+artifact is not activation of a service. Local rollback is consumer selection
+of a previous immutable directory. GitHub rollback is a new, separately approved
+superseding release. Deleting or rewriting release evidence is explicitly not a
+rollback. npm publish, service activation and infrastructure rollback remain
+outside this controller.
+
+The opt-in driver `tests/eval/codex-host-live.mjs --approve-fixture-gates` creates
+its own disposable project and destination and exercises the shipped graph.
+It needs `GREAT_CTO_LIVE_DOCKER_IMAGE`. Add `--live-codex` to use actual Codex
+workers/verifiers (incurs model usage); otherwise they are explicitly fixtures.
+Only gates of that disposable project are auto-approved. It retains `run.json`
+and `acceptance.json` outside the worker project for inspection. A blocked or
+unverifiable run is not a successful end-to-end acceptance.
+
+For a mixed-host full-graph source acceptance that does **not** auto-approve
+any gate, run:
+
+```sh
+GREAT_CTO_LIVE_DOCKER_IMAGE=node@sha256:<local-digest> node tests/eval/mixed-host-release-live.mjs
+```
+
+To exercise an already offline-installed npm candidate instead of the checkout,
+pass its runtime root as the single optional argument (for npm this is
+`<prefix>/node_modules/great-cto/board`). The driver executes that root's
+controller with that root as cwd, records controller and pipeline SHA256 values,
+and rejects runtime drift after the stage. This does not activate the candidate
+as a marketplace plugin or inherit another run's approvals.
+
+It creates a disposable Git project, isolated run store, local release root
+and operator-owned policies under the private, persistent macOS directory
+`/Users/Shared/great-cto-acceptance-<uid>/` (or an absolute, private
+`GREAT_CTO_LIVE_BASE_DIR`; required on non-macOS hosts). The base must have no
+ancestor `.codex/config.toml`. This avoids losing a human-gated run to OS temp
+cleanup or inheriting a project Codex config. It routes QA to Claude Code and
+security to Codex, then stops at `gate:product`. The printed paths and run ID
+are retained for separate operator approval and resume. The local release
+adapter still needs its own later release approval; this driver does not
+publish or activate an artifact by itself.
+
+## Related
+
+- [ADR-021: controlled shell inside the offline check container](adr/ADR-021-controlled-shell-inside-offline-check-container.md) —
+  trust boundary and removal criteria for sequencing operator-owned checks.
+- [ADR-022: reconcile GitHub assets before publishing](adr/ADR-022-github-release-reconciliation.md) —
+  draft, byte verification and rollback semantics for the external adapter.
+- [Codex support contract](CODEX-SUPPORT-CONTRACT.md) — acceptance criteria and
+  explicit remaining lifecycle boundaries; not a claim of complete support.
+- [Mixed-host release readiness](analysis/2026-10-01-mixed-host-release-readiness.md) —
+  the source and packaged-candidate evidence behind `--routes` in 3.47.0.
+
+- [2026-09-05-codex-phase0-findings](analysis/2026-09-05-codex-phase0-findings.md) —
+  what Codex does and does not carry as a plugin, measured against codex-cli
+  0.153.4: skills and MCP work; slash commands and role agents have no plugin
+  surface, which is why this controller exists. Hooks were listed there too; a
+  probe on 2026-09-28 showed Codex does run plugin hooks — `{ hooks: { Event: [...] } }`
+  at a path named in `.codex-plugin/plugin.json`, Claude's payload shape, `apply_patch`
+  for edits, and a working deny — once the user has reviewed them.
+- [project-capabilities](reference/project-capabilities.md) — `second_opinion`,
+  which is how Codex participates in a Claude Code pipeline instead.

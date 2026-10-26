@@ -1,0 +1,244 @@
+// tests/eval/eval-gate.test.mjs — Unit tests for scripts/eval-gate.mjs
+//
+// Run: node --test tests/eval/eval-gate.test.mjs
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { evaluateGate, parseResultsJsonl, judgeOf } from '../../scripts/eval-gate.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const GATE = join(__dirname, '..', '..', 'scripts', 'eval-gate.mjs');
+
+const r = (eval_, rate, extra = {}) => ({ eval: eval_, rate, split: 'holdout', ...extra });
+
+// ── parseResultsJsonl ─────────────────────────────────────────────────────────
+
+test('parseResultsJsonl: parses lines, skips blanks and malformed', () => {
+  const text = '{"eval":"a","rate":1}\n\n{bad json}\n{"eval":"b","rate":0.5}\n';
+  const out = parseResultsJsonl(text);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].eval, 'a');
+  assert.equal(out[1].eval, 'b');
+});
+
+// ── evaluateGate: core decisions ──────────────────────────────────────────────
+
+test('evaluateGate: equal rates → promote', () => {
+  const g = evaluateGate([r('a', 0.8)], [r('a', 0.8)]);
+  assert.equal(g.pass, true);
+  assert.equal(g.regressions.length, 0);
+});
+
+test('evaluateGate: candidate better → promote with improvement', () => {
+  const g = evaluateGate([r('a', 0.6)], [r('a', 0.9)]);
+  assert.equal(g.pass, true);
+  assert.equal(g.improvements.length, 1);
+  assert.equal(g.improvements[0].delta, 0.3);
+});
+
+test('evaluateGate: candidate regresses → block', () => {
+  const g = evaluateGate([r('a', 0.9)], [r('a', 0.7)]);
+  assert.equal(g.pass, false);
+  assert.equal(g.regressions.length, 1);
+  assert.equal(g.regressions[0].eval, 'a');
+});
+
+test('evaluateGate: epsilon tolerates tiny drop', () => {
+  const g = evaluateGate([r('a', 0.90)], [r('a', 0.89)], { epsilon: 0.02 });
+  assert.equal(g.pass, true, 'within epsilon should not block');
+  assert.equal(g.regressions.length, 0);
+});
+
+test('evaluateGate: drop beyond epsilon still blocks', () => {
+  const g = evaluateGate([r('a', 0.90)], [r('a', 0.80)], { epsilon: 0.02 });
+  assert.equal(g.pass, false);
+});
+
+test('evaluateGate: candidate below its own threshold → block even if no baseline', () => {
+  const g = evaluateGate([], [r('a', 0.5, { threshold: 0.8 })]);
+  assert.equal(g.pass, false);
+  assert.equal(g.belowThreshold.length, 1);
+});
+
+test('evaluateGate: belowThreshold flag honored', () => {
+  const g = evaluateGate([r('a', 0.9)], [r('a', 0.85, { belowThreshold: true })]);
+  assert.equal(g.pass, false);
+  assert.equal(g.belowThreshold.length, 1);
+});
+
+test('evaluateGate: missing-in-candidate reported, does not block', () => {
+  const g = evaluateGate([r('a', 0.9), r('b', 0.9)], [r('a', 0.9)]);
+  assert.equal(g.pass, true);
+  assert.deepEqual(g.missing, ['b']);
+});
+
+test('evaluateGate: split filter restricts comparison', () => {
+  const base = [r('a', 0.9, { split: 'holdout' }), r('a', 0.2, { split: 'tuning' })];
+  const cand = [r('a', 0.9, { split: 'holdout' }), r('a', 0.1, { split: 'tuning' })];
+  // Only holdout considered → equal → promote (tuning regression ignored)
+  const g = evaluateGate(base, cand, { split: 'holdout' });
+  assert.equal(g.pass, true);
+});
+
+test('evaluateGate: multiple evals, one regression blocks the whole set', () => {
+  const g = evaluateGate(
+    [r('a', 0.9), r('b', 0.9)],
+    [r('a', 0.95), r('b', 0.6)],
+  );
+  assert.equal(g.pass, false);
+  assert.equal(g.regressions.length, 1);
+  assert.equal(g.improvements.length, 1);
+});
+
+// ── judgeOf() + mismatched bucket (JP-3) ───────────────────────────────────────
+//
+// Two rows scored by different judges — or the same graph judge edited between
+// runs — are not comparable. A row with no `judge` field predates the graph
+// judge (2026-07-29) and was in fact rubric-scored, so absent resolves to
+// 'rubric', not 'unknown' (ARCH-judge-provenance.md §2).
+
+test('judgeOf: defaults an absent judge field to rubric, passes explicit values through', () => {
+  assert.equal(judgeOf({}), 'rubric');
+  assert.equal(judgeOf({ judge: 'rubric' }), 'rubric');
+  assert.equal(judgeOf({ judge: 'dag' }), 'dag');
+});
+
+test('evaluateGate: rubric baseline vs dag candidate → mismatched, blocks', () => {
+  const g = evaluateGate(
+    [r('a', 0.8, { judge: 'rubric' })],
+    [r('a', 0.8, { judge: 'dag', dagHash: 'abc123def456' })],
+  );
+  assert.equal(g.pass, false);
+  assert.equal(g.mismatched.length, 1);
+  assert.equal(g.mismatched[0].eval, 'a');
+  assert.equal(g.mismatched[0].baseJudge, 'rubric');
+  assert.equal(g.mismatched[0].candJudge, 'dag');
+  // A cross-judge delta is incomparable, not a regression or an improvement.
+  assert.equal(g.regressions.length, 0);
+  assert.equal(g.improvements.length, 0);
+});
+
+test('evaluateGate: both dag with the same dagHash compares normally', () => {
+  const g = evaluateGate(
+    [r('a', 0.6, { judge: 'dag', dagHash: 'abc123def456' })],
+    [r('a', 0.9, { judge: 'dag', dagHash: 'abc123def456' })],
+  );
+  assert.equal(g.mismatched.length, 0, 'same dagHash must not be flagged as a mismatch');
+  assert.equal(g.pass, true);
+  assert.equal(g.improvements.length, 1);
+});
+
+test('evaluateGate: both dag with differing dagHash → mismatched, blocks', () => {
+  const g = evaluateGate(
+    [r('a', 0.8, { judge: 'dag', dagHash: 'abc123def456' })],
+    [r('a', 0.8, { judge: 'dag', dagHash: 'def456abc123' })],
+  );
+  assert.equal(g.pass, false);
+  assert.equal(g.mismatched.length, 1);
+  assert.equal(g.mismatched[0].baseDagHash, 'abc123def456');
+  assert.equal(g.mismatched[0].candDagHash, 'def456abc123');
+  assert.equal(g.regressions.length, 0, 'differing graphs must not also register as a rate regression');
+});
+
+test('evaluateGate: legacy row with no judge field vs dag candidate → mismatched', () => {
+  // The baseline row omits `judge` entirely — a pre-2026-07-29 row. judgeOf
+  // resolves it to 'rubric', which differs from the candidate's 'dag': the
+  // unknown must not be waved through as "same judge as the candidate".
+  const g = evaluateGate(
+    [r('a', 0.8)],
+    [r('a', 0.8, { judge: 'dag', dagHash: 'abc123def456' })],
+  );
+  assert.equal(g.pass, false);
+  assert.equal(g.mismatched.length, 1);
+  assert.equal(g.mismatched[0].baseJudge, 'rubric');
+  assert.equal(g.mismatched[0].candJudge, 'dag');
+});
+
+test('evaluateGate: candidate below its own threshold is still reported even when also mismatched', () => {
+  const g = evaluateGate(
+    [r('a', 0.8, { judge: 'rubric' })],
+    [r('a', 0.5, { judge: 'dag', dagHash: 'abc123def456', threshold: 0.8 })],
+  );
+  assert.equal(g.pass, false);
+  assert.equal(g.mismatched.length, 1);
+  assert.equal(g.belowThreshold.length, 1, 'below-threshold is a per-candidate check, independent of baseline comparability');
+});
+
+// ── DEEPEN Wave 1: variance-aware regression (epsilon ≥ combined stddev) ──────
+
+test('evaluateGate: drop within combined stddev is noise, not a regression', () => {
+  // base 0.9 (σ=0.1), cand 0.78 (σ=0.1) → noiseBand 0.2; delta -0.12 < 0.2 → promote
+  const g = evaluateGate(
+    [r('a', 0.9, { stddev: 0.1 })],
+    [r('a', 0.78, { stddev: 0.1 })],
+  );
+  assert.equal(g.pass, true, 'drop inside the noise floor must not block');
+  assert.equal(g.regressions.length, 0);
+});
+
+test('evaluateGate: drop beyond combined stddev still blocks', () => {
+  // base 0.9 (σ=0.02), cand 0.6 (σ=0.02) → noiseBand 0.04; delta -0.30 → regression
+  const g = evaluateGate(
+    [r('a', 0.9, { stddev: 0.02 })],
+    [r('a', 0.6, { stddev: 0.02 })],
+  );
+  assert.equal(g.pass, false);
+  assert.equal(g.regressions.length, 1);
+  assert.ok(g.regressions[0].effectiveEpsilon >= 0.04);
+});
+
+test('evaluateGate: effectiveEpsilon is max(epsilon, noiseBand)', () => {
+  // epsilon 0.05 dominates a tiny noiseBand of 0.02; delta -0.04 → within → promote
+  const g = evaluateGate(
+    [r('a', 0.90, { stddev: 0.01 })],
+    [r('a', 0.86, { stddev: 0.01 })],
+    { epsilon: 0.05 },
+  );
+  assert.equal(g.pass, true);
+});
+
+// ── CLI ───────────────────────────────────────────────────────────────────────
+
+function writeJsonl(rows) {
+  const dir = mkdtempSync(join(tmpdir(), 'evalgate-'));
+  const path = join(dir, `${Math.abs(hash(JSON.stringify(rows)))}.jsonl`);
+  writeFileSync(path, rows.map(x => JSON.stringify(x)).join('\n') + '\n');
+  return path;
+}
+function hash(s) { let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) | 0; return h; }
+
+test('CLI: promote exits 0', () => {
+  const base = writeJsonl([r('a', 0.8)]);
+  const cand = writeJsonl([r('a', 0.9)]);
+  const res = spawnSync(process.execPath, [GATE, '--baseline', base, '--candidate', cand], { encoding: 'utf8' });
+  assert.equal(res.status, 0, res.stdout + res.stderr);
+  assert.ok(res.stdout.includes('PROMOTE'));
+});
+
+test('CLI: regression exits 1', () => {
+  const base = writeJsonl([r('a', 0.9)]);
+  const cand = writeJsonl([r('a', 0.6)]);
+  const res = spawnSync(process.execPath, [GATE, '--baseline', base, '--candidate', cand], { encoding: 'utf8' });
+  assert.equal(res.status, 1);
+  assert.ok(res.stdout.includes('BLOCK'));
+});
+
+test('CLI: missing args exits 2', () => {
+  const res = spawnSync(process.execPath, [GATE, '--baseline', 'x.jsonl'], { encoding: 'utf8' });
+  assert.equal(res.status, 2);
+});
+
+test('CLI: judge mismatch exits 1 and prints the mismatch', () => {
+  const base = writeJsonl([r('a', 0.8, { judge: 'rubric' })]);
+  const cand = writeJsonl([r('a', 0.8, { judge: 'dag', dagHash: 'abc123def456' })]);
+  const res = spawnSync(process.execPath, [GATE, '--baseline', base, '--candidate', cand], { encoding: 'utf8' });
+  assert.equal(res.status, 1);
+  assert.ok(res.stdout.includes('BLOCK'));
+  assert.match(res.stdout, /mismatch/i);
+});

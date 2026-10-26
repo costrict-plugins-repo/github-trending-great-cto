@@ -1,0 +1,248 @@
+---
+description: "Done for now? Run it — you get a session note with what was done, how each done item was verified, where the work stands (branch, dirty files, running servers) and the next step. Optional: commit & push."
+argument-hint: "[description] — e.g. 'implemented auth flow' (auto-inferred if omitted)"
+user-invocable: true
+allowed-tools: Read, Write, Bash, Glob, Grep
+model: haiku
+---
+
+You are the great_cto `/save` command. Your job is to create a compact, useful session log that makes `/resume` fast next time. Write, don't ask — infer everything from the conversation and git.
+
+## Step 1 — Gather session data (run all in parallel)
+
+```bash
+# What changed in git during this session
+git diff --stat HEAD 2>/dev/null | head -20
+git log --oneline --since="8 hours ago" 2>/dev/null | head -10
+
+# Current open tasks
+cat .great_cto/tasks.md 2>/dev/null | grep -E "^\- \[.\]" | head -20
+
+# Existing logs (to auto-number)
+ls .great_cto/logs/session-*.md 2>/dev/null | wc -l
+
+# Project name + phase
+grep -E "^# |^phase:|^primary:" .great_cto/PROJECT.md 2>/dev/null | head -3
+```
+
+## Step 2 — Infer session description
+
+If the user provided `$ARGUMENTS` — use that as the session description.
+
+Otherwise infer from:
+1. Git commits made during this session (last 8 hours)
+2. What was discussed/built in this conversation
+3. File changes visible in `git diff --stat`
+
+Keep the description to 3–5 words: `"implemented auth flow"`, `"fixed streaming archetype"`, `"added regulated auto-detect"`.
+
+## Step 3 — Write session log
+
+```bash
+mkdir -p .great_cto/logs
+DATE=$(date +%Y-%m-%d)
+TIME=$(date +%H:%M)
+SLUG=$(echo "<session-description>" | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | cut -c1-40)
+LOG_FILE=".great_cto/logs/session-${DATE}-${SLUG}.md"
+```
+
+Write `$LOG_FILE`:
+
+```markdown
+---
+date: <YYYY-MM-DD>
+time: <HH:MM>
+duration: <estimated from conversation length — "~30 min" / "~2 h">
+concepts: [<keyword1>, <keyword2>, <keyword3>]
+---
+
+# Session: <description>
+
+## Goal
+
+<one line: what this work is actually for — the real goal, not the first ask if it shifted>
+
+## Start here
+
+1. <the single most concrete first action for the next session — a command to run or a file:line to open>
+2. <then this, if there is a clear second step>
+
+## Done
+
+- <bullet: what was actually implemented / fixed / decided>
+  Verify: `<exact command a later session can run to prove it>` → <expected result>
+- <bullet: second thing>
+  Verify: not verified — <why: e.g. needs prod credentials, nothing runnable for prose>
+
+## Decisions
+
+- <any explicit decisions made — e.g. "decided to use X over Y because Z">
+  *(none)* — if nothing was explicitly decided
+
+## Pending
+
+- <what was left unfinished or is the clear next step>
+- <second pending item if any>
+
+## Files changed
+
+<output of git diff --stat HEAD or "no git changes">
+
+## Commits
+
+<git log --oneline --since="8 hours ago" output, or "no commits this session">
+```
+
+Then append the run state — branch@sha, dirty files, stash, upstream, dev servers still
+listening. Do NOT type this block by hand: the sha and time in its marker line are what
+`/resume` checks the note against, and a transcription slip makes every later check wrong.
+
+```bash
+HS="${CLAUDE_PLUGIN_ROOT:-$(ls -d ~/.claude/plugins/cache/*/great_cto/*/ 2>/dev/null | awk -F'/plugins/cache/' '{split($NF,p,"/"); print p[3], $0}' | sort -V | tail -1 | cut -d' ' -f2- | sed 's|/$||')}/scripts/lib/handoff-state.mjs"
+[ -f "$HS" ] || HS="$(pwd)/scripts/lib/handoff-state.mjs"
+LOG_FILE=".great_cto/logs/session-<date>-<slug>.md"   # the file you just wrote
+{ echo; node "$HS" capture 2>/dev/null || printf '## Run state\n\n- not captured (handoff-state unavailable)\n'; } >> "$LOG_FILE"
+```
+
+It is read-only: the stash is counted, never popped; nothing is staged or committed.
+
+**Verify line rules** (one per Done item — this is what stops "done" being claimed on the note's word):
+- The exact command, in backticks, that proves the item **from a fresh session**, and its expected result after `→`:
+  `` Verify: `node --test tests/lib/auth.test.mjs` → 14 pass ``
+- Prefer the narrowest read-only proof: a targeted test file, `git log --oneline -1 -- <file>`, `grep -n <symbol> <file>`.
+  `/resume` re-runs only cheap read-only commands; a push, deploy, build or full suite is listed, never re-run.
+- If nothing was run, or it cannot be run later, say so: `Verify: not verified — <why>`. Never invent a command you did not run.
+
+**Start here rules:** step 1 is an action, not a topic — `run X`, `open file:line and do Y`,
+`ask the CTO about Z`. If there is no open next action, write `1. ship / merge / deploy <what>`.
+
+**Concepts field rules** (enables `/recall` search):
+- Extract 3–6 lowercased keywords that best describe what was worked on
+- Prefer specific terms over generic: `"quota-check"` not `"monitoring"`, `"side-panel"` not `"ui"`
+- Include: main feature slug, key library/tool names, archetype if relevant
+- Examples: `[quota, oauth, board, side-panel]` · `[orchestrator, toml, 3-state-completion]` · `[substantiveness, explicit-gate, ai-security-reviewer]`
+- These are the only index entries for `/recall` — choose them to be findable in 6 months
+
+## Step 3b — Update brain.md tiers (optional, 60 seconds)
+
+After writing the session log, optionally promote insights to `.great_cto/brain.md`:
+
+**EPISODIC tier** — always update with a 1-2 sentence session summary:
+```
+### <YYYY-MM-DD> — <slug>
+<1-2 sentence outcome>
+Key decisions: <brief>
+```
+Rotate: keep only the 5 most recent episodic entries. Drop the oldest when adding the 6th.
+
+**SEMANTIC tier** — promote if a fact was confirmed for the 2nd time this session:
+- Architectural fact stated the same way in 2+ sessions → append to `## SEMANTIC → Architecture`
+- Tech choice made explicitly → append to `## SEMANTIC → Tech Choices`
+- New constraint confirmed → append to `## SEMANTIC → Constraints`
+
+**PROCEDURAL tier** — promote if a workflow was repeated (not first time):
+- Release procedure used again → verify entry exists, update if steps changed
+- Debug pattern used 2nd time → add named procedure entry
+
+**WORKING tier** — always overwrite with current state:
+```
+Active task: <current task or "—">
+Current focus: <what you're doing>
+Blockers: <known blockers or "—">
+```
+
+Skip brain.md update if the session was trivial (< 30 min, no architectural decisions).
+
+## Step 4 — Update tasks.md (if open tasks changed)
+
+If tasks were completed during this session, mark them done:
+
+```bash
+# Mark completed tasks
+sed -i 's/^- \[ \] <completed-task>/- [x] <completed-task>/' .great_cto/tasks.md 2>/dev/null || true
+```
+
+Only modify tasks that were explicitly completed — don't guess.
+
+## Step 5 — Confirm and optionally commit
+
+Show the CTO:
+
+```
+✅ Session saved → .great_cto/logs/session-<date>-<slug>.md
+
+  Done:    <N> items (<M> with a runnable Verify)
+  Pending: <N> items
+  Start:   <Start here step 1>
+  State:   <branch>@<sha> · <clean | N dirty>
+  Commits: <N> this session
+
+Commit & push? (y/n)
+```
+
+If user says **yes** (or `/save commit`):
+
+```bash
+git add .great_cto/logs/
+git commit -m "chore: session log <date> — <description>"
+git push
+```
+
+If user says **no** — done. Log stays local (that's fine).
+
+## Step 6 — Remind about next session
+
+Always end with:
+
+```
+Next session: run `/resume` to restore this context instantly.
+```
+
+---
+
+## Notes
+
+- Keep bullets **concrete** — "added streaming archetype with kafka/flink signals" not "worked on archetypes"
+- Pending should always have **at least one item** — if everything is done, the pending item is "ship / merge / deploy"
+- Every Done item carries a `Verify:` line; the next step is written as `## Start here` step 1, not buried in Pending
+- Do NOT dump raw code or long diffs — just the summary
+- Tone: crisp, factual, no fluff
+
+---
+
+## Context compression protocol
+
+Long sessions accumulate noise. Apply compression at three levels before writing the session log:
+
+### Level 1 — Micro-compact (tool outputs)
+
+After each tool call, compress the raw output to a single insight line. Do not paste full Bash output into the session log.
+
+- ❌ `"git log output: abc123 feat: add streaming abc456 fix: null check..."` 
+- ✅ `"2 commits: streaming archetype + null-check fix"`
+
+### Level 2 — Phase summary (completed work stage)
+
+When a pipeline phase completes (architect done, QA done, devops done), compress that phase to ≤3 bullets in the session log:
+- What was produced (artifact path)
+- One decision made (with rationale)
+- One blocker resolved or one open question surfaced
+
+### Level 3 — Session checkpoint (major transition)
+
+When the session crosses a gate (gate:arch approved, gate:ship approved) or major pivot, write a checkpoint entry:
+
+```
+**Checkpoint** [gate:arch approved at 14:32]
+  Before: research phase, 3 open questions
+  After: ARCH-stripe-subscriptions.md committed, all questions resolved
+  Decision: use Stripe Connect over custom split — regulatory compliance overhead
+```
+
+### Compression rules
+
+1. **Compress phases, not facts** — the WHY and the WHAT are preserved; dead ends are dropped
+2. **Preserve file:line references** — `src/auth/session.ts:42` survives compression; "some auth file" does not
+3. **Dead ends get one line**: `"tried X, failed because Y — do not retry"`
+4. **Verbose stack traces**: keep only root cause + fix, drop full trace
+5. **Cost**: each compression saves 3–10k tokens on `/resume` — it's worth the 30 seconds

@@ -1,0 +1,299 @@
+// E2E test #5 — Cross-session resume.
+//
+// Validates that great_cto's persistence guarantees survive a process restart:
+// seed a partially-completed pipeline, kill the board, start a fresh board
+// against the same HOME + project dir, and assert that /api/resume
+// reconstructs the correct state from disk alone.
+//
+// Persistence sources tested:
+//   - <project>/.great_cto/verdicts/*.log  (agent verdicts → recent_verdicts)
+//   - bd's .beads/ database        (gates → open_gates, WIP → wip_tasks)
+//   - ~/.great_cto/decisions.md    (approval history → decisions)
+//
+// If any of these silently dropped state on restart, this test fails.
+//
+// Run: node --test tests/resume-e2e.test.mjs
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
+import { spawn, spawnSync } from 'node:child_process';
+import { startBoard } from './helpers/board-start.mjs';
+import { reap } from './helpers/reap.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLI_ENTRY = join(__dirname, '..', 'packages', 'cli', 'index.mjs');
+
+const bdProbe = spawnSync('bd', ['--version'], { encoding: 'utf8' });
+const BD_AVAILABLE = bdProbe.status === 0;
+
+// ── helpers ────────────────────────────────────────────────────────────────
+
+
+async function api(port, path, init) {
+  const r = await fetch(`http://127.0.0.1:${port}${path}`, init);
+  const txt = await r.text();
+  // The degraded header is the whole point of reading headers here. When bd is
+  // write-blocked machine-wide — which it is whenever two gates run at once on
+  // this machine — the board still answers, still returns 200, and returns an
+  // EMPTY gate list with `X-Board-Degraded` set. Dropping the header made this
+  // suite read that absence as the fact "the gate did not survive the restart",
+  // which is the one thing this product exists to never do.
+  let degraded = null;
+  const raw = r.headers.get('X-Board-Degraded');
+  if (raw) { try { degraded = decodeURIComponent(raw); } catch { degraded = raw; } }
+  try { return { status: r.status, degraded, body: JSON.parse(txt) }; }
+  catch { return { status: r.status, degraded, body: txt }; }
+}
+
+/**
+ * Fail on a wrong answer; skip on no answer.
+ *
+ * A gate count read from a board that has just told us its store could not be
+ * read is not evidence either way. Asserting on it turns a busy machine into a
+ * red release gate, and a gate that goes red for reasons nobody can act on is a
+ * gate people learn to re-run until it is green.
+ */
+function skipIfDegraded(t, r, what) {
+  if (!r.degraded) return false;
+  t.skip(`${what} — not checked, not passed: the board reported its store degraded (${r.degraded})`);
+  return true;
+}
+
+function makeProject() {
+  const home = mkdtempSync(join(tmpdir(), 'gcto-resume-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'gcto-resume-proj-'));
+  // Verdicts are per-project: write to <project>/.great_cto/verdicts/
+  mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+  writeFileSync(join(project, '.great_cto', 'PROJECT.md'),
+    'archetype: web-service\nprimary: web-service\n');
+  const init = spawnSync('bd', ['init'], { cwd: project, encoding: 'utf8' });
+  if (init.status !== 0) throw new Error(`bd init failed: ${init.stderr}`);
+  return { home, project };
+}
+
+function bdCreate(project, title, opts = {}) {
+  const r = spawnSync('bd', ['create', title, '--priority', opts.priority || 'P1'],
+    { cwd: project, encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`bd create: ${r.stderr}`);
+  const m = (r.stdout || '').match(/Created issue:\s*(\S+)/);
+  if (!m) throw new Error(`parse bd create: ${r.stdout}`);
+  const id = m[1];
+  // Read the result, as bdCreate above and bdClose elsewhere already do. A
+  // label or status that silently failed to apply leaves the fixture in a
+  // state the test did not ask for, and the assertion that then fails names
+  // the wrong cause.
+  if (opts.label) {
+    const r2 = spawnSync('bd', ['update', id, '--add-label', opts.label],
+      { cwd: project, encoding: 'utf8' });
+    if (r2.status !== 0) throw new Error(`bd update ${id} --add-label failed: ${r2.stderr || r2.stdout}`);
+  }
+  if (opts.status) {
+    const r3 = spawnSync('bd', ['update', id, '--status', opts.status],
+      { cwd: project, encoding: 'utf8' });
+    if (r3.status !== 0) throw new Error(`bd update ${id} --status failed: ${r3.stderr || r3.stdout}`);
+  }
+  return id;
+}
+
+function seedVerdict(project, agent, ts, verdict, details, costUsd) {
+  // Verdicts are now per-project; write to <project>/.great_cto/verdicts/
+  const file = join(project, '.great_cto', 'verdicts', `${agent}.log`);
+  appendFileSync(file, `${ts} ${verdict} ${details} cost=$${costUsd.toFixed(2)}\n`);
+}
+
+
+// Kill AND wait. SIGKILL is delivered asynchronously, so between the signal and
+// the cleanup below the board could still finish a write into its temp HOME and
+// leave `rmSync` failing with ENOTEMPTY. See tests/helpers/reap.mjs.
+async function killBoardTree(board) {
+  await reap(board);
+}
+
+function cleanup(...dirs) {
+  for (const d of dirs) try { rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {}
+}
+
+// ── tests ──────────────────────────────────────────────────────────────────
+
+test('resume: pipeline state survives board restart', { skip: !BD_AVAILABLE && 'bd CLI not installed' }, async (t) => {
+  const { home, project } = makeProject();
+  const now = new Date();
+  const minutesAgo = (m) => new Date(now.getTime() - m * 60_000).toISOString();
+
+  // ── Phase 1: seed a partially-completed pipeline ──
+  // 3 agents have produced verdicts; 1 gate is open; 2 tasks are in_progress
+  seedVerdict(project, 'architect',     minutesAgo(45), 'APPROVED', 'feature=billing-api', 0.42);
+  seedVerdict(project, 'pm',            minutesAgo(30), 'APPROVED', 'feature=billing-api', 0.18);
+  seedVerdict(project, 'senior-dev',    minutesAgo(15), 'DONE',     'feature=billing-api', 1.20);
+
+  const gateShipId = bdCreate(project, 'gate: ship billing-api v1', { label: 'gate' });
+  const wipId1 = bdCreate(project, 'wire stripe webhook handler', { status: 'in_progress' });
+  const wipId2 = bdCreate(project, 'add idempotency middleware', { status: 'in_progress' });
+
+  // ── Phase 2: start board, capture state ──
+  // startBoard picks the port, spawns, waits, and retries a genuine
+  // EADDRINUSE — the race the hand-written loop reported as
+  // `board did not start on port <n>` and everyone re-ran through.
+  const { port: port1, proc: booted } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+  let board = booted;
+
+  let preRestartResume;
+  try {
+    const r = await api(port1, '/api/resume');
+    assert.equal(r.status, 200, `pre-restart /api/resume returned ${r.status}`);
+    preRestartResume = r.body;
+  } finally {
+    await killBoardTree(board);
+  }
+
+  // Wait a moment to ensure board process fully exited
+  await new Promise(r => setTimeout(r, 500));
+
+  // ── Phase 3: start FRESH board, verify state recovered from disk ──
+  const { port: port2, proc: rebooted } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+  board = rebooted;
+  try {
+    const r = await api(port2, '/api/resume');
+    assert.equal(r.status, 200, `post-restart /api/resume returned ${r.status}`);
+    const post = r.body;
+
+    // 1. Verdicts persisted via verdict logs on disk
+    assert.equal(post.recent_verdicts.length, 3,
+      `expected 3 recent verdicts, got ${post.recent_verdicts.length}`);
+    const agentsRecovered = new Set(post.recent_verdicts.map(v => v.agent));
+    for (const expected of ['architect', 'pm', 'senior-dev']) {
+      assert.ok(agentsRecovered.has(expected),
+        `agent '${expected}' missing from recovered verdicts: ${[...agentsRecovered].join(', ')}`);
+    }
+
+    // 2. Gate persisted via bd database
+    if (skipIfDegraded(t, r, 'gate persistence across a restart')) return;
+    assert.equal(post.open_gates.length, 1,
+      `expected 1 open gate, got ${post.open_gates.length}`);
+    assert.equal(post.open_gates[0].id, gateShipId,
+      `recovered wrong gate id: ${post.open_gates[0].id}`);
+
+    // 3. WIP tasks persisted via bd database
+    assert.equal(post.wip_tasks.length, 2,
+      `expected 2 WIP tasks, got ${post.wip_tasks.length}`);
+    const wipIds = new Set(post.wip_tasks.map(t => t.id));
+    assert.ok(wipIds.has(wipId1), `WIP task ${wipId1} not recovered`);
+    assert.ok(wipIds.has(wipId2), `WIP task ${wipId2} not recovered`);
+
+    // 4. Resume shape equivalence — pre and post restart should match in counts
+    assert.equal(preRestartResume.recent_verdicts.length, post.recent_verdicts.length,
+      'verdict count drifted across restart');
+    assert.equal(preRestartResume.open_gates.length, post.open_gates.length,
+      'open_gates count drifted across restart');
+    assert.equal(preRestartResume.wip_tasks.length, post.wip_tasks.length,
+      'wip_tasks count drifted across restart');
+  } finally {
+    await killBoardTree(board);
+    cleanup(home, project);
+  }
+});
+
+/**
+ * ADR-024 §1: a gate decision presents the token /api/inbox issued for that gate,
+ * and an expensive or unclassified approval also carries the typed gate name —
+ * exactly what the page sends. Read from the server being posted to; the token
+ * store lives in the project, so it outlives a restart.
+ */
+async function decisionAuth(port, id) {
+  const inbox = await api(port, '/api/inbox');
+  const g = (inbox.body?.pending_gates || []).find((x) => x.id === id);
+  if (!g?.token) throw new Error(`no approval token for ${id}: ${JSON.stringify(inbox.body?.approval_tokens)}`);
+  const rev = g.reversibility || {};
+  const guarded = rev.state === 'expensive' || rev.state === 'unclassified';
+  return { token: g.token, ...(guarded ? { confirm: rev.gate ? `gate:${rev.gate}` : id } : {}) };
+}
+
+test('resume: approving a gate then restarting reflects the closed state', { skip: !BD_AVAILABLE && 'bd CLI not installed' }, async (t) => {
+  const { home, project } = makeProject();
+  const gatePlanId = bdCreate(project, 'gate: plan approval', { label: 'gate' });
+  const gateShipId = bdCreate(project, 'gate: ship approval', { label: 'gate' });
+
+  // Phase 1: approve gate:plan, leaving only gate:ship open
+  // startBoard picks the port, spawns, waits, and retries a genuine
+  // EADDRINUSE — the race the hand-written loop reported as
+  // `board did not start on port <n>` and everyone re-ran through.
+  const { port: port1, proc: booted } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+  let board = booted;
+  try {
+    const r = await api(port1, `/api/gates/${gatePlanId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve', reason: 'pre-restart approval', ...(await decisionAuth(port1, gatePlanId)) }),
+    });
+    assert.equal(r.status, 200, `pre-restart approve failed: ${JSON.stringify(r.body)}`);
+  } finally {
+    await killBoardTree(board);
+  }
+
+  await new Promise(r => setTimeout(r, 500));
+
+  // Phase 2: restart, verify only 1 gate remaining (ship)
+  const { port: port2, proc: rebooted } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+  board = rebooted;
+  try {
+    const r = await api(port2, '/api/resume');
+    if (skipIfDegraded(t, r, 'which gate remains open after an approval')) return;
+    assert.equal(r.body.open_gates.length, 1,
+      `expected 1 open gate after restart, got ${r.body.open_gates.length}`);
+    assert.equal(r.body.open_gates[0].id, gateShipId,
+      `wrong gate remains open: expected ${gateShipId}, got ${r.body.open_gates[0].id}`);
+
+    // And /api/inbox.summary.gates should agree
+    const inbox = await api(port2, '/api/inbox');
+    assert.equal(inbox.body.summary.gates, 1,
+      `inbox gates summary should be 1, got ${inbox.body.summary.gates}`);
+  } finally {
+    await killBoardTree(board);
+    cleanup(home, project);
+  }
+});
+
+test('resume: decisions log preserves audit trail across restart', { skip: !BD_AVAILABLE && 'bd CLI not installed' }, async () => {
+  const { home, project } = makeProject();
+  const gate1 = bdCreate(project, 'gate: pre-restart audit test', { label: 'gate' });
+
+  // Phase 1: approve gate to create a decisions.md entry
+  // startBoard picks the port, spawns, waits, and retries a genuine
+  // EADDRINUSE — the race the hand-written loop reported as
+  // `board did not start on port <n>` and everyone re-ran through.
+  const { port: port1, proc: booted } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+  let board = booted;
+  try {
+    await api(port1, `/api/gates/${gate1}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve', reason: 'audit-test-marker-xyz', ...(await decisionAuth(port1, gate1)) }),
+    });
+    await new Promise(r => setTimeout(r, 300));
+  } finally {
+    await killBoardTree(board);
+  }
+
+  await new Promise(r => setTimeout(r, 500));
+
+  // Phase 2: restart, verify /api/decisions surfaces the entry
+  const { port: port2, proc: rebooted } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+  board = rebooted;
+  try {
+    const r = await api(port2, '/api/decisions?limit=20');
+    assert.equal(r.status, 200);
+    const found = (r.body || []).some(d =>
+      d.id === gate1 && (d.reason || '').includes('audit-test-marker-xyz')
+    );
+    assert.ok(found,
+      `decisions log should preserve audit-test-marker-xyz entry across restart. ` +
+      `Got ${r.body?.length || 0} decisions, none matched gate=${gate1}.`);
+  } finally {
+    await killBoardTree(board);
+    cleanup(home, project);
+  }
+});

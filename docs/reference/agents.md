@@ -1,0 +1,140 @@
+# Reference — Agents
+
+> **Auto-generated** by `scripts/gen-docs-reference.mjs` from `agents/*.md` frontmatter.
+> Do not edit by hand — run `node scripts/gen-docs-reference.mjs` to refresh.
+
+**72 agents** · 31 core & specialists · 41 domain reviewers.
+
+Grouped by **team role** — after Boris Cherny's (Anthropic, Claude Code) five roles of the
+IT team of the future (Prototyper · Builder · Sweeper · Grower · Maintainer), plus the two
+axes his model omits: **Reviewers & Safety** (the compliance/security moat) and
+**Orchestration & Meta**. Roles are a lens over the agents, not a merge — each agent stays
+narrowly scoped (focused prompt + right model tier + gates).
+
+## Prototyper — Idea → working prototype
+
+Frames the problem and turns a raw idea into a validated brief, an architecture, and a design — the WHAT and the HOW before a line ships.
+
+| Agent | Model | Effort | What it does |
+|---|---|---|---|
+| `architect` | claude-opus-5 | XHIGH | Use when starting any new feature. Creates architecture docs, ADRs, cost estimates, Well-Architected review. Always first in the pipeline. |
+| `decision-scorer` | claude-sonnet-5 | MEDIUM | Scores 2+ architectural alternatives against PROJECT.md criteria. Called by architect after proposing variants. Outputs a weighted scoring table and recommended choice. |
+| `design-advisor` | claude-opus-5 | XHIGH | Use after architect, before/parallel to pm, for any UI-bearing feature (landing pages, dashboards, admin panels, web apps, React Native apps). Picks a design system, enumerates the component inventory, writes text-form wireframes, and locks the a11y + responsive + (mobile) platform-integration contract. Outputs docs/design/DESIGN-{slug}.md. Plan altitude only — never writes implementation code. |
+| `product-owner` | claude-opus-5 | HIGH | The first agent in the pipeline — runs BEFORE architect. Turns a raw idea or problem statement into a validated product brief. Frames the problem, brainstorms options, runs a multi-LLM idea debate (4 personas on 4 models), and synthesizes a recommendation the CTO approves at gate:product (the one human gate — WHAT before HOW). Outputs docs/product/BRIEF-{slug}.md + discovery-summary for architect. |
+
+## Builder — Prototype → production product
+
+Stands up the app and implements the real features, integrations, auth, billing, and data plumbing that make a prototype a product.
+
+| Agent | Model | Effort | What it does |
+|---|---|---|---|
+| `ai-eval-engineer` | haiku | MEDIUM | Builds and maintains the eval pipeline for ai-system / agent-product archetypes. Outputs tests/eval/EVAL-*.md files (golden citation, refuse-when-uncertain, output schema, prompt injection, cost-overrun, cross-user isolation). Runs regression on every prompt or model change. Detects drift. |
+| `ai-prompt-architect` | sonnet | HIGH | Designs and versions LLM system prompts for ai-system / agent-product archetypes. Outputs docs/adr/ADR-{NN}-PROMPT-{name}.md files with sha256-pinned prompt text, jailbreak resistance test cases, and revision history. Pairs with ai-eval-engineer for golden-set scenarios. |
+| `app-scaffolder` | sonnet | HIGH | Project-scaffolding builder that stands up a working base application from the pinned stack-baseline so senior-dev implements FEATURES, not boilerplate. Creates the Next.js + TypeScript + Tailwind/shadcn skeleton, wires Drizzle + Postgres, Auth.js (to the auth-engineer contract), env template, folder structure, CI, and a passing smoke test — a deployable empty app. Runs first in the build, after gate:plan, before senior-dev. Writes the scaffold + docs/SCAFFOLD-{slug}.md. Without a pinned starter every build reinvents the skeleton; this makes the first hour of every product identical and correct. |
+| `auth-engineer` | sonnet | HIGH | Authentication and access-control specialist for SMB Product-Builder products. Owns the auth contract — provider choice (Auth.js default / Clerk fast-path), session model, RBAC, multi-tenant row-level isolation, the protected-route map, account lifecycle (signup/login/reset/invite), and OAuth/magic-link/password flows. Runs after architect, before senior-dev. Writes docs/auth/AUTH-{slug}.md. |
+| `connector-builder` | sonnet | HIGH | Source-connector specialist for dashboard / analytics Product-Builder products. The read-side twin of integrations-engineer — owns the connector contract for pulling data IN from sources (Stripe, Google Analytics, QuickBooks, Google/Meta Ads, Shopify, carrier APIs): OAuth source auth, incremental sync (cursors/CDC), schema mapping into the warehouse-lite, backfill, freshness SLAs, and partial-failure handling. Runs after architect, before senior-dev. Writes docs/connectors/CONNECT-{slug}.md. |
+| `geo-routing-engineer` | sonnet | HIGH | Geospatial and routing specialist for Product-Builder products with maps, scheduling-by-location, or vehicle routing (route-optimization in logistics, dispatch in home services, field-booking). Owns the routing contract — geocoding, the VRP/routing model (constraints, objective), maps/distance-matrix provider selection, ETA + time-window handling, re-optimization on change, and the cost/quBudget of map API calls. Runs after architect, before senior-dev. Writes docs/routing/ROUTE-{slug}.md. |
+| `integrations-engineer` | sonnet | HIGH | Third-party integration specialist for SMB Product-Builder archetypes. Owns the integration contract — OAuth2/API-key flows, webhook signature verification, idempotency keys, retry/backoff with jitter, rate-limit handling, secret storage, and sandbox→prod promotion — for Stripe, Twilio, QuickBooks, Google/Microsoft Calendar, Shopify, MLS/IDX, and carrier APIs. Runs after architect/design-advisor, before senior-dev. Writes docs/integrations/INTEGRATE-{slug}.md. |
+| `media-pipeline-engineer` | sonnet | HIGH | Media-pipeline specialist for content-platform Product-Builder products (on-demand video, coaching, online-ordering imagery, storefronts). Owns the media contract — upload, transcode/HLS/ABR, storage tiers, signed CDN delivery, image optimization (AVIF/WebP/responsive srcset), access-tier gating, and processing-job idempotency. Runs after architect/design-advisor, before senior-dev. Writes docs/media/MEDIA-{slug}.md. |
+| `migration-import-engineer` | sonnet | HIGH | Data-migration and onboarding-import specialist for SMB Product-Builder archetypes. Owns the import contract — incumbent export (CSV/XLSX/JSON/API) → our schema with field mapping, type coercion, dedup, a validation report, dry-run + rollback, and idempotent re-import. Source playbooks for ServiceTitan, Toast, Mindbody, Shopify, QuickBooks, Follow Up Boss. Runs after architect, before/with senior-dev. Writes docs/data-import/IMPORT-{slug}.md. |
+| `mobile-app-builder` | sonnet | XHIGH | React Native implementer for Product-Builder products whose users work in the field (home-services dispatch, construction field-docs, field-booking, delivery). Builds the mobile app to the design-advisor's RN contract with TDD — offline-first sync, camera/photo + location capture, push notifications, and store-submission readiness — then hands off to mobile-store-reviewer for policy sign-off. Activated when a product's design contract specifies a React Native target. Field crews live on a phone; we had a mobile-store-reviewer (policy) but no builder — this is the builder. |
+| `senior-dev` | sonnet | XHIGH | Use to implement tasks from Beads backlog. Claims a task, implements with TDD, closes when done. Can run in parallel. |
+| `subscription-billing-engineer` | sonnet | HIGH | Subscription and billing specialist for SMB Product-Builder archetypes. Owns the billing contract — Stripe Billing/Connect plans and tiers, usage metering, proration, dunning, webhook reconciliation, tax (Stripe Tax), customer portal, trial→paid, and refund/dispute hand-off. Runs after architect, before senior-dev. Writes docs/billing/BILLING-{slug}.md. |
+
+## Sweeper — Clean · simplify · verify
+
+Reviews, tests, and tightens what Builder produced — correctness, quality, and the golden-path proof that it actually works.
+
+| Agent | Model | Effort | What it does |
+|---|---|---|---|
+| `code-reviewer` | haiku | MEDIUM | Use after senior-dev completes a task and before gate:ship. One stable, human-grade reviewer (correctness, security, performance, readability) — replaces ad-hoc inline review forks. Reads the diff, files bugs in Beads, emits a verdict. |
+| `e2e-test-engineer` | haiku | MEDIUM | Use after qa-engineer passes and before/around devops deploy. Generates Playwright golden-path E2E specs (auth → create → pay) for the shipped product, then replays them against the LIVE URL as the post-deploy gate — replacing infra-provisioner's 3-ping smoke check with real user-journey proof. |
+| `qa-engineer` | haiku | MEDIUM | Use after senior-dev completes implementation. Analyzes actual code, then runs type-appropriate QA, writes report, files bugs in Beads. |
+
+## Grower — Scale to product-market fit
+
+Takes a working product and grows it — performance under load, activation/retention loops, funnel instrumentation, and the experiments that find PMF.
+
+| Agent | Model | Effort | What it does |
+|---|---|---|---|
+| `growth-engineer` | sonnet | HIGH | Growth specialist — owns the path from "it works" to "it grows". Designs the North-Star + input-metric tree, instruments the activation/retention funnel (event schema), builds growth loops (referral / content / paid), and designs the experiments (A/B, holdout) that find product-market fit. Runs after the product is live (with/after performance-engineer), before hand-off to Maintainer. Writes docs/growth/GROWTH-{slug}.md. |
+| `performance-engineer` | sonnet | HIGH | Performance specialist. Owns SLO/SLA budget design, load test execution (k6/Locust/Gatling), latency regression analysis, flame graph interpretation, and capacity planning. Runs after senior-dev, before QA. Writes docs/performance/PERF-{slug}.md. Activated when performance-sla is set in PROJECT.md, or archetype is data-platform / enterprise / commerce. |
+
+## Maintainer — Keep it reliable
+
+Ships, provisions, and keeps a mature system healthy — deploys, infra, incident response.
+
+| Agent | Model | Effort | What it does |
+|---|---|---|---|
+| `ci-resolver` | sonnet | HIGH | Use when CI or a build is red. Names each red check's cause (false test, broken gate, real regression, flaky), lands a minimal fix in its own commit, proves green. Never skips a check. |
+| `devops` | haiku | MEDIUM | Use after gate:ship is approved. Deploys using the method matching the project type. |
+| `infra-provisioner` | sonnet | HIGH | Provisions the real backing infrastructure for a Product-Builder product so it reaches a live URL — managed Postgres (Neon default), the hosting project (Vercel default), env/secret wiring, and the custom domain + DNS + TLS. Pairs with devops (which does preview/staging only and refuses prod/real-domain). Runs after gate:ship is approved, before the production deploy. Plan-first and human-gated: it shows a provisioning plan with cost and waits for CTO approval before creating anything, is idempotent (re-running never duplicates resources), and records teardown. Writes docs/infra/PROVISION-{slug}.md. |
+| `l3-support` | sonnet | MEDIUM | Production support. Monitors logs, triages incidents, creates Beads tasks. For P0 — immediate investigation + postmortem. |
+
+## Reviewers & Safety — The axis Cherny leaves out _(great_cto adds — beyond Cherny's 5)_
+
+Pre-implementation compliance and security gates — HIPAA, PCI, SOX, GDPR, AI-governance and 30+ more. Generalists build fast; a specialist reviewer guards the risky parts. This is great_cto's moat and the thing Cherny's 5 roles don't cover.
+
+| Agent | Model | Effort | What it does |
+|---|---|---|---|
+| `accounting-reviewer` | sonnet | HIGH | Bookkeeping / general-ledger / financial-close specialist pre-implementation reviewer for fintech and enterprise-saas archetypes. Outputs threat model TM-accounting-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `adtech-privacy-reviewer` | sonnet | HIGH | US adtech / web-tracking privacy-litigation pre-implementation reviewer. Outputs threat model TM-adtech-{slug}.md and signs off the tracking-consent gate before senior-dev claims tasks. |
+| `ai-security-reviewer` | sonnet | HIGH | AI-specific pre-implementation threat modelling for ai-system / agent-product archetypes. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `api-platform-reviewer` | sonnet | HIGH | API platform / dev-API pre-implementation reviewer. Outputs threat model TM-{slug}.md. |
+| `cli-reviewer` | sonnet | HIGH | CLI tool pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off CLI surface decisions before senior-dev claims tasks. |
+| `cmmc-reviewer` | sonnet | HIGH | US defense-contractor (GovCon) pre-implementation reviewer. Outputs threat model TM-cmmc-{slug}.md and signs off the CMMC-assessment gate before senior-dev claims tasks. |
+| `cms-reviewer` | sonnet | HIGH | CMS / content-platform pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off SEO + a11y + content-policy decisions before senior-dev claims tasks. |
+| `data-platform-reviewer` | sonnet | HIGH | Data-platform pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off retention + lineage decisions before senior-dev claims tasks. |
+| `db-migration-reviewer` | sonnet | HIGH | Database migration safety specialist. Activates when migrations/ files are detected in a PR or feature branch. Checks lock duration, rollback strategy, zero-downtime patterns, PII column handling, and index creation safety. Writes docs/migrations/MIGRATE-{slug}.md. Blocks deploy if no rollback path exists. |
+| `devtools-reviewer` | sonnet | HIGH | Devtools (CLI plugin / IDE extension / dev SDK) pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off supply-chain decisions before senior-dev claims tasks. |
+| `dpdpa-reviewer` | sonnet | HIGH | India DPDPA 2023 + IT Act + RBI specialist pre-implementation reviewer. Auto-invoked on `in` jurisdiction signal. Covers DPDPA consent obligations, Data Fiduciary duties, Data Principal rights, cross-border transfer restrictions, and RBI data localisation for fintech. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `edtech-reviewer` | sonnet | HIGH | Education-technology specialist pre-implementation reviewer for edtech archetype. Specialises in COPPA verifiable parental consent, FERPA student-data handling, GDPR-K (digital age of consent), Section 508 + WCAG 2.2 AA accessibility, child-safety content moderation (CSAM hash, NCMEC reporting), and US state student-privacy laws (SOPIPA-CA, NY 2-D). Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `enterprise-saas-reviewer` | sonnet | HIGH | B2B / enterprise-SaaS pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off tenant-isolation decisions before senior-dev claims tasks. |
+| `firmware-reviewer` | sonnet | HIGH | IoT/embedded specialist pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `game-reviewer` | sonnet | HIGH | Game / interactive-entertainment pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off age-rating + COPPA decisions before senior-dev claims tasks. |
+| `gdpr-reviewer` | sonnet | HIGH | GDPR + EU AI Act + NIS2 specialist pre-implementation reviewer. Auto-invoked when jurisdiction detection finds eu, uk, or br signals. Covers GDPR Art.5/6/9/25/32/35, DPIA, EU AI Act risk classification, and NIS2 Article 21 controls. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `gov-reviewer` | sonnet | HIGH | Government / public-sector specialist pre-implementation reviewer for gov-public archetype. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `healthcare-reviewer` | sonnet | HIGH | Healthcare-specific pre-implementation reviewer for archetype:healthcare. Specialises in HIPAA Security Rule (45 CFR 164.308–318), Business Associate Agreement (BAA) chain, FHIR/HL7 implementation gotchas, PHI access logging (immutable audit), HITECH breach-notification timelines, and HHS Office for Civil Rights (OCR) audit readiness. Outputs threat model TM-{slug}.md and signs off PHI-handling decisions before senior-dev starts. |
+| `hr-ai-reviewer` | sonnet | HIGH | HR-AI / AI-recruiting pre-implementation reviewer. Outputs threat model TM-hrai-{slug}.md. |
+| `infra-reviewer` | sonnet | HIGH | Infrastructure-as-code pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off destructive changes before senior-dev claims tasks. |
+| `insurance-reviewer` | sonnet | HIGH | Insurance / InsurTech specialist pre-implementation reviewer for insurance archetype. Specialises in NAIC Model Acts (50-state filing matrix), the NAIC AI Model Bulletin 2023 (AIS Program, unfair-discrimination testing, DOI market-conduct readiness), Colorado SB 21-169 + NY DFS AI circular (insurance-specific algorithmic-discrimination testing), Solvency II (EU capital adequacy), IFRS 17 insurance contracts, ACORD standards, actuarial model auditability (ASOPs), anti-discrimination pricing analysis (disparate impact), claims fraud detection patterns, bordereau reporting for re-insurance. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `legal-reviewer` | sonnet | HIGH | Legal-services / legal-tech specialist pre-implementation reviewer for legal archetype (law firms, solo practitioners, legal-SaaS). Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `library-reviewer` | sonnet | HIGH | Library / SDK pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off API stability decisions before senior-dev claims tasks. |
+| `marketplace-reviewer` | sonnet | HIGH | Two-sided marketplace pre-implementation reviewer. SD), 1099-K reporting, escrow / hold-and-release, dispute mediation, two-sided fee model, EU DSA + P2B Regulation compliance. Outputs threat model TM-{slug}.md and signs off payout-flow + seller-onboarding decisions before senior-dev claims tasks. |
+| `mcp-server-reviewer` | sonnet | HIGH | MCP (Model Context Protocol) server pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off the tool surface before senior-dev claims tasks. |
+| `mlops-reviewer` | sonnet | HIGH | MLOps / model lifecycle pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off training-pipeline + serving-strategy decisions before senior-dev claims tasks. |
+| `mobile-store-reviewer` | sonnet | HIGH | Mobile-app pre-implementation reviewer for App Store / Play Store policy compliance. Outputs threat model TM-{slug}.md and signs off store-policy decisions before senior-dev claims tasks. |
+| `msp-reviewer` | sonnet | HIGH | Managed Service Provider (MSP) / IT-services specialist pre-implementation reviewer for enterprise-saas and devtools archetypes. Outputs threat model TM-msp-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `oracle-reviewer` | sonnet | HIGH | Web3-DeFi specialist pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `pci-reviewer` | sonnet | HIGH | Commerce-specific pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off scope decisions before senior-dev claims tasks. |
+| `procurement-reviewer` | sonnet | HIGH | Purchasing / source-to-pay specialist pre-implementation reviewer for enterprise-saas and enterprise archetypes. Outputs threat model TM-procurement-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `rcm-reviewer` | sonnet | HIGH | Healthcare Revenue Cycle Management (RCM) / medical-billing specialist pre-implementation reviewer for the healthcare archetype. Outputs threat model TM-rcm-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `regulated-reviewer` | sonnet | HIGH | Regulated-industry specialist pre-implementation reviewer for fintech / regulated archetypes. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `security-officer` | sonnet | HIGH | Use after QA passes. Runs security audit by project type, writes report, controls gate:ship. |
+| `smart-contract-auditor` | sonnet | HIGH | Use when Solidity/EVM contracts exist — after web3 implementation, or /review --contracts (--package before an external audit). Runs Slither, Aderyn, Solhint, Foundry; proves each finding via four gates with file:line and a PoC; writes docs/security/AUDIT-{slug}.md. --package adds a threat model, invariants, a Foundry invariant suite, an auditors' package. Critical/High block gate:ship; an unrun tool is not checked. |
+| `streaming-reviewer` | sonnet | HIGH | Streaming / event-driven pre-implementation reviewer. Outputs threat model TM-{slug}.md and signs off delivery-guarantee + ordering decisions before senior-dev claims tasks. |
+| `tax-reviewer` | sonnet | HIGH | Tax preparation / filing specialist pre-implementation reviewer for the fintech archetype. Outputs threat model TM-tax-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `us-ai-reviewer` | sonnet | HIGH | US AI-governance pre-implementation reviewer — the US analogue of the EU AI Act coverage. Outputs threat model TM-usai-{slug}.md and signs off the AI-governance gate before senior-dev claims tasks. |
+| `us-privacy-reviewer` | sonnet | HIGH | US privacy law specialist pre-implementation reviewer. Covers CCPA/CPRA, US state privacy matrix (VA CDPA · TX TDPSA · FL FDBR · CO CPA · CT CTDPA), FTC Act § 5, COPPA (under-13), and GLBA (financial). Auto-invoked on us / us-ca jurisdiction signals. Outputs threat model TM-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `voice-ai-reviewer` | sonnet | HIGH | Voice-AI / telephony pre-implementation reviewer. Specialises in TCPA prior-express-consent, STIR/SHAKEN attestation, state recording-consent matrix (one-/two-party), CRTC CASL (Canada), Ofcom CLI rules (UK), EU AI Act Article 50 synth-voice disclosure, deepfake laws (CA AB-2655, TN ELVIS Act), and PII redaction in transcripts/recordings. Outputs threat model TM-voice-{slug}.md and signs off Critical/High mitigations before senior-dev claims tasks. |
+| `web-store-reviewer` | sonnet | HIGH | Pre-implementation Web Store policy reviewer for browser-extension archetype. Validates manifest.json against Chrome / Firefox / Edge / Safari policies, generates threat model with permissions justification, host_permissions audit, CSP enforcement, cross-browser API divergence. Outputs TM-{slug}.md and pre-flight checklist. |
+
+## Orchestration & Meta — Coordinate the fleet, learn from it _(great_cto adds — beyond Cherny's 5)_
+
+Coordinates multi-stream work, decomposes plans, audits existing codebases, and crystallizes lessons back into the system.
+
+| Agent | Model | Effort | What it does |
+|---|---|---|---|
+| `continuous-learner` | claude-haiku-4-5 | LOW | Use at session end (auto-triggered by SessionEnd hook) or via /crystallize learn. Extracts repeatable patterns, decisions, and cost outliers from the session and writes structured entries to .great_cto/lessons.md. Lessons seen in ≥3 projects become candidates; only an A/B-measured one reaches ~/.great_cto/decisions.md (ADR-037). |
+| `coordinator` | sonnet | — | Multi-agent coordinator. Use when a CTO request spans 3+ independent work streams, requires parallel research before implementation, or the task graph is complex enough that sequencing matters. Orchestrates agents across the full DECOMPOSE→CLASSIFY→DISPATCH→MONITOR→SYNTHESIZE→VERIFY lifecycle. |
+| `knowledge-extractor` | claude-opus-5 | HIGH | Deep-analysis agent spawned by /crystallize. Reads session logs and lessons.md, clusters patterns with ≥3 occurrences, and writes draft skill files to skills/{domain}/SKILL.md. |
+| `pm` | sonnet | HIGH | Use after architect produces the ARCH doc. Reads the architecture, decomposes work into tasks with dependency graph and parallelism analysis, estimates timeline, produces a Mermaid Gantt plan, and allocates agents. Creates gate:plan for human approval before any senior-dev starts. |
+| `project-auditor` | sonnet | HIGH | Use for /audit or when no PROJECT.md exists. Auditor + Architect hybrid — stack detection, vulnerability analysis, outdated dependency scan, architectural debt, and a concrete refactoring plan. |
+
+## Unclassified
+
+> ⚠️ These agents are not mapped in `shared/lifecycle-map.mjs`. Classify them there.
+
+| Agent | Model | Effort | What it does |
+|---|---|---|---|
+| `quant-researcher` | sonnet | XHIGH | Quantitative research agent for systematic-trading projects. Forms hypotheses, builds and runs backtests, and reports results with the validity conditions that make a backtest evidence rather than decoration — purged cross-validation with an embargo, stationarity, sample uniqueness under overlapping labels, transaction costs and slippage, and a trials count for multiple-testing. RESEARCH ONLY: it never places an order, never touches execution credentials, and never sizes a position. Outputs docs/research/QUANT-{slug}.md; a human decides what to do with it. |

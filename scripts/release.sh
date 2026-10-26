@@ -1,0 +1,401 @@
+#!/usr/bin/env bash
+# scripts/release.sh — full release workflow.
+#
+# Combines bump-version.sh + git commit + tag + push + GitHub Release into
+# a single command. Designed to be safe to re-run if any step fails midway:
+# each step checks current state before acting.
+#
+# Usage:
+#   scripts/release.sh 2.2.0                # full release
+#   scripts/release.sh 2.2.0 --dry-run      # show what would happen
+#   scripts/release.sh 2.2.0 --skip-bump    # version already bumped manually
+#   scripts/release.sh 2.2.0 --skip-push    # don't git push (useful for testing)
+#   scripts/release.sh 2.2.0 --skip-release # don't create GitHub Release
+#
+# Pre-requirements:
+#   - clean working tree (no uncommitted changes)
+#   - on the main branch
+#   - CHANGELOG.md has a real entry for this version (not the "TBD" stub)
+#   - gh CLI authenticated (for GitHub Release creation)
+#
+# Side effects (in order):
+#   1. bump-version.sh updates plugin.json / package.json / jsr.json / README
+#      and inserts a CHANGELOG stub (you must fill it in before re-running)
+#   2. git commit -am "feat(vX.Y.Z): ..."
+#   3. git tag vX.Y.Z
+#   4. git push origin main --tags
+#   5. gh release create vX.Y.Z (with notes auto-extracted from CHANGELOG)
+#
+# After release:
+#   - npm + JSR publish workflows fire automatically on tag push
+#   - announce.yml fires on release publish (if secrets configured)
+
+set -euo pipefail
+
+# --- args --------------------------------------------------------------------
+
+NEW="${1:-}"
+DRY_RUN=0
+SKIP_BUMP=0
+SKIP_PUSH=0
+SKIP_RELEASE=0
+
+shift_count=1
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)      DRY_RUN=1 ;;
+    --skip-bump)    SKIP_BUMP=1 ;;
+    --skip-push)    SKIP_PUSH=1 ;;
+    --skip-release) SKIP_RELEASE=1 ;;
+  esac
+done
+
+if [ -z "$NEW" ] || [[ "$NEW" =~ ^-- ]]; then
+  cat <<USAGE
+usage: $0 <version> [--dry-run] [--skip-bump] [--skip-push] [--skip-release]
+
+example:
+  $0 2.2.0                  # full release
+  $0 2.2.0 --dry-run        # preview without writing
+
+pre-requirements:
+  - clean working tree
+  - on main branch
+  - CHANGELOG.md has a real entry for vX.Y.Z (not the TBD stub)
+  - gh CLI authenticated
+USAGE
+  exit 2
+fi
+
+if ! echo "$NEW" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+  echo "FAIL: version must be semver (x.y.z): $NEW" >&2
+  exit 1
+fi
+
+# --- helpers -----------------------------------------------------------------
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CHANGELOG="$ROOT/CHANGELOG.md"
+PLUGIN_JSON="$ROOT/.claude-plugin/plugin.json"
+
+color_blue()   { printf "\033[34m%s\033[0m" "$1"; }
+color_green()  { printf "\033[32m%s\033[0m" "$1"; }
+color_red()    { printf "\033[31m%s\033[0m" "$1"; }
+color_yellow() { printf "\033[33m%s\033[0m" "$1"; }
+color_dim()    { printf "\033[2m%s\033[0m" "$1"; }
+
+step() { echo ""; color_blue "▸ $1"; echo ""; }
+ok()   { color_green "  ✓ $1"; echo ""; }
+warn() { color_yellow "  ⚠ $1"; echo ""; }
+fail() { color_red "  ✗ $1"; echo ""; exit 1; }
+
+# Runs argv directly — NOT through eval. The commit subject comes from the
+# CHANGELOG, and eval executed the backticks in it as a command substitution:
+# a heading like "`product-only` — ..." both lost the subject and ran
+# `product-only` as a shell command. Anything in the CHANGELOG is data.
+run() {
+  if [ "$DRY_RUN" = "1" ]; then
+    color_dim "    [dry-run] $*"; echo ""
+  else
+    "$@" || fail "command failed: $*"
+  fi
+}
+
+# --- pre-flight checks -------------------------------------------------------
+
+step "Pre-flight checks"
+
+cd "$ROOT"
+
+# 1. clean working tree
+if [ -n "$(git status --porcelain)" ]; then
+  if [ "$SKIP_BUMP" = "1" ]; then
+    warn "working tree has uncommitted changes (proceeding with --skip-bump assumes those are the bump itself)"
+  else
+    git status --short
+    fail "working tree is dirty — commit or stash before releasing"
+  fi
+fi
+ok "working tree clean"
+
+# 2. on main branch
+BRANCH=$(git branch --show-current)
+# Not a question any more. Step 5 pushes the local `main` ref, not HEAD: answering
+# "y" on another branch tagged that branch and pushed a stale main beside it, and
+# without a terminal the prompt waited forever (3.40.0, 2026-09-27).
+if [ "$BRANCH" != "main" ]; then
+  fail "not on main (currently: ${BRANCH:-detached HEAD}) — release from main: git checkout main && git merge --ff-only ${BRANCH:-<commit>}"
+fi
+ok "on branch: $BRANCH"
+
+# 3. tag doesn't exist already
+if git rev-parse "v$NEW" >/dev/null 2>&1; then
+  fail "tag v$NEW already exists locally — pick a new version or delete the tag"
+fi
+ok "tag v$NEW available"
+
+# 4. gh CLI auth (only if we plan to create a release)
+if [ "$SKIP_RELEASE" != "1" ]; then
+  if ! command -v gh >/dev/null; then
+    fail "gh CLI not installed — install or use --skip-release"
+  fi
+  if ! gh auth status >/dev/null 2>&1; then
+    fail "gh CLI not authenticated — run 'gh auth login' or use --skip-release"
+  fi
+  ok "gh CLI authenticated"
+fi
+
+# --- step 1: bump version ----------------------------------------------------
+
+if [ "$SKIP_BUMP" = "1" ]; then
+  step "1. Bump version (skipped)"
+  CURRENT=$(grep -m1 '"version"' "$PLUGIN_JSON" | sed 's/.*"\([0-9][0-9.]*\)".*/\1/')
+  if [ "$CURRENT" != "$NEW" ]; then
+    fail "plugin.json says $CURRENT but you asked for $NEW — re-bump or remove --skip-bump"
+  fi
+  ok "plugin.json already at $NEW"
+else
+  step "1. Bump version → $NEW"
+  if [ "$DRY_RUN" = "1" ]; then
+    color_dim "    [dry-run] bash scripts/bump-version.sh $NEW"; echo ""
+  else
+    bash "$ROOT/scripts/bump-version.sh" "$NEW"
+  fi
+fi
+
+# --- step 1b: screenshots match the release line -------------------------------
+# A minor or major bump makes the README screenshots stale, and the publish gate
+# checks them AFTER this script has already pushed the tag and the GitHub
+# Release: 3.29.0 and 3.64.0 went out with stale images and a red main. The same
+# test runs here, before anything is public.
+step "1b. Screenshots match v$NEW"
+if node --test "$ROOT/tests/lib/screenshot-freshness.test.mjs" >/dev/null 2>&1; then
+  ok "docs/screenshots are from the v${NEW%.*} line"
+else
+  fail "docs/screenshots are older than v${NEW%.*} — re-shoot before tagging: node scripts/capture-screenshots.mjs (this script stages docs/screenshots/*.png)"
+fi
+
+# --- step 2: validate CHANGELOG entry ----------------------------------------
+
+step "2. Validate CHANGELOG entry"
+
+# Extract the section between "## v$NEW —" and the next "## v" or end.
+# If the section is empty, only contains the TBD stub, or doesn't exist → fail.
+NOTES_FILE=$(mktemp)
+trap "rm -f $NOTES_FILE" EXIT
+
+awk -v ver="v$NEW" '
+  $0 ~ ("^## " ver " — ") { in_section = 1; next }
+  in_section && /^## v[0-9]+\.[0-9]+\.[0-9]+/ { exit }
+  in_section { print }
+' "$CHANGELOG" > "$NOTES_FILE"
+
+# The RELEASE PAGE says what you can now do; the CHANGELOG says what was wrong.
+#
+# These were the same text, so every release page led with defects — "two stages
+# could not be verified", "the checker read the wrong contracts". That is the
+# right framing for a maintainer auditing a decision months later, and the wrong
+# framing for the page a prospective user reads first, where a list of things
+# that used to be broken is the entire impression.
+#
+# So the page carries the lead paragraph (what this release lets you do) and, if
+# the entry provides one, a "What is new" section. The per-defect headings and
+# the reasoning under them stay in the CHANGELOG, one link away. Nothing is
+# hidden; it is filed where its readers are.
+#
+# Authoring rule the script cannot enforce: write the lead paragraph in terms of
+# what the release ENABLES, not what it repaired. This will not rephrase a defect
+# list into a feature list, and should not — that is where honest release notes
+# turn into marketing.
+# The title of the version commit and the GitHub Release: the first sentence of
+# the entry's lead paragraph (what the release lets you do), cut at a word within
+# 72 characters. It used to be the first `###` heading, which titled 3.46.2 and
+# 3.47.0 "Fixed" and "Added". An entry with no lead paragraph still falls back to
+# its first heading.
+entry_title() {
+  local lead
+  lead=$(awk '/^### /{exit} NF{print}' "$1" | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g; s/^ //')
+  if [ -n "$lead" ]; then
+    lead=$(printf '%s' "$lead" | sed -E 's/([.!?])( |$).*/\1/; s/[.!?]$//')
+    if [ "${#lead}" -gt 72 ]; then
+      lead=$(printf '%s' "$lead" | cut -c1-73 | sed -E 's/ [^ ]*$//')
+    fi
+    printf '%s\n' "$lead"; return
+  fi
+  lead=$(grep -m1 -E '^### ' "$1" | sed 's/^### //' | cut -c1-80)
+  printf '%s\n' "${lead:-release}"
+}
+
+SUMMARY_FILE=$(mktemp)
+trap "rm -f $NOTES_FILE $SUMMARY_FILE" EXIT
+
+# Lead paragraph: everything before the first `###`.
+awk '/^### / { exit } { print }' "$NOTES_FILE" > "$SUMMARY_FILE"
+
+# The "What is new" section, if the entry has one. The `.` matches an
+# apostrophe, so the heading may be written either way.
+awk '/^### / { want = ($0 ~ /What.s new/); next } want { print }' \
+  "$NOTES_FILE" >> "$SUMMARY_FILE"
+
+# Collapse the blank runs extraction leaves behind, and drop a trailing rule —
+# the `---` that separates the summary from the detail sections belongs to the
+# CHANGELOG's layout, not to the release page.
+awk 'NF || prev { print; prev = NF }' "$SUMMARY_FILE" \
+  | awk '{ lines[NR] = $0 } END { last = NR; while (last > 0 && (lines[last] == "" || lines[last] ~ /^-{3,}$/)) last--; for (i = 1; i <= last; i++) print lines[i] }' \
+  > "$SUMMARY_FILE.tidy" && mv "$SUMMARY_FILE.tidy" "$SUMMARY_FILE"
+
+printf '\n[Full notes, including every fix and the reasoning behind it](https://github.com/%s/blob/main/CHANGELOG.md)\n' \
+  "${GITHUB_REPO:-avelikiy/great_cto}" >> "$SUMMARY_FILE"
+
+printf '\n[Full notes for this release](https://github.com/%s/blob/main/CHANGELOG.md) — what changed, and why each change was made.\n' \
+  "${GITHUB_REPO:-avelikiy/great_cto}" >> "$SUMMARY_FILE"
+
+if [ ! -s "$NOTES_FILE" ]; then
+  fail "no CHANGELOG entry for v$NEW — fill it in before releasing"
+fi
+
+if grep -q "TBD — fill in before committing" "$NOTES_FILE"; then
+  warn "CHANGELOG entry for v$NEW is still the TBD stub:"
+  echo ""
+  sed 's/^/      /' "$NOTES_FILE" | head -10
+  echo ""
+  fail "fill in the CHANGELOG stub, then re-run"
+fi
+
+ok "CHANGELOG has $(wc -l < "$NOTES_FILE" | tr -d ' ') lines of release notes for v$NEW"
+
+# --- step 3: commit ----------------------------------------------------------
+
+step "3. Commit"
+
+# IMPORTANT: --skip-bump means "version already bumped manually", NOT
+# "skip the commit step". Whether we ran bump-version.sh or not, if the
+# working tree has uncommitted changes (which it always does at this
+# point: bump just edited 4 files, OR user prepared changes manually),
+# we MUST commit them or the tag will point at the wrong commit.
+if [ -z "$(git status --porcelain)" ]; then
+  warn "no changes to commit — tag will point at current HEAD ($(git rev-parse --short HEAD))"
+else
+  SUBJECT_LINE=$(entry_title "$NOTES_FILE")
+  COMMIT_MSG="feat(v$NEW): $SUBJECT_LINE"
+
+  # EXPLICIT paths, never `git add -A`. On 2026-09-06 the sweep put unrelated
+  # work into two version commits in one day: a contract revert in the morning,
+  # and in the afternoon an entire untracked feature (codex-pipeline, written by
+  # a Codex session) plus two design documents — none mentioned in the release
+  # notes, all public the moment the tag was pushed. A version commit carries
+  # the files the bump wrote and nothing else; anything else dirty is a reason
+  # to stop, not a passenger.
+  # The npx pins (#149) are version files too: bump-version.sh rewrites
+  # `great-cto@X.Y.Z` in the Codex host skill and the public docs. Translations
+  # are named one by one — a `docs/*/README.md` glob would admit docs/plans/README.md
+  # and every other README into a version commit.
+  VERSION_FILES=(
+    .claude-plugin/plugin.json .claude-plugin/marketplace.json .codex-plugin/plugin.json .codex-plugin/mcp.json
+    CHANGELOG.md README.md
+    packages/cli/package.json packages/cli/package-lock.json packages/cli/jsr.json
+    skills/codex-host/SKILL.md docs/HOST-CODEX.md
+    docs/de/README.md docs/es/README.md docs/fr/README.md docs/ja/README.md docs/ko/README.md
+    docs/pt-BR/README.md docs/ru/README.md docs/zh-CN/README.md docs/zh-TW/README.md
+  )
+  STRAY=$(git status --porcelain | awk '{print $2}' | grep -vE '^(\.claude-plugin/(plugin|marketplace)\.json|\.codex-plugin/(plugin|mcp)\.json|CHANGELOG\.md|README\.md|packages/cli/(package|package-lock|jsr)\.json|docs/screenshots/[^/]+\.png|skills/codex-host/SKILL\.md|docs/HOST-CODEX\.md|docs/(de|es|fr|ja|ko|pt-BR|ru|zh-CN|zh-TW)/README\.md)$' || true)
+  if [ -n "$STRAY" ]; then
+    echo ""; color_red "✗ refusing to commit — the tree carries changes that are not version files:"; echo ""
+    echo "$STRAY" | sed 's/^/      /'
+    echo ""; echo "    Commit or set them aside first. A version commit must contain only what the bump wrote."
+    exit 1
+  fi
+  color_dim "    commit message: $COMMIT_MSG"; echo ""
+  for f in "${VERSION_FILES[@]}"; do [ -e "$f" ] && run git add -- "$f"; done
+  [ -d docs/screenshots ] && run git add -- docs/screenshots/*.png
+  color_dim "    $(git diff --cached --name-only | wc -l | tr -d ' ') file(s) staged"; echo ""
+  run git commit -m "$COMMIT_MSG"
+  ok "committed"
+fi
+
+# --- step 4: tag -------------------------------------------------------------
+
+step "4. Tag v$NEW"
+
+if [ "$DRY_RUN" = "1" ]; then
+  color_dim "    [dry-run] git tag v$NEW"; echo ""
+else
+  # -m keeps this working when tag.gpgSign=true (signed tags require a message non-interactively)
+  git tag -m "v$NEW" "v$NEW"
+fi
+ok "tagged v$NEW"
+
+# --- step 5: push ------------------------------------------------------------
+
+if [ "$SKIP_PUSH" = "1" ]; then
+  step "5. Push (skipped)"
+  warn "remember to: git push origin main --tags"
+else
+  step "5. Push to origin"
+  run git push origin main
+  run git push origin "v$NEW"
+  ok "pushed main + v$NEW"
+fi
+
+# --- step 6: GitHub Release --------------------------------------------------
+
+if [ "$SKIP_RELEASE" = "1" ] || [ "$SKIP_PUSH" = "1" ]; then
+  step "6. GitHub Release (skipped)"
+  warn "to create later: gh release create v$NEW --notes-file <(awk '/^## v$NEW/,/^## v[0-9]/' CHANGELOG.md)"
+else
+  step "6. Create GitHub Release"
+
+  TITLE_LINE=$(entry_title "$NOTES_FILE")
+  RELEASE_TITLE="v$NEW — $TITLE_LINE"
+
+  # Determine if this should be marked --latest
+  # (highest semver tag → latest)
+  # In a real run the tag was created in step 3, so it is already the highest and
+  # this marks Latest. In a dry run it does not exist yet, and comparing against
+  # the tags that DO exist reported "v2.95.0 is higher than 2.96.0" — a rehearsal
+  # that disagrees with the performance is worse than no rehearsal. So the
+  # candidate is included in the comparison either way.
+  HIGHEST_TAG=$(printf '%s\nv%s\n' "$(git tag --sort=-v:refname | head -1)" "$NEW" | sort -V | tail -1)
+  if [ "$HIGHEST_TAG" = "v$NEW" ]; then
+    LATEST_FLAG="--latest"
+    color_dim "    will mark as Latest (v$NEW is the highest tag)"; echo ""
+  else
+    LATEST_FLAG=""
+    # `$HIGHEST_TAG` already carries its own leading v; printing "v$HIGHEST_TAG"
+    # produced "vv2.95.0".
+    color_dim "    not marking Latest ($HIGHEST_TAG is higher than v$NEW)"; echo ""
+  fi
+
+  if [ "$DRY_RUN" = "1" ]; then
+    color_dim "    [dry-run] gh release create v$NEW --title \"$RELEASE_TITLE\" $LATEST_FLAG --notes-file ..."; echo ""
+  else
+    gh release create "v$NEW" \
+      --title "$RELEASE_TITLE" \
+      --notes-file "$SUMMARY_FILE" \
+      $LATEST_FLAG
+  fi
+  ok "GitHub Release created: https://github.com/avelikiy/great_cto/releases/tag/v$NEW"
+fi
+
+# --- summary -----------------------------------------------------------------
+
+echo ""
+color_green "╭─ Released v$NEW ────────────────────────────────────╮"
+echo ""
+color_green "│"
+[ "$SKIP_BUMP" != "1" ]    && color_green "│  ✓ bumped plugin.json / package.json / jsr.json / README"
+[ "$SKIP_BUMP" != "1" ]    && color_green "│  ✓ committed"
+color_green "│  ✓ tagged v$NEW"
+[ "$SKIP_PUSH" != "1" ]    && color_green "│  ✓ pushed main + tag"
+[ "$SKIP_RELEASE" != "1" ] && [ "$SKIP_PUSH" != "1" ] && color_green "│  ✓ GitHub Release created"
+color_green "│"
+color_green "╰─────────────────────────────────────────────────────╯"
+echo ""
+
+if [ "$SKIP_PUSH" != "1" ]; then
+  echo "  Next:"
+  echo "    npm + JSR workflows fire automatically on the tag push"
+  echo "    announce.yml fires on Release publish (if secrets configured)"
+  echo ""
+  echo "    Watch:  gh run list --limit 5"
+fi

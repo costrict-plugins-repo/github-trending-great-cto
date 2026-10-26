@@ -1,0 +1,1204 @@
+#!/usr/bin/env node
+/**
+ * pipeline-dispatcher — PostToolUse hook (matcher: Task|Agent) that turns the
+ * pipeline's prose handoffs into a machine directive.
+ *
+ * Why this exists
+ * ---------------
+ * Every agent→agent transition in great_cto was prompt-driven: SKILL.md says
+ * "Spawn great_cto-pm after gate:arch" and the orchestrating model has to
+ * remember to do it. Context compaction, a user tangent, or a long session
+ * silently stalls the pipeline after any agent. All the state needed to
+ * compute "what runs next" already exists (verdicts/*.log, shared/pipeline.toml,
+ * Beads gates) — this hook computes it and injects a PIPELINE-NEXT directive
+ * into the main-loop context right after the subagent's Task/Agent call
+ * completes.
+ *
+ * The dispatcher NEVER approves gates and NEVER spawns anything itself — it
+ * only tells the orchestrator what the transition map says should happen.
+ * Human gates stay human.
+ *
+ * I/O (Claude Code PostToolUse):
+ *   stdin:  { tool_name, tool_input: { subagent_type, ... }, ... }
+ *   stdout: {"hookSpecificOutput":{"hookEventName":"PostToolUse",
+ *            "additionalContext":"<directive>"}}   (silent when nothing to say)
+ *   exit:   always 0 (advisory — dispatch must never break the tool call)
+ *
+ * Opt out: GREAT_CTO_DISABLE_DISPATCHER=1
+ */
+
+import { readFileSync, existsSync, statSync, readdirSync, writeFileSync } from 'node:fs';
+import { logVerdictCommand } from '../lib/log-verdict-path.mjs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { gatesForApprovalLevel, levelFromProjectMd } from '../lib/approval-level.mjs';
+import { nativeRuntimePolicy } from '../lib/runtime-gate-policy.mjs';
+import { recordStandDown } from '../lib/stand-down.mjs';
+import { readGateBeads, gateStates as readGateStates } from '../lib/gate-state.mjs';
+import { parseVerdictLine as parseVerdictRecord, needOf } from '../lib/verdict-record.mjs';
+import { parseAgentBudgets, judgeAgentBudget, budgetAllowsDispatch } from '../lib/agent-budget.mjs';
+import { findAgentTranscript, transcriptStartedAt } from '../lib/agent-transcript.mjs';
+import { stopShape } from '../lib/stop-shape.mjs';
+import { observeNativePipeline } from '../lib/work-tasks.mjs';
+import { createHash } from 'node:crypto';
+import { recordRun } from '../lib/pipeline-journal.mjs';
+import { checkArtifacts, explainArtifacts } from '../lib/artifact-claims.mjs';
+import { latestScore as _latestScore, readScores as _readScores } from '../lib/scores.mjs';
+import { appendEvent } from '../lib/agent-events.mjs';
+import { parsePipelineToml } from '../lib/pipeline-toml.mjs';
+import { contractPath, PLUGIN_SHARED } from '../lib/contract-path.mjs';
+export { parsePipelineToml } from '../lib/pipeline-toml.mjs';
+
+const PROJ_DIR = process.env.GREAT_CTO_DIR || '.great_cto';
+/**
+ * Where the pipeline map lives.
+ *
+ * This was `shared/pipeline.toml`, resolved against the CURRENT WORKING
+ * DIRECTORY — the project being worked in. Only a project that happens to
+ * contain a copy of the map could chain, and of seventeen registered projects
+ * with `.great_cto/`, thirteen had none. In those the hook hit
+ *
+ *     if (!existsSync(PROJ_DIR) || !existsSync(PIPELINE_PATH)) return process.exit(0);
+ *
+ * and exited silently: no dispatch, no verdict, no task, and nothing anywhere
+ * saying why. The pipeline was installed, wired, and incapable of running.
+ *
+ * The map is a property of the PLUGIN, not of each project. It is resolved from
+ * this file's own location first-and-last, with a project-local copy taking
+ * precedence so a project can still override the chain deliberately.
+ */
+// A project copy counts only when marked as a deliberate override — see
+// scripts/lib/contract-path.mjs; unmarked copies were left by the old SessionStart.
+const PIPELINE_PATH = contractPath('pipeline.toml');
+const VERDICT_DIR = join(PROJ_DIR, 'verdicts');
+// A verdict is "fresh" if written in the last 30 min — long enough for a slow
+// subagent's closing writes, short enough not to resurrect yesterday's run.
+// Exported so scripts/lib/pipeline-position.mjs shares this one boundary
+// instead of hardcoding its own 30-min constant.
+export const FRESH_MS = 30 * 60 * 1000;
+// Join-quorum partner verdicts may be hours old (parallel branches).
+const JOIN_MS = 24 * 60 * 60 * 1000;
+
+// Exported so `declared-consumed.mjs` can ask "is this token handled anywhere?"
+// against the same set the dispatcher acts on, rather than a second copy that
+// would drift and quietly excuse a token nothing reads.
+export const BLOCKED_TOKENS = new Set(['BLOCKED', 'FAIL', 'FAILED', 'REJECTED']);
+
+/**
+ * The verdict token an independent verifier writes when work must go back.
+ *
+ * Distinct from BLOCKED on purpose. BLOCKED halts the chain and escalates to the
+ * CTO — it means "a human must decide". REWORK means "the agent that just ran
+ * can fix this itself, and here is what": nobody needs to be interrupted, the
+ * work needs another pass. Collapsing them would either page a human for a
+ * missing file or let a missing file through as a routine retry.
+ */
+export const REWORK_TOKEN = 'REWORK';
+
+/**
+ * How many times a stage may be sent back before it becomes a human's problem.
+ *
+ * Three, not unlimited. Two machines handing work back and forth do not get
+ * bored, and the symptom is not an error — it is a pipeline that looks busy.
+ */
+export const MAX_REWORK = 3;
+
+/**
+ * The score recorded for one run, or null.
+ *
+ * Keyed on the run's own timestamp so a score from an EARLIER run of the same
+ * agent cannot satisfy the gate for this one — the failure mode would be a stage
+ * verified once and waved through forever after.
+ *
+ * Fail-open on its own failure: a scores file that cannot be read is not a
+ * refusal to dispatch. A broken checker halting every transition is a worse
+ * outage than the defect it looks for.
+ */
+function latestScoreFor(cwd, agent, runTs) {
+  try {
+    const latestScore = _latestScore;
+    return latestScore(cwd, { agent, runTs: runTs || null, name: 'independent-verify' });
+  } catch { return null; }
+}
+
+/** How many REWORK verdicts this agent already has in this chain. */
+export function countRework(agent, allVerdicts) {
+  if (!Array.isArray(allVerdicts)) return 0;
+  return allVerdicts.filter((v) => v?.agent === agent && v?.verdict === REWORK_TOKEN).length;
+}
+
+/**
+ * The agents whose work a reviewer's finding can be sent back to: every agent the
+ * map sends on to code-reviewer. Read from the map so a new builder is covered the
+ * day its edge is added, and nobody has to remember a list.
+ */
+export function implementersOf(transitions) {
+  return Object.entries(transitions || {})
+    .filter(([name, r]) => !name.includes('.') && (r?.next || []).includes('code-reviewer'))
+    .map(([name]) => name);
+}
+
+/**
+ * A halting verdict declared `need=implementer`: send it back to the agent that
+ * did the work, or say why not. Returns null when the verdict is not routable
+ * at all (need is `decision` or undeclared) so the caller halts as before.
+ *
+ * Every answer other than a route is a halt. No owner, no key to find one by, or
+ * the ceiling reached — each is a reason the CTO has to look, and each is named.
+ *
+ * The owner is the latest implementer verdict with the same `task`, else the same
+ * `feature`. Measured across the registered projects before choosing: senior-dev
+ * writes task on 25 of 27 verdicts, but reviewers write task on 2 of 9 (qa) and
+ * 2 of 8 (code-reviewer), while feature is on 17, 5 and 10 — so task is preferred
+ * when both sides carry it, and feature is what usually joins them.
+ *
+ * The ceiling is MAX_REWORK and is shared: the owner's REWORK passes and the
+ * findings already routed on the same key count together, so two send-back paths
+ * cannot each run three times.
+ */
+export function routeToOwner({ agent, verdict, transitions, allVerdicts, rule }) {
+  if (needOf(verdict) !== 'implementer') return null;
+  const meta = verdict.meta || {};
+  const downstream = ((rule?.next || []).join(', ')) || 'downstream agents';
+  const halt = (why) => ({
+    kind: 'blocked',
+    text: `PIPELINE: ${agent} returned ${verdict.verdict} with need=implementer, but ${why} — the pipeline is halted at this stage. `
+      + `Surface the blocking findings to the CTO. Do NOT spawn ${downstream} until resolved.`,
+  });
+  if (!meta.task && !meta.feature) return halt('the verdict names no task or feature to find its owner by');
+
+  const implementers = implementersOf(transitions);
+  const prior = (Array.isArray(allVerdicts) ? allVerdicts : [])
+    .filter((v) => v && v !== verdict && String(v.ts || '') < String(verdict.ts || ''));
+  const ownedBy = (field) => (meta[field]
+    ? prior.filter((v) => implementers.includes(v.agent) && v.meta?.[field] === meta[field])
+    : []);
+
+  let field = 'task';
+  let owned = ownedBy('task');
+  if (!owned.length) { field = 'feature'; owned = ownedBy('feature'); }
+  if (!owned.length) {
+    const keys = [meta.task && `task=${meta.task}`, meta.feature && `feature=${meta.feature}`].filter(Boolean).join(' or ');
+    return halt(`no implementer verdict (${implementers.join(', ')}) matches ${keys}`);
+  }
+  const ownerLast = owned.reduce((a, b) => (String(a.ts) >= String(b.ts) ? a : b));
+  const owner = ownerLast.agent;
+  const key = `${field}=${meta[field]}`;
+  const finding = meta.finding || null;
+
+  const routed = prior.filter((v) => BLOCKED_TOKENS.has(v.verdict) && needOf(v) === 'implementer' && v.meta?.[field] === meta[field]);
+
+  // Reported again before the owner answered: it is already on its way back.
+  if (finding && routed.some((v) => v.agent === agent && v.meta?.finding === finding && String(v.ts) > String(ownerLast.ts))) {
+    return {
+      kind: 'route-pending',
+      text: `PIPELINE-HOLD: ${agent} reported finding ${finding} on ${key} again, and it was already sent back to ${owner}, which has recorded no verdict since. `
+        + `Nothing is dispatched: wait for ${owner} to finish. Do NOT spawn ${downstream}.`,
+    };
+  }
+
+  const passes = countRework(owner, prior) + routed.length;
+  if (passes >= MAX_REWORK) {
+    return {
+      kind: 'blocked',
+      text: `PIPELINE-STOP: ${owner} has been sent back ${passes} times on ${key} and it still does not pass. `
+        + `That is the ceiling — this is now a decision, not another pass. `
+        + `Show the CTO ${agent}'s finding${finding ? ` ${finding}` : ''} and what ${owner} changed on each attempt.`,
+    };
+  }
+  return {
+    kind: 'route',
+    text: `PIPELINE-ROUTE: ${agent} returned ${verdict.verdict} with need=implementer${finding ? ` (finding ${finding})` : ''} on ${key} (pass ${passes + 1} of ${MAX_REWORK}). `
+      + `Re-spawn ${owner} with ${agent}'s finding quoted verbatim and require it to address it. `
+      + `The CTO is not asked: the reviewer declared this fixable without a decision. `
+      + `Do NOT spawn ${downstream} — that work would rest on a stage that has not passed.`,
+  };
+}
+
+/**
+ * Layer 1 of independent-verify, inline: do the artefacts this verdict names
+ * exist on disk with content?
+ *
+ * Imported lazily and fail-open on its own failure. A verification step that
+ * throws must not become a way to stop the pipeline — a broken checker halting
+ * every transition is a worse outage than the defect it looks for, and "the
+ * checker could not run" is a third state, reported, never counted as a pass.
+ */
+function verifyClaimedArtefacts(agent, verdict, cwd) {
+  try {
+    const r = checkArtifacts(verdict?.meta || {}, { root: cwd });
+    if (!r.checked.length) return { state: 'nothing-claimed', detail: 'the verdict names no artefact' };
+    if (r.ok) return { state: 'ok', detail: `${r.checked.length} claimed artefact(s) present` };
+    return { state: 'rework', detail: explainArtifacts(r) || 'claimed artefacts are missing or empty' };
+  } catch {
+    return { state: 'unavailable', detail: 'artefact check could not run' };
+  }
+}
+
+
+
+/**
+ * The agentId out of a PostToolUse payload, if the tool reported one.
+ *
+ * The Agent tool prints it in its result so a caller can resume that exact
+ * agent with its context — which is the only useful thing to do with one that
+ * was cut off. Extracted defensively from the stringified response: the field's
+ * position is not guaranteed, and a directive that says "use the agentId from
+ * its result" is still actionable when this finds nothing.
+ */
+export function agentIdFrom(payload) {
+  try {
+    const blob = typeof payload?.tool_response === 'string'
+      ? payload.tool_response
+      : JSON.stringify(payload?.tool_response ?? '');
+    const m = blob.match(/agentId["':\s]+([a-f0-9]{8,})/i);
+    return m ? m[1] : null;
+  } catch { return null; }
+}
+
+/**
+ * Did this PostToolUse fire on a LAUNCH rather than a finish?
+ *
+ * The Agent tool returns as soon as a backgrounded agent is started. This hook
+ * read that return as the agent having concluded and reported "<agent> finished
+ * but recorded no verdict line" — twice in one session, while the agent was
+ * still working. The directive that follows asks the reader to record a verdict,
+ * so obeying it writes a verdict about work that has not happened into the log
+ * this project treats as evidence. A hook built to enforce three-state
+ * completion was collapsing two of the states.
+ *
+ * Measured from a real transcript — 83 Agent results, two shapes and no others:
+ *
+ *   isAsync=true,   status="async_launched", no content, no usage   x67
+ *   isAsync absent, status="completed",      content + usage        x16
+ *
+ * So this is read, not guessed. It fails CLOSED: anything it cannot positively
+ * identify as a launch keeps the old behaviour and still asks for the verdict.
+ * A detector that answered "launch" on an unfamiliar payload would silence the
+ * check this whole file exists for.
+ */
+export function isAsyncLaunch(payload) {
+  let r = payload?.tool_response;
+  if (typeof r === 'string') { try { r = JSON.parse(r); } catch { return false; } }
+  if (!r || typeof r !== 'object') return false;
+  if (r.status !== 'async_launched' && r.isAsync !== true) return false;
+  // A finished run carries what it produced. A launch cannot.
+  return r.content === undefined && r.usage === undefined && r.totalTokens === undefined;
+}
+
+/**
+ * How the subagent stopped — read from ITS OWN transcript, found by the agentId
+ * the tool result printed.
+ *
+ * This does not depend on SubagentStop, and that is the point. On 2026-08-08 an
+ * agent was cut off after 97 turns with 105 passing tests in a worktree, and the
+ * SubagentStop hook never ran — `cost-history.log`, which that hook appends on
+ * every invocation, had no entry within two hours of it. Run by hand against the
+ * same transcript the hook worked perfectly. It is unreliable in exactly the case
+ * it exists for, so the reliable signal is read here instead.
+ */
+function stopShapeFor(agentId) {
+  if (!agentId) return null;
+  const path = findAgentTranscript({ agentId });
+  if (!path) return null;
+  const sh = stopShape(path);
+  if (sh.shape === 'empty') return null;
+  return { shape: sh.shape, turns: sh.turns, agent: null, startedAt: transcriptStartedAt(path) };
+}
+
+/**
+ * A verdict that predates this run belongs to whatever the same agent did
+ * before, and must not be read as this one's success.
+ *
+ * The freshness window is thirty minutes and says nothing about WHICH run. On
+ * 2026-08-08 a senior-dev verdict written twenty minutes earlier, for the
+ * previous task, was read as a cut-off agent's TASK_DONE — and the directive
+ * said "succeeded, spawn code-reviewer" for a stage that had produced nothing
+ * but an unlanded worktree. A false success advances the pipeline; a false
+ * absence only stalls it.
+ */
+export function verdictBelongsToRun(verdict, startedAt) {
+  if (!verdict || !startedAt) return true;          // nothing to contradict it
+  const ts = Date.parse(verdict.ts ?? '');
+  if (!Number.isFinite(ts)) return true;            // unreadable — do not invent a mismatch
+  // A second of slack: the verdict is written during the run, not before it.
+  return ts >= startedAt - 1000;
+}
+
+/** How the last subagent stopped, as SubagentStop recorded it — the fallback. */
+export function readLastStop(dir, { withinMs = 10 * 60 * 1000, now = Date.now(), read = readFileSync } = {}) {
+  try {
+    const o = JSON.parse(read(join(dir, '.last-stop'), 'utf8'));
+    // Stale means it describes a different subagent — worse than knowing nothing,
+    // because it would prescribe resuming an agent that already finished.
+    if (o?.ts && now - Date.parse(o.ts) > withinMs) return null;
+    return o && o.shape ? o : null;
+  } catch { return null; }
+}
+
+/** Normalize "great_cto-architect" → "architect". */
+export function normalizeAgent(subagentType) {
+  // Three spellings reach this hook. `great_cto-architect` is the installed copy in
+  // ~/.claude/agents; `great-cto:architect` is the plugin namespace, which is how the
+  // plugin itself spawns agents. Only the first was stripped, so every stage run
+  // under the plugin name looked up a rule for `great-cto:architect`, found none,
+  // and the pipeline did not chain — 19 such runs in three projects' journals since
+  // 2026-09-06. Another plugin's namespace is left alone: not ours to route.
+  return String(subagentType || '').trim().replace(/^great[-_]cto[:-]/, '');
+}
+
+/**
+ * Parse a verdict log line → {agent, verdict, canonical, hasCost}.
+ *
+ * Delegates to scripts/lib/verdict-record.mjs, which owns the schema. This hook
+ * had its OWN copy of the parser and it knew only the two legacy text dialects.
+ * When verdicts moved to versioned JSON (dda79037) one parser was updated and
+ * this one was not, so on the first live pipeline run architect wrote a correct
+ * v1 record through scripts/log-verdict.sh, and the dispatcher reported "no
+ * verdict recorded", named no next stage, and the run stalled at the first
+ * transition while the agent had done exactly the right thing.
+ *
+ * The lesson is not "tolerate more formats" — it is that a second parser for a
+ * schema someone else owns will drift, and the drift shows up as the pipeline
+ * being silently wrong rather than as a failing test. So there is one parser.
+ *
+ * `canonical` marks the CURRENT write format (versioned JSON). Legacy lines
+ * still read — every log written before dda79037 is in them — and are not a
+ * defect to report.
+ */
+export function parseVerdictLine(line) {
+  const r = parseVerdictRecord(line);
+  if (!r.ok) return null;
+  return {
+    ts: r.rec.ts ?? null,
+    agent: r.rec.agent || null,
+    verdict: String(r.rec.verdict || '').toUpperCase(),
+    canonical: !r.legacy,
+    hasCost: r.rec.cost_usd != null,
+    // The number itself, not only whether it exists. Per-agent budgets are
+    // enforced from MEASURED spend, and this is where measured spend lives —
+    // `hasCost` alone could only answer "was anything recorded".
+    costUsd: r.rec.cost_usd != null ? Number(r.rec.cost_usd) : null,
+    // The claims the verdict makes — artefact paths among them. Carried so the
+    // completion hook can check whether what the agent named actually exists.
+    meta: r.rec.meta ?? {},
+  };
+}
+
+/** Read the agent's latest verdict if the log was touched within `withinMs`. */
+export function latestVerdict(dir, agent, withinMs, now) {
+  const fp = join(dir, `${agent}.log`);
+  try {
+    if (!existsSync(fp)) return null;
+    if (now - statSync(fp).mtimeMs > withinMs) return null;
+    const lines = readFileSync(fp, 'utf8').trim().split('\n');
+    return parseVerdictLine(lines[lines.length - 1]);
+  } catch { return null; }
+}
+
+/**
+ * Parse a reviewer's `<!-- HANDOFF -->` YAML block (archetype-review-base) out
+ * of a TM file's text. Returns {agent, verdict} or null. Used as fallback when
+ * a *-reviewer wrote its TM + HANDOFF but forgot the verdict log line.
+ */
+export function parseHandoffVerdict(text, agent) {
+  const blocks = String(text).split('<!-- HANDOFF -->');
+  if (blocks.length < 2) return null;
+  // Scan newest-last: reviewers append; take the LAST block with THIS agent's
+  // key. Strictly agent-specific — a generic `*-verdict:` fallback would
+  // attribute another reviewer's verdict on a shared multi-reviewer TM.
+  const rx = new RegExp(`^\\s*${agent.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-verdict:\\s*(signed-off|blocked)`, 'm');
+  for (let i = blocks.length - 1; i >= 1; i--) {
+    const m = blocks[i].match(rx);
+    if (m) return { ts: '', agent, verdict: m[1] === 'signed-off' ? 'APPROVED' : 'BLOCKED' };
+  }
+  return null;
+}
+
+/** Fallback for reviewers: read the freshest TM-*.md and parse its HANDOFF. */
+export function handoffFallback(agent, withinMs, now, { readdir, stat, read }) {
+  try {
+    const dir = join('docs', 'sec-threats');
+    const files = readdir(dir).filter(f => /^TM-.*\.md$/.test(f));
+    let newest = null, newestM = 0;
+    for (const f of files) {
+      const m = stat(join(dir, f)).mtimeMs;
+      if (m > newestM) { newestM = m; newest = f; }
+    }
+    if (!newest || now - newestM > withinMs) return null;
+    return parseHandoffVerdict(read(join(dir, newest)), agent);
+  } catch { return null; }
+}
+
+/**
+ * The `product` briefing, when the level asks for one.
+ *
+ * @returns {Promise<string|null|'unavailable'>} the screen · null when this level
+ *   does not brief · 'unavailable' when it should and could not, which re-gates.
+ */
+async function briefingFor(level) {
+  const { briefedGatesFor } = await import('../lib/approval-level.mjs');
+  if (!briefedGatesFor(level).includes('product')) return null;
+  try {
+    const { readdirSync } = await import('node:fs');
+    const briefs = readdirSync(join(process.cwd(), 'docs', 'product'))
+      .filter((f) => /^BRIEF-.*\.md$/.test(f)).sort();
+    if (!briefs.length) return 'unavailable';
+    const rel = join('docs', 'product', briefs[briefs.length - 1]);
+    const { briefScreen } = await import('../lib/brief-screen.mjs');
+    return briefScreen(readFileSync(join(process.cwd(), rel), 'utf8'), { path: rel }) || 'unavailable';
+  } catch { return 'unavailable'; }
+}
+
+/**
+ * Pure transition decision.
+ *
+ * `activeGates` is the set the project's approval-level actually asks for
+ * (scripts/lib/approval-level.mjs). pipeline.toml declares where a gate *can*
+ * sit; the approval level decides which of those stop a human. Without this the
+ * dispatcher would tell the orchestrator to wait for `gate:arch` under
+ * `product-only` — where the architect deliberately never creates one — and the
+ * pipeline would stall forever on a gate that does not exist. Omitted (or null)
+ * means "honour every gate in the map", which is the pre-existing behaviour.
+ *
+ * @returns {{kind:string, text:string}|null} null = nothing to inject
+ */
+/**
+ * A stage the map says to run, that this run does not need.
+ *
+ * `shared/pipeline.toml` says `architect -> pm` unconditionally; CLAUDE.md says
+ * skip pm decomposition below three work streams. On 2026-08-07 the architect
+ * itself wrote "depth Small, one implementation task" — the decision was already
+ * in its output, and a human made it again.
+ *
+ * The trap is that skipping a stage also skips that stage's gate, and `depth`
+ * comes from a verdict an agent writes. An input from the agent that removes a
+ * check is the shape that produced three CRITICALs in execution-claims a day
+ * earlier. So: **a skip may never remove an ACTIVE gate.** At `gates-only`,
+ * gate:plan is not active and skipping pm changes nothing a human was going to
+ * be asked; at `expert` it is active, so pm runs and the plan is reviewed. The
+ * approval level decides, not the agent.
+ */
+export function resolveSkip({ rule, transitions, meta, activeGates, gateStates, depth = 0 }) {
+  const cond = rule?.skip_next_when;
+  const nexts = rule?.next || [];
+  if (!cond || nexts.length !== 1 || depth > 3) return { nexts, skipped: [] };
+
+  const [key, want] = String(cond).split('=').map((x) => x.trim().toLowerCase());
+  const have = String(meta?.[key] ?? '').trim().toLowerCase();
+  if (!key || !want || have !== want) return { nexts, skipped: [] };
+
+  const skipStage = nexts[0];
+  const skipRule = transitions?.[skipStage];
+  if (!skipRule || !(skipRule.next || []).length) return { nexts, skipped: [] };
+
+  // The gates on the edge being removed. If any is active at this level, the
+  // human asked to be consulted here and a verdict field does not overrule that.
+  const gates = Array.isArray(skipRule.gate) ? skipRule.gate : skipRule.gate ? [skipRule.gate] : [];
+  const stillActive = gates.filter((g) => {
+    if (!activeGates) return true;
+    const bare = String(g).replace(/^gate:/, '');
+    return activeGates.includes(bare) || activeGates.includes(g);
+  });
+  if (stillActive.length) return { nexts, skipped: [] };
+
+  const onward = resolveSkip({ rule: skipRule, transitions, meta, activeGates, gateStates, depth: depth + 1 });
+  return { nexts: onward.nexts, skipped: [skipStage, ...onward.skipped], why: `${cond} (declared by ${meta?.agent ?? 'the stage'})` };
+}
+
+export function decideNext({ agent, transitions, verdict, joinVerdicts, activeGates = null, gateStates = null, lastStop = null, agentId = null, effects = null, cwd = null, allVerdicts = null }) {
+  // An edge may be guarded by several gates — `approval-level` decides which of
+  // them apply, the map only declares that they guard this edge. Before this,
+  // `gate` was a single string and every level above `strict` promised gates
+  // (code, qa, security, compliance) that no transition declared: the level
+  // asked for a pause the map could not deliver, and a regulated archetype's
+  // security + compliance floor was among them.
+  const gatesOf = (g) => (Array.isArray(g) ? g : g ? [g] : []);
+  const gateActive = (g) => {
+    if (!g) return false;
+    if (!activeGates) return true;                       // no policy supplied → unchanged behaviour
+    const bare = String(g).replace(/^gate:/, '');
+    return activeGates.includes(bare) || activeGates.includes(g);
+  };
+  const activeOf = (g) => gatesOf(g).filter(gateActive);
+  // A verdict-keyed branch wins over the agent's default edge.
+  //
+  // `[transitions.l3-support.INCIDENT]` routes only the INCIDENT verdict; OK
+  // still ends the chain. Without this, a token an agent is instructed to write
+  // but the map does not list falls through the `onTokens` check below and
+  // decideNext returns null — silence. l3-support shipped able to report an
+  // incident into a pipeline that would not react to the word.
+  //
+  // Looked up before the default so a branch cannot be shadowed, and only for an
+  // exact verdict match, so this cannot widen anything by accident.
+  const branch = verdict?.verdict ? transitions[`${agent}.${verdict.verdict}`] : null;
+  const rule = branch || transitions[agent] ||
+    (agent.endsWith('-reviewer') ? { on: ['APPROVED', 'SIGNED-OFF', 'DONE'], next: ['senior-dev'] } : null);
+  if (!rule) return null;
+
+  if (!verdict) {
+    // How it stopped decides what to ask for, and the two need opposite things.
+    // An agent CUT OFF mid-loop cannot be asked for anything — it has to be
+    // resumed with its context, and only the orchestrator can do that. This hook
+    // runs in the orchestrator's context, which is why the directive can name the
+    // action instead of describing the problem.
+    if (lastStop?.shape === 'cut-off') {
+      // What it left behind, stated rather than requested.
+      //
+      // This used to say "its work may already exist: check for changes it left
+      // behind" — an instruction to go and look, which is only followed when the
+      // reader chooses to. `attempt-effects` answers it instead, and answers
+      // fail-closed: anything it could not establish counts as present, so the
+      // advice never softens on missing information.
+      const left = effects
+        ? (effects.state === 'some'
+            ? `It DID leave work behind (${effects.fields.join(', ')}) — re-running would duplicate it. `
+            : effects.state === 'unknown'
+              ? `Whether it left work behind could not be established (${effects.fields.join(', ')}), so treat it as though it did. `
+              : 'It left nothing behind, so nothing would be duplicated — but it also made no progress to keep. ')
+        : 'Its work may already exist: check for changes it left behind, INCLUDING in a git worktree under .claude/worktrees/. ';
+      return {
+        kind: 'resume',
+        text: `PIPELINE: ${agent} was CUT OFF after ${lastStop.turns} turns — it never closed a turn, so it stopped mid-loop rather than concluding, and recorded no verdict. `
+          + left
+          + 'Check a git worktree under .claude/worktrees/ too. '
+          + `RESUME it${agentId ? ` (SendMessage to: '${agentId}')` : ' with SendMessage, using the agentId from its result'} and ask it to record its verdict and close its task. `
+          + 'Do NOT re-run it from scratch — a fresh run repeats work already done, and this one spent its whole budget.',
+      };
+    }
+    return {
+      kind: 'no-verdict',
+      text: `PIPELINE: ${agent} finished but recorded no verdict line in ${VERDICT_DIR}/${agent}.log. ` +
+        `Three-state completion requires it (shared/orchestrator.toml [completion]). ` +
+        `Ask the agent (or run yourself): ${logVerdictCommand()} ${agent} <VERDICT> auto — then continue the pipeline.`,
+    };
+  }
+
+  // REWORK: back to the agent that just ran, with a bound.
+  //
+  // The bound is the part that matters. "Send it back until it is right" with no
+  // ceiling is an unbounded loop between two machines, and the failure mode is
+  // not a crash — it is a pipeline that looks busy for hours. After MAX_REWORK
+  // passes this stops being the agent's problem and becomes a decision, which is
+  // what BLOCKED already means.
+  if (verdict.verdict === REWORK_TOKEN) {
+    const passes = countRework(agent, allVerdicts);
+    if (passes >= MAX_REWORK) {
+      return {
+        kind: 'blocked',
+        text: `PIPELINE-STOP: ${agent} has been sent back ${passes} times and still does not pass verification. `
+          + `That is the ceiling — this is now a decision, not another pass. `
+          + `Show the CTO the outstanding findings and what ${agent} changed on each attempt.`,
+      };
+    }
+    return {
+      kind: 'rework',
+      text: `PIPELINE-REWORK: ${agent} did not pass independent verification (pass ${passes + 1} of ${MAX_REWORK}). `
+        + `Re-spawn ${agent} with the verifier's findings quoted verbatim and require it to address each one. `
+        + `Do NOT spawn ${((rule.next || []).join(', ')) || 'downstream agents'} — that work would rest on a stage that has not passed.`,
+    };
+  }
+
+  if (BLOCKED_TOKENS.has(verdict.verdict)) {
+    // A finding the implementer can fix goes back to the implementer. Only an
+    // explicit need=implementer is routed; decision and undeclared halt below.
+    const routed = routeToOwner({ agent, verdict, transitions, allVerdicts, rule });
+    if (routed) return routed;
+    return {
+      kind: 'blocked',
+      text: `PIPELINE: ${agent} returned ${verdict.verdict} — the pipeline is halted at this stage. ` +
+        `Surface the blocking findings to the CTO. Do NOT spawn ${((rule.next || []).join(', ')) || 'downstream agents'} until resolved.`,
+    };
+  }
+
+  const onTokens = (rule.on || []).map(t => t.toUpperCase());
+  if (!onTokens.includes(verdict.verdict)) return null; // unknown token — stay silent
+
+  // Join quorum: partner branches must also have succeeded.
+  const pendingJoin = (rule.join || []).filter(j => {
+    const v = joinVerdicts?.[j];
+    return !v || BLOCKED_TOKENS.has(v.verdict);
+  });
+  if (pendingJoin.length > 0) {
+    return {
+      kind: 'join-wait',
+      text: `PIPELINE-NEXT: ${agent} succeeded (${verdict.verdict}), but the parallel branch ` +
+        `[${pendingJoin.join(', ')}] has not recorded a success verdict yet. ` +
+        `If not already running, spawn it now (subagent_type: ${pendingJoin[0]}). ` +
+        `Only after the full quorum: ${activeOf(rule.gate).length ? `surface ${activeOf(rule.gate).join(' + ')} to the CTO, then ` : ''}spawn ${(rule.next || []).join(' + ')}.`,
+    };
+  }
+
+  // A legacy line is history, not a defect — the helper has written versioned
+  // JSON since dda79037. Only a missing cost tag still matters, because
+  // /api/cost reads it and a stage with no cost reports zero spend.
+  const formatNote = verdict.hasCost === false
+    ? ` NOTE: this verdict carries no cost — /api/cost will report zero spend for ${agent}.`
+      + ` Record with: ${logVerdictCommand()} ${agent} ${verdict.verdict} auto`
+    : '';
+
+  const skip = resolveSkip({ rule, transitions, meta: verdict?.meta, activeGates, gateStates });
+
+  // Budget is applied to the stages about to be dispatched, not to the one that
+  // just finished — stopping an agent mid-run recovers nothing already spent.
+  // `cwd` absent means the caller did not offer a project to read budgets from,
+  // and an unread budget is not an exceeded one: everything proceeds.
+  const budget = cwd
+    ? applyAgentBudgets(skip.nexts, { cwd, verdicts: allVerdicts || [] })
+    : { allowed: skip.nexts, held: [] };
+  const nexts = budget.allowed;
+  const heldNote = budget.held.length
+    ? ` HELD BY BUDGET: ${budget.held.map((h) => h.why).join('; ')}.`
+      + ` Raise the limit in .great_cto/PROJECT.md under \`agent-budgets:\` or accept the stage does not run.`
+    : '';
+
+  // Every next stage is over budget. This is a stop, and it says so — a stage
+  // held for money that reported "succeeded, spawn nothing" would read exactly
+  // like a pipeline that had finished.
+  if (skip.nexts.length > 0 && nexts.length === 0) {
+    return {
+      kind: 'blocked',
+      text: `PIPELINE-STOP: ${agent} succeeded (${verdict.verdict}), and every next stage is over its declared budget.`
+        + heldNote + ` Nothing was dispatched.`,
+    };
+  }
+  // ── independent verification, before anything is built on this stage ──────
+  //
+  // Split by cost, because this hook runs synchronously on every agent
+  // transition and a judge takes ~30s per requirement:
+  //
+  //   enforced here   layer 1, "do the files this verdict names exist" — pure
+  //                   file stats, microseconds, and the single most common way a
+  //                   verdict is wrong. A stage that failed this does not
+  //                   dispatch; the finding names the file and goes back to the
+  //                   agent that claimed it.
+  //   directed here   layers 2-3, acceptance commands and the second model. Too
+  //                   slow to run inline, so the directive names the command and
+  //                   the next stage waits on it.
+  //
+  // The asymmetry is deliberate and stated rather than silent: what this hook
+  // can enforce, it enforces; what it cannot, it instructs and says so.
+  const artefacts = cwd ? verifyClaimedArtefacts(agent, verdict, cwd) : null;
+  if (artefacts && artefacts.state === 'rework') {
+    return {
+      kind: 'rework',
+      text: `PIPELINE-REWORK: ${agent} reported ${verdict.verdict}, and the artefacts it named are not there. `
+        + `${artefacts.detail} `
+        + `Do NOT spawn ${(nexts.length ? nexts : skip.nexts).join(', ') || 'anything downstream'} — that work would rest on a stage that produced nothing. `
+        + `Re-spawn ${agent} with these findings and require it to either write the artefact or drop the claim.`,
+    };
+  }
+
+  const verifyCmd = `node scripts/lib/independent-verify.mjs ${agent}`;
+
+  // Verification stopped being advisory.
+  //
+  // It was a sentence in a directive — "VERIFY FIRST: run …" — and a sentence is
+  // followed when the reader chooses to. Measured on this repository: 31 agent
+  // runs, 10 scores, and most of those ten were run by hand rather than by the
+  // pipeline. A check that executes on a third of the work is not a gate, it is
+  // a suggestion with good intentions.
+  //
+  // So the DISPATCH is now conditional on a score existing for THIS run, and the
+  // hook stays fast by not doing the verifying itself — it declines to hand work
+  // to the next stage until the judgement is on disk.
+  //
+  // The escape from a deadlock is deliberate and is not a bypass: `unverifiable`
+  // is a valid score. Running the judge always unblocks the pipeline, even when
+  // the honest answer is "nothing here could be checked". What cannot be done is
+  // SKIPPING the look. `GREAT_CTO_REQUIRE_VERIFY=0` turns the gate off for
+  // operators who need it off, and says so in the directive rather than
+  // pretending the check passed.
+  const requireVerify = process.env.GREAT_CTO_REQUIRE_VERIFY !== '0';
+  const score = cwd ? latestScoreFor(cwd, agent, verdict?.ts) : null;
+  if (requireVerify && cwd && !score) {
+    return {
+      kind: 'verify-wait',
+      text: `PIPELINE-VERIFY: ${agent} reported ${verdict.verdict}, and nothing has checked it. `
+        + `Run \`${verifyCmd}\` before spawning ${(skip.nexts || []).join(', ') || 'the next stage'}. `
+        + `Exit 0 verified — proceed. Exit 1 rework — hand the findings back to ${agent}. `
+        + `Exit 2 unverifiable — nothing could be checked; that is a recorded answer and the `
+        + `pipeline may proceed, but say so to the CTO rather than treating it as a pass. `
+        + `Set GREAT_CTO_REQUIRE_VERIFY=0 to dispatch without a check.`,
+    };
+  }
+
+  // A recorded `rework` is not a pass.
+  //
+  // This branch did not exist: any score satisfied the gate, and the directive
+  // said "spawn <next> now … do not stop the turn before dispatching", with the
+  // rework mentioned only as a trailing note. The verify-wait text above tells the
+  // orchestrator to hand rework back; the dispatch that followed it said the
+  // opposite, and a reader acts on the directive (great_cto-hxuv).
+  //
+  // Bounded like REWORK verdicts: after MAX_REWORK rework scores for this agent it
+  // is a decision. The stop names the other cause worth checking — a receipt
+  // measured from the wrong base shows the judge none of the code.
+  if (score && score.state === 'rework') {
+    let passes = 1;
+    try {
+      const n = _readScores(cwd, { agent, name: 'independent-verify' }).scores.filter((x) => x.state === 'rework').length;
+      if (n > 0) passes = n;
+    } catch { /* the count falls back to this one score */ }
+    const listed = Array.isArray(score.findings)
+      ? score.findings.map((f) => (typeof f === 'string' ? f : (f?.text || f?.detail || f?.why || ''))).filter(Boolean)
+      : [];
+    const findings = [...listed, score.comment].filter(Boolean).join(' | ').slice(0, 800);
+    const downstream = (skip.nexts || []).join(', ') || 'the next stage';
+    if (passes >= MAX_REWORK) {
+      return {
+        kind: 'blocked',
+        text: `PIPELINE-STOP: independent verification has recorded rework for ${agent} ${passes} times. `
+          + `That is the ceiling — this is now a decision, not another pass. `
+          + `Show the CTO the verifier's findings${findings ? `: ${findings}` : ''}. `
+          + `Also check that the judged change named the files ${agent} actually changed: a receipt measured from the wrong base shows the judge none of the code.`,
+      };
+    }
+    return {
+      kind: 'rework',
+      text: `PIPELINE-REWORK: independent verification recorded rework for ${agent} (pass ${passes} of ${MAX_REWORK}). `
+        + `Re-spawn ${agent} with the verifier's findings quoted verbatim and require it to address each one`
+        + `${findings ? `: ${findings}` : '.'} `
+        + `Do NOT spawn ${downstream} — that work would rest on a stage that did not pass verification.`,
+    };
+  }
+  // Three reasons, not two. This note used to say "the check is disabled
+  // (GREAT_CTO_REQUIRE_VERIFY=0)" for BOTH ways of arriving here without a score,
+  // and for one of them that sentence is simply false: with no `cwd` the checker
+  // had nowhere to look, the variable is unset, and an operator reading the note
+  // goes hunting an environment variable that does not exist while the real cause
+  // — no project directory — is never named.
+  //
+  // The gate itself is unchanged; only the account of why it did not run. A
+  // directive that reports the wrong cause is worse than one that reports none,
+  // because it sends the reader somewhere confidently.
+  const verifyNote = score
+    ? ` VERIFIED: independent-verify recorded \`${score.state}\` for this run (${score.scorer}).`
+    : !requireVerify
+      ? ` NOT VERIFIED: the check is switched off (GREAT_CTO_REQUIRE_VERIFY=0); nothing has judged this stage.`
+      : ` NOT VERIFIED: the check could not run — no project directory was resolved, so there was nowhere to look for a score. This is not a pass.`;
+
+  const skipNote = skip.skipped.length
+    ? ` (skipping ${skip.skipped.join(', ')} — ${skip.why}; no active gate sat on that edge)`
+    : '';
+  if (nexts.length === 0) {
+    return { kind: 'done', text: `PIPELINE: ${agent} succeeded (${verdict.verdict}) — end of chain. Report the outcome to the CTO.${formatNote}` };
+  }
+
+  // A gate the CTO has already approved is not a stopping point. Until this
+  // read existed the machinery never asked, so approving a gate was one human
+  // action and telling the orchestrator to continue was a second — the second
+  // carrying no decision. `gateStates` is optional: without it every gate reads
+  // as unapproved, which is the previous behaviour and the safe direction.
+  const stateOf = (g) => gateStates?.[g]?.state ?? 'pending';
+  const active = activeOf(rule.gate);
+  const unapproved = active.filter((g) => stateOf(g) !== 'approved');
+
+  if (active.length && !unapproved.length) {
+    return {
+      kind: 'next',
+      text: `PIPELINE-NEXT: ${agent} succeeded (${verdict.verdict}) and ${active.join(' + ')} `
+        + `${active.length > 1 ? 'are' : 'is'} APPROVED → spawn ${nexts.map((n) => `Agent(subagent_type: ${n})`).join(' and ')} now. `
+        + `Include the feature slug and artifact paths from ${agent}'s output in the brief. Do not stop the turn before dispatching.${skipNote}${formatNote}${verifyNote}`,
+    };
+  }
+
+  if (unapproved.length) {
+    const active = unapproved;
+    const list = active.join(' + ');
+    return {
+      kind: 'gate', gates: active,
+      text: `PIPELINE-NEXT: ${agent} succeeded (${verdict.verdict}). Next stage [${nexts.join(', ')}] is behind ${list} (human approval). ` +
+        `Ensure the ${list} Beads task${active.length > 1 ? 's exist' : ' exists'} (bd list --label gate --status open), show the CTO the gate summary with artifact links, and WAIT for approval. ` +
+        `${active.length > 1 ? 'EVERY one of them must be approved before proceeding. ' : ''}` +
+        `After the CTO approves: close the gate bead${active.length > 1 ? 's' : ''} and spawn ${nexts.map(n => `subagent_type: ${n}`).join(', then ')}. Do not auto-approve.${formatNote}`,
+    };
+  }
+  // A gate declared in the map but not active at this approval level is skipped
+  // deliberately, and the directive says so — a silently-skipped gate would look
+  // identical to a forgotten one, and the operator must be able to tell which
+  // question they chose not to be asked.
+  if (gatesOf(rule.gate).length) {
+    return {
+      kind: 'next',
+      text: `PIPELINE-NEXT: ${agent} succeeded (${verdict.verdict}) → spawn ${nexts.map(n => `Agent(subagent_type: ${n})`).join(' and ')} now. ` +
+        `${gatesOf(rule.gate).join(' + ')} ${gatesOf(rule.gate).length > 1 ? 'are' : 'is'} declared in the pipeline map but NOT active at this approval level — the CTO delegated this decision, so do not wait for it. ` +
+        `Include the feature slug and artifact paths from ${agent}'s output in the brief. Do not stop the turn before dispatching.` + heldNote + verifyNote,
+    };
+  }
+
+  return {
+    kind: 'next',
+    text: `PIPELINE-NEXT: ${agent} succeeded (${verdict.verdict}) → spawn ${nexts.map(n => `Agent(subagent_type: ${n})`).join(' and ')} now ` +
+      `(parallel is safe — no gate between these stages). Include the feature slug and artifact paths from ${agent}'s output in the brief. Do not stop the turn before dispatching.` + heldNote + verifyNote,
+  };
+}
+
+/**
+ * Hold back any next stage whose agent has spent past its declared budget.
+ *
+ * Only MEASURED spend refuses. `agent-budgets:` in PROJECT.md is judged against
+ * the sum of `cost_usd` across that agent's verdict records — the number an
+ * agent actually reported spending — never against the board's time-based
+ * estimate. An estimate is time multiplied by a rate constant, and halting a
+ * pipeline on it would stop real work over arithmetic.
+ *
+ * @returns {{allowed: string[], held: Array<{agent: string, why: string}>}}
+ */
+/**
+ * Every parsed verdict record in a project, newest last.
+ *
+ * `latestVerdict` answers "what did this agent just say"; a budget needs "what
+ * has this agent spent", which is every record it ever wrote. Unparseable lines
+ * are skipped — the parser owns the schema and returns null for anything it does
+ * not recognise, and a line we could not read contributes no measured spend
+ * rather than a guessed one.
+ */
+export function readAllVerdicts(dir) {
+  const out = [];
+  let files;
+  try { files = readdirSync(dir).filter((f) => f.endsWith('.log')); }
+  catch { return out; }
+  for (const f of files) {
+    let text;
+    try { text = readFileSync(join(dir, f), 'utf8'); } catch { continue; }
+    for (const line of text.split('\n')) {
+      const v = parseVerdictLine(line);
+      if (v) out.push(v);
+    }
+  }
+  return out;
+}
+
+export function applyAgentBudgets(nexts, { cwd, verdicts }) {
+  let budgets;
+  try {
+    const md = readFileSync(join(cwd, '.great_cto', 'PROJECT.md'), 'utf8');
+    budgets = parseAgentBudgets(md).budgets;
+  } catch {
+    // No PROJECT.md, or unreadable. A budget we could not read is not a budget
+    // that was exceeded — proceed, exactly as before this feature existed.
+    return { allowed: nexts, held: [] };
+  }
+  if (!budgets.size) return { allowed: nexts, held: [] };
+
+  // Measured spend per agent, from the verdict records themselves.
+  const measured = new Map();
+  for (const v of (verdicts || [])) {
+    if (!v?.agent || v.costUsd == null) continue;
+    measured.set(v.agent, (measured.get(v.agent) || 0) + v.costUsd);
+  }
+
+  const allowed = [], held = [];
+  for (const n of nexts) {
+    const spend = measured.has(n) ? { real_llm_usd: measured.get(n), llm_usd: measured.get(n) } : undefined;
+    const verdict = judgeAgentBudget({ agent: n, budgets, spend });
+    if (budgetAllowsDispatch(verdict)) allowed.push(n);
+    else held.push({ agent: n, why: verdict.why });
+  }
+  return { allowed, held };
+}
+
+/**
+ * Which of the outcomes this run was.
+ *
+ * Read from `decision.kind`, which the decision already carries, rather than by
+ * matching prose. A first version regexed `decision.text` and read a plain
+ * dispatch as a hold — the word it keyed on appeared in an unrelated sentence
+ * about a gate not being active. Classifying output by pattern-matching its own
+ * wording is a guess dressed as a fact, and it was wrong on the first row.
+ */
+export const OUTCOME_BY_KIND = Object.freeze({
+  next: 'dispatch',
+  resume: 'dispatch',
+  // A send-back names a stage to run again. REWORK was missing here and fell
+  // through to 'stop', so the journal recorded work going back as the chain
+  // ending on purpose.
+  rework: 'dispatch',
+  route: 'dispatch',
+  'route-pending': 'hold',
+  // Waiting for independent verification is a hold, not the chain stopping.
+  'verify-wait': 'hold',
+  gate: 'hold',
+  'join-wait': 'hold',
+  done: 'stop',
+  blocked: 'stop',
+  'no-verdict': 'no-verdict',
+});
+
+function journalOutcome({ decision, verdict, rule }) {
+  if (!decision) {
+    if (!rule) return 'no-rule';
+    if (!verdict) return 'no-verdict';
+    return 'unknown-verdict';
+  }
+  // The budget refusal is a `blocked` that is worth telling apart from every
+  // other stop: it is the only one a person can lift by changing a number.
+  if (/HELD BY BUDGET/.test(decision.text)) return 'blocked-budget';
+  return OUTCOME_BY_KIND[decision.kind] || 'stop';
+}
+
+/** Why a run produced nothing — the sentence that did not exist before. */
+function journalSilentWhy({ verdict, rule, agent }) {
+  if (!rule) return `no [transitions.${agent}] in the map — its verdict names no next stage`;
+  if (!verdict) return `no verdict from ${agent} within the freshness window`;
+  return `verdict "${verdictToken(verdict)}" matches no on-list and no branch for ${agent}`;
+}
+
+/** The token out of a verdict record — the record is not the token. */
+function verdictToken(v) {
+  return typeof v === 'string' ? v : (v?.verdict ?? null);
+}
+
+/** Has this run already shown the product briefing? */
+function briefedAlready() {
+  try { return existsSync(join(process.cwd(), '.great_cto', '.product-briefed')); }
+  catch { return false; }
+}
+
+function markBriefed() {
+  try { writeFileSync(join(process.cwd(), '.great_cto', '.product-briefed'), new Date().toISOString()); }
+  catch { /* best-effort: re-briefing is the safe failure */ }
+}
+
+function emit(text) {
+  process.stdout.write(JSON.stringify({
+    hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: text },
+  }) + '\n');
+}
+
+/** Gate approval for the gates on this edge, read once, failing safe to unapproved. */
+function gateStatesFor(rule, verdict) {
+  const gates = Array.isArray(rule?.gate) ? rule.gate : rule?.gate ? [rule.gate] : [];
+  if (!gates.length) return null;
+  return readGateStates(gates, readGateBeads(), { verdictTs: verdict?.ts ?? null });
+}
+
+async function main() {
+  // The project root, for the journal. PROJ_DIR is `.great_cto` by default and
+  // may be an absolute override.
+  const PROJECT_ROOT = PROJ_DIR.replace(/\/?\.great_cto\/?$/, '') || '.';
+  const MAP_SOURCE = PIPELINE_PATH.startsWith(PLUGIN_SHARED) ? 'plugin' : 'project';
+  // Never able to fail a dispatch: a journal whose failure stops the pipeline is
+  // very much worse than no journal.
+  // `startedAt` comes from the agent's own transcript, so the interval does not
+  // depend on the agent remembering to report anything — the same reason
+  // `cost=auto` recorded a measured zero for months.
+  // When this agent's run began, for the interval the journal records. Declared
+  // HERE rather than read off `shape` inside the closure: `shape` is computed
+  // further down, and two `journal()` calls on the no-map path run before it —
+  // reaching for it there is a TDZ ReferenceError that the closure's own catch
+  // would swallow, losing the journal line entirely. A measurement that can
+  // delete a record is worse than no measurement.
+  // 0 disables the breaker for one run — an escape hatch that is explicit and
+  // per-run, rather than a flag someone sets once and forgets.
+  const BREAKER_THRESHOLD = Number(process.env.GREAT_CTO_BREAKER_THRESHOLD ?? 5);
+  let runStartedAt = null;
+  // Did this attempt leave anything behind? Three states, and `null` is not
+  // `false`: null means nobody looked, and letting unknown read as progress
+  // would hand the breaker a reset it never earned. Declared HERE, beside
+  // runStartedAt, for the same reason — `journal()` closes over it and runs on
+  // paths that execute before the effects block.
+  let runProgressed = null;
+  let runSession = null;
+  const journal = (entry) => {
+    try { if (entry.decisionKind) observeNativePipeline({ root: PROJECT_ROOT, sessionId: runSession, ...entry }); } catch { /* shared projection cannot change host authority */ }
+    try { recordRun(PROJECT_ROOT, { startedAt: runStartedAt, progressed: runProgressed, ...entry, mapSource: MAP_SOURCE }); } catch { /* the run still happened */ }
+    // ADR-021: the outcome is an agent event as well, so a stage that did not
+    // chain (no-rule, no-verdict, verify-wait) shows on the board when it happens
+    // instead of in a journal read by hand.
+    try {
+      appendEvent(join(PROJECT_ROOT, '.great_cto'), {
+        kind: 'pipeline', agent: entry.agent, outcome: entry.outcome,
+        verdict: typeof entry.verdict === 'string' ? entry.verdict : undefined,
+      });
+    } catch { /* never break a dispatch over an event */ }
+  };
+
+  if (process.env.GREAT_CTO_DISABLE_DISPATCHER === '1') return process.exit(0);
+  // Not a great_cto project: nothing to record, and nowhere to record it.
+  if (!existsSync(PROJ_DIR)) return process.exit(0);
+  if (!existsSync(PIPELINE_PATH)) {
+    journal({ outcome: 'no-map', why: 'no pipeline map in the project or the plugin — the dispatcher cannot read a verdict' });
+    return process.exit(0);
+  }
+
+  let payload = {};
+  try { payload = JSON.parse(readFileSync(0, 'utf8')); } catch { return process.exit(0); }
+  runSession = payload.session_id || null;
+  const toolInput = payload.tool_input || {};
+  const agent = normalizeAgent(toolInput.subagent_type);
+  if (!agent || agent === 'general-purpose' || agent === 'Explore' || agent === 'Plan') return process.exit(0);
+
+  // The agent was started, not finished. Say nothing: this hook fires again on
+  // the completion, which is the event it is actually about. Journalled so the
+  // silence is a recorded decision rather than an absence.
+  if (isAsyncLaunch(payload)) {
+    journal({ agent, outcome: 'launched', why: 'the Agent tool returned on launch; the run has not concluded' });
+    return process.exit(0);
+  }
+
+  let transitions;
+  try { transitions = parsePipelineToml(readFileSync(PIPELINE_PATH, 'utf8')); }
+  catch (e) {
+    journal({ agent, outcome: 'no-map', why: `the map at ${PIPELINE_PATH} could not be parsed: ${String(e?.message || e)}` });
+    return process.exit(0);
+  }
+
+  const now = Date.now();
+  let verdict = latestVerdict(VERDICT_DIR, agent, FRESH_MS, now);
+  if (!verdict && agent.endsWith('-reviewer')) {
+    // Reviewer wrote its TM + HANDOFF but skipped the verdict log — the
+    // archetype-review-base HANDOFF block is an equally authoritative signal.
+    verdict = handoffFallback(agent, FRESH_MS, now, {
+      readdir: (d) => readdirSync(d),
+      stat: (f) => statSync(f),
+      read: (f) => readFileSync(f, 'utf8'),
+    });
+  }
+  const rule = transitions[agent];
+  const joinVerdicts = {};
+  for (const j of (rule?.join || [])) {
+    joinVerdicts[j] = latestVerdict(VERDICT_DIR, j, JOIN_MS, now);
+  }
+
+  // Which gates this project's approval-level actually asks for. Read failures
+  // fall back to null = honour every gate in the map, so a missing PROJECT.md
+  // makes the pipeline MORE cautious, never less.
+  let activeGates = null;
+  /** ship-only's product briefing: the screen, null (not applicable), or 'unavailable'. */
+  let briefing = null;
+  let adaptive = null;
+  try {
+    const pm = readFileSync(join(process.cwd(), '.great_cto', 'PROJECT.md'), 'utf8');
+    const archetype = (pm.match(/^archetype:\s*(\S+)/m) || [])[1];
+    const level = levelFromProjectMd(pm);
+
+    // At `ship-only` the `product` decision is briefed rather than gated — one
+    // screen, non-blocking. The trade holds only while the screen can actually be
+    // produced, so the brief is read HERE and its readability decides whether the
+    // gate comes back. A brief that cannot be shown re-gates product: "I could not
+    // show you" must never arrive as "you were shown and said nothing".
+    briefing = await briefingFor(level);
+    activeGates = gatesForApprovalLevel(level, {
+      archetype,
+      briefReadable: briefing !== 'unavailable',
+    });
+    adaptive = nativeRuntimePolicy({ root: process.cwd(), level, archetype, briefReadable: briefing !== 'unavailable', record: rec => recordStandDown(process.cwd(), rec) });
+    if (adaptive) activeGates = adaptive.activeGates;
+  } catch { /* no PROJECT.md or helper — keep every gate */ }
+
+  const shape = stopShapeFor(agentIdFrom(payload));
+  // From the transcript, so the interval does not depend on the agent
+  // remembering to report anything — the same reason `cost=auto` recorded a
+  // measured zero for months. Null stays null: an untimed run is unmeasured.
+  runStartedAt = shape?.startedAt ?? null;
+  if (!verdictBelongsToRun(verdict, shape?.startedAt)) verdict = null;
+
+  // Only when there is no verdict. With one, the run concluded and what it left
+  // behind is not in question — and this hook fires on every subagent
+  // completion, so `git status` on the hot path would be a cost with no reader.
+  let effects = null;
+  if (!verdict) {
+    try {
+      const { observeEffects, summariseEffects } = await import('../lib/attempt-effects.mjs');
+      const { execFileSync } = await import('node:child_process');
+      let changedPaths = null;
+      try {
+        changedPaths = execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8', timeout: 5000 })
+          .split('\n').map((l) => l.slice(3).trim()).filter(Boolean);
+      } catch { /* stays null → unknown → treated as present */ }
+      let verdictSeenAt = null;
+      try { verdictSeenAt = statSync(join(PROJ_DIR, 'verdicts', `${agent}.log`)).mtimeMs; } catch { /* absent */ }
+      effects = summariseEffects(observeEffects({
+        since: shape?.startedAt ?? null, verdictSeenAt, changedPaths, delivered: null,
+      }));
+      // `some` means the attempt did work despite leaving no verdict — cut
+      // short, not wasted, and the breaker must not count it against the
+      // pipeline. `unknown` stays null: not looked at is not progress.
+      runProgressed = effects.state === 'some' ? true : effects.state === 'none' ? false : null;
+    } catch { /* the advice falls back to asking the reader to look */ }
+  }
+
+  // Every verdict this project has recorded, for the budget check. Reading the
+  // whole directory is what the budget needs — a cap is spend-to-date, not spend
+  // since the last dispatch — and it is a handful of small append-only logs.
+  //
+  // Without this the feature was wired and never fired: `decideNext` defaulted
+  // `cwd` to null, `applyAgentBudgets` was never reached, and every budget in
+  // every project read as allowed. Declared and not consumed, shipped by the
+  // person who spends his days closing exactly that.
+  const allVerdicts = readAllVerdicts(VERDICT_DIR);
+
+  const decision = decideNext({
+    agent, transitions, verdict, joinVerdicts, activeGates, effects,
+    cwd: PROJ_DIR.replace(/\/?\.great_cto\/?$/, '') || '.',
+    allVerdicts,
+    gateStates: gateStatesFor(rule, verdict),
+    // The transcript first, `.last-stop` only if it is unreachable: the hook that
+    // writes the latter does not run when the harness force-stops a subagent.
+    lastStop: shape || readLastStop(PROJ_DIR),
+    agentId: agentIdFrom(payload),
+  });
+
+  // The breaker: five runs in a row that produced nothing is not five ordinary
+  // failures, it is a pipeline that has stopped moving. `provider-exhaustion`
+  // cannot see this — it judges ONE error's kind, and five different, each
+  // individually retryable, still add up to no progress. Every run looks like a
+  // run, and nothing happens.
+  //
+  // It overrides a dispatch only. A `gate` decision is the machinery correctly
+  // waiting for a human and must never be overridden by a counter — and `hold`
+  // and `blocked-budget` are not counted as failures at all, so a pipeline
+  // parked on a gate for a week never approaches the threshold.
+  let breaker = { state: 'unmeasured', count: null, why: '' };
+  try {
+    const { breakerState } = await import('../lib/breaker.mjs');
+    const { readRuns } = await import('../lib/pipeline-journal.mjs');
+    const j = readRuns(PROJECT_ROOT);
+    breaker = breakerState(j?.state === 'some' ? j.rows : null, { threshold: BREAKER_THRESHOLD });
+  } catch { /* the dispatch is not blocked by a breaker that cannot be read */ }
+
+  if (breaker.state === 'tripped' && decision?.kind === 'next') {
+    journal({
+      agent, verdict: verdictToken(verdict), outcome: 'breaker',
+      next: [], why: breaker.why.slice(0, 240),
+    });
+    console.log(
+      `PIPELINE-STOP: ${breaker.why}\n`
+      + `The next stage [${(decision.nexts ?? []).join(', ')}] is NOT being dispatched. `
+      + `Read .great_cto/pipeline-runs.jsonl for the runs that went nowhere, fix what is stopping them, `
+      + `then re-run. To override for one run: GREAT_CTO_BREAKER_THRESHOLD=0.`,
+    );
+    return;
+  }
+
+  // Every run ends here, and every run is recorded — the ones that decided
+  // something and, more importantly, the ones that did not. "Nothing should
+  // happen" and "nothing could happen" produce identical output, and only a
+  // reason written at the moment separates them afterwards.
+  journal({
+    agent, verdict: verdictToken(verdict), decisionKind: decision?.kind || null, gates: decision?.gates || [],
+    receipt: verdict?.receipt || null, recordDigest: verdict ? createHash('sha256').update(JSON.stringify(verdict)).digest('hex') : null,
+    outcome: journalOutcome({ decision, verdict, rule }),
+    next: decision?.nexts ?? [],
+    why: decision ? decision.text.slice(0, 240) : journalSilentWhy({ verdict, rule, agent }),
+  });
+  // The briefing rides with the directive rather than on its own line: it is the
+  // context for the transition that is about to happen, and a screen that arrives
+  // detached from what it is briefing is a screen nobody connects to anything.
+  //
+  // Printed once per run — the dispatcher fires on every subagent completion, and
+  // a briefing repeated after each of nine stages is how a mandatory screen
+  // becomes wallpaper. The marker is the first thing checked and the last thing
+  // written, so a crash between them re-briefs rather than skipping.
+  const brief = briefing && briefing !== 'unavailable' && !briefedAlready() ? briefing : '';
+  if (brief) markBriefed();
+  const riskNotice = adaptive ? `Adaptive gates: ${adaptive.assessment.known ? adaptive.assessment.tier : 'unavailable, full gates'}; removed=${adaptive.removed.join(',') || 'none'}; ${adaptive.assessment.reasons.join('; ')}\n` : '';
+  if (decision) emit(riskNotice + (brief ? brief + '\n' + decision.text : decision.text));
+  else if (brief) emit(brief);
+  return process.exit(0);
+}
+
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) main();

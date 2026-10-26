@@ -1,0 +1,132 @@
+#!/usr/bin/env node
+// Bundle the board server into the npm package (runs on `npm pack` / `npm publish`
+// via the "prepack" script). Without this, `npx great-cto board` only works when
+// the great_cto plugin happens to be in ~/.claude/plugins/cache — a fresh npm
+// install had no board at all (great_cto-hbu3).
+//
+// The bundle mirrors the repo-root layout under packages/cli/board/ because the
+// board resolves its imports relative to that structure:
+//   packages/board/lib/projects.mjs → ../../../scripts/lib/gate-plan.mjs
+//   scripts/lib/gate-plan.mjs       → ../../packages/cli/dist/archetypes.js
+//   packages/board/lib/config.mjs   → ../../../.claude-plugin/plugin.json (version badge)
+import { cpSync, mkdirSync, rmSync, existsSync, copyFileSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { runtimeImportClosure } from './runtime-import-closure.mjs';
+
+const here = dirname(fileURLToPath(import.meta.url)); // packages/cli/scripts
+const cliRoot = join(here, "..");                     // packages/cli
+const repoRoot = join(cliRoot, "..", "..");           // repo root
+const out = join(cliRoot, "board");
+
+const boardSrc = join(repoRoot, "packages", "board");
+if (!existsSync(join(boardSrc, "server.mjs"))) {
+  // Packing from a published tarball (no repo around) — keep whatever is there.
+  if (existsSync(join(out, "packages", "board", "server.mjs"))) {
+    console.log("bundle-board: repo sources absent, keeping existing bundle");
+    process.exit(0);
+  }
+  console.error("bundle-board: packages/board/server.mjs not found — run from the repo");
+  process.exit(1);
+}
+
+rmSync(out, { recursive: true, force: true });
+
+// board runtime (skip tests, the cloudflare worker, and stray tarballs)
+const skip = /(\.test\.mjs$|cloudflare-worker|\.tgz$)/;
+cpSync(boardSrc, join(out, "packages", "board"), {
+  recursive: true,
+  filter: (src) => !skip.test(src),
+});
+
+// shared scripts the board imports at runtime — DERIVED, not hand-listed.
+//
+// This was a hand-maintained array of four filenames, and the board had grown to
+// import six. `system-map.mjs` and `pipeline-wake.mjs` were never copied, so in
+// the published package the Docs system map and the record that binds a gate
+// approval to pipeline state both failed with "Cannot find module" — the second
+// one silently, because that call is best-effort by design and reports its error
+// into a JSON field nobody reads.
+//
+// It worked in the repo and not in the thing users install, which is the worst
+// place for a difference to live. A list you have to remember to update is a list
+// that will be wrong again, so the list is now read out of the source: every
+// `../../../scripts/lib/X.mjs` the board mentions, static import or dynamic.
+const boardFiles = [];
+(function walkBoard(dir) {
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) { if (!/node_modules/.test(p)) walkBoard(p); continue; }
+    if (/\.mjs$/.test(e.name) && !/\.test\.mjs$/.test(e.name)) boardFiles.push(p);
+  }
+})(boardSrc);
+
+const needed = new Set();
+const neededTop = new Set();
+for (const f of boardFiles) {
+  const text = readFileSync(f, "utf8");
+  for (const m of text.matchAll(/scripts\/lib\/([\w.-]+\.mjs)/g)) needed.add(m[1]);
+  // Some reusable helpers (skill-lint) live directly under scripts/. Derive
+  // actual relative imports too, so repository-only dependencies cannot ship.
+  for (const m of text.matchAll(/(?:from\s+|import\(\s*)['"](?:\.\.\/)+scripts\/([\w.-]+\.mjs)['"]/g)) neededTop.add(m[1]);
+}
+
+// The npm CLI is also a supported entrypoint for the controlled Codex host.
+// Seed the same dependency closure from its executable instead of maintaining
+// a second hand-written runtime list.
+const codexController = join(repoRoot, "scripts", "codex-pipeline.mjs");
+const taskController = join(repoRoot, "scripts", "work-task.mjs");
+for (const m of [readFileSync(codexController, "utf8"), readFileSync(taskController, "utf8")].join("\n").matchAll(/from\s+['"]\.\/lib\/([\w.-]+\.mjs)['"]/g)) needed.add(m[1]);
+
+// Follow literal imports across directories, not only scripts/lib siblings.
+// controlled-specialists imports ../hooks/auto-attach-reviewers.mjs. A sibling
+// scan shipped a CLI whose --version worked while codex-host could not start.
+//
+// The direct scan alone was WRONG and would have shipped a broken bundle:
+// `gate-plan.mjs` imports `./change-tier.mjs` and `./judge-model.mjs`, which the
+// board never names itself. Dropping them for being unmentioned would have
+// replaced two missing files with two different missing files — a fix that moves
+// the defect rather than removing it.
+const runtimeFiles = runtimeImportClosure(repoRoot, [codexController, taskController,
+  ...boardFiles.filter(file => !skip.test(file)),
+  ...[...neededTop].map(f => join(repoRoot, "scripts", f)),
+  ...[...needed].map(f => join(repoRoot, "scripts", "lib", f))]);
+for (const src of runtimeFiles) {
+  const dest = join(out, src.slice(repoRoot.length + 1));
+  mkdirSync(dirname(dest), { recursive: true });
+  copyFileSync(src, dest);
+}
+mkdirSync(join(out, "shared"), { recursive: true });
+copyFileSync(join(repoRoot, "shared", "pipeline.toml"), join(out, "shared", "pipeline.toml"));
+console.log(`bundle-board: copied ${runtimeFiles.length} runtime module(s)`);
+
+// routes.mjs reads this data directory for Usage ownership, dispatches and
+// outcomes. Import closure cannot discover fs-based dependencies. Copy only
+// public top-level role Markdown; never recurse into overlays or sidecars.
+const agentsSrc = join(repoRoot, "agents");
+const agentFiles = readdirSync(agentsSrc, { withFileTypes: true })
+  .filter(entry => entry.name.endsWith('.md'));
+if (!agentFiles.length) throw new Error('board bundle requires the public agent roster');
+mkdirSync(join(out, "agents"), { recursive: true });
+for (const entry of agentFiles) {
+  if (!entry.isFile() || !/^[a-z0-9]+(?:-[a-z0-9]+)*\.md$/.test(entry.name))
+    throw new Error('unsupported public agent roster entry');
+  copyFileSync(join(agentsSrc, entry.name), join(out, "agents", entry.name));
+}
+console.log(`bundle-board: copied ${agentFiles.length} public agent role(s)`);
+
+// gate-plan.mjs → ../../packages/cli/dist/archetypes.js
+mkdirSync(join(out, "packages", "cli", "dist"), { recursive: true });
+copyFileSync(
+  join(cliRoot, "dist", "archetypes.js"),
+  join(out, "packages", "cli", "dist", "archetypes.js"),
+);
+
+// version badge source for the board UI
+mkdirSync(join(out, ".claude-plugin"), { recursive: true });
+copyFileSync(
+  join(repoRoot, ".claude-plugin", "plugin.json"),
+  join(out, ".claude-plugin", "plugin.json"),
+);
+
+console.log("bundle-board: board bundled into packages/cli/board/");

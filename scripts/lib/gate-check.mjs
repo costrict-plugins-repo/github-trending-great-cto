@@ -1,0 +1,173 @@
+// scripts/lib/gate-check.mjs — strict-mode evidence-blocking gate check (governance Phase 2).
+//
+// NaCl strict-mode: a gate REFUSES to pass while any in-scope task is in a terminal-fail
+// state {BLOCKED, FAILED, UNVERIFIED, NOT_RUN} — instead of being downgraded to "explained".
+// The ONLY sanctioned override is a valid signed exception (Phase 1). Every covered task is
+// logged with the exception id, so a bypass is never silent.
+//
+// CLI:  node scripts/lib/gate-check.mjs <gate>   → exit 0 if the gate may pass, 1 if blocked
+//   (loads tasks from `bd list --json` and exceptions from the registry)
+
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { verify, list as listExceptions } from './exceptions.mjs';
+import { reviewerStatus } from './required-reviewers.mjs';
+import { latestVerdicts, lastCodeChange, shipBlockers } from './ship-evidence.mjs';
+
+// Terminal-fail states that block a gate (normalized, lowercase).
+export const BLOCKING_STATES = new Set(['blocked', 'failed', 'unverified', 'not_run', 'not-run']);
+
+/**
+ * Normalize a beads task to { id, title, state }. A task's effective state is its
+ * blocking status, else the first blocking label, else its status.
+ */
+export function normalizeTask(task) {
+  const status = String(task.status || '').toLowerCase();
+  const labels = (task.labels || []).map((l) => String(l).toLowerCase().replace(/^state:/, ''));
+  let state = status;
+  if (!BLOCKING_STATES.has(status)) {
+    const bl = labels.find((l) => BLOCKING_STATES.has(l));
+    if (bl) state = bl;
+  }
+  return { id: task.id, title: task.title || '', state };
+}
+
+/**
+ * Does a signed exception cover this gate + task?
+ * - gate must match exactly or be '*'.
+ * - scope empty or '*' → gate-wide (covers every blocking task for that gate, e.g. a
+ *   "CI billing-locked" exception).
+ * - otherwise scope is a comma/space-separated list of task ids; coverage requires an
+ *   EXACT id match (no substring — "uncovered" must not be covered by scope "covered").
+ */
+export function covers(exc, gate, taskId, now) {
+  if (!verify(exc, { now }).valid) return false;
+  if (!(exc.gate === gate || exc.gate === '*')) return false;
+  const scope = String(exc.scope || '').trim();
+  if (!scope || scope === '*') return true;
+  return scope.split(/[\s,]+/).includes(String(taskId));
+}
+
+/**
+ * Evaluate a gate against a list of (already-normalized) tasks + exceptions.
+ * @returns {{ pass: boolean, blocking: Array, covered: Array }}
+ */
+export function evaluateGate(tasks, exceptions, { gate, now } = {}) {
+  const blocking = [];
+  const covered = [];
+  for (const t of tasks) {
+    if (!BLOCKING_STATES.has(String(t.state).toLowerCase())) continue;
+    const exc = (exceptions || []).find((e) => covers(e, gate, t.id, now));
+    if (exc) covered.push({ id: t.id, state: t.state, exception: exc.id });
+    else blocking.push({ id: t.id, state: t.state, title: t.title });
+  }
+  return { pass: blocking.length === 0, blocking, covered };
+}
+
+/**
+ * Required domain reviewers for gate:ship. A reviewer the project's archetype, packs
+ * or compliance imply (required-reviewers.mjs) must have a verdict, or a signed
+ * exception whose scope names `reviewer:<agent>`. On the measuring machine
+ * pci-reviewer was needed by 7 of 22 projects and ran once — nothing required it.
+ */
+export function evaluateReviewers(status, exceptions, { gate, now } = {}) {
+  const blocking = [];
+  const covered = [];
+  if (gate !== 'gate:ship' || !status || status.state !== 'read') return { pass: true, blocking, covered };
+  for (const r of status.reviewers) {
+    if (r.verdict) continue;
+    const exc = (exceptions || []).find((e) => covers(e, gate, `reviewer:${r.agent}`, now));
+    if (exc) covered.push({ agent: r.agent, exception: exc.id });
+    else blocking.push({ agent: r.agent, why: r.why });
+  }
+  return { pass: blocking.length === 0, blocking, covered };
+}
+
+/**
+ * What the verdict logs say about gate:ship (ship-evidence.mjs): an open negative
+ * verdict, a missing or non-passing QA / security verdict, or a QA verdict older
+ * than the last code change. Each is waived only by a signed exception naming
+ * `reviewer:<agent>` — the same scope the required-reviewer check uses.
+ */
+export function evaluateShipEvidence(blockers, exceptions, { gate, now } = {}) {
+  const blocking = [];
+  const covered = [];
+  if (gate !== 'gate:ship') return { pass: true, blocking, covered };
+  for (const b of blockers || []) {
+    const exc = (exceptions || []).find((e) => covers(e, gate, `reviewer:${b.agent}`, now));
+    if (exc) covered.push({ ...b, exception: exc.id });
+    else blocking.push(b);
+  }
+  return { pass: blocking.length === 0, blocking, covered };
+}
+
+// ── CLI ──────────────────────────────────────────────────────────────────────
+
+function loadTasks() {
+  try {
+    // 20s: bd has been measured at up to 8.7s under this repo's own test
+    // parallelism, and an unbounded call can wait forever on a stale
+    // .beads/.lock. The catch below already returns null for "bd unavailable",
+    // which is the right three-state answer — it just never got to run.
+    const out = execFileSync('bd', ['list', '--json'], { encoding: 'utf8', timeout: 20000, killSignal: 'SIGKILL', stdio: ['ignore', 'pipe', 'ignore'] });
+    const data = JSON.parse(out);
+    const arr = Array.isArray(data) ? data : (data.issues || data.tasks || []);
+    return arr.map(normalizeTask);
+  } catch {
+    return null; // bd unavailable
+  }
+}
+
+function main() {
+  const argv = process.argv.slice(2);
+  // --as <agent>: the agent about to write its own verdict runs this check, and its
+  // own previous verdict (or absence) must not block it — security-officer calls
+  // `gate-check gate:ship --as security-officer` before it approves.
+  const asIdx = argv.indexOf('--as');
+  const as = asIdx >= 0 ? argv[asIdx + 1] : null;
+  const gate = argv.find((a, i) => !a.startsWith('--') && !(asIdx >= 0 && i === asIdx + 1));
+  if (!gate) { process.stderr.write('Usage: gate-check.mjs <gate> [--as <agent>]\n'); process.exit(2); }
+
+  const exceptions = listExceptions({});
+
+  // Reviewers first: they read files, so a missing bd is no reason to skip them.
+  const rev = evaluateReviewers(reviewerStatus(process.cwd()), exceptions, { gate });
+  for (const c of rev.covered) process.stdout.write(`  ⚠ ${c.agent} has no verdict — sanctioned by signed exception ${c.exception}\n`);
+  if (!rev.pass) {
+    process.stdout.write(`✗ ${gate} BLOCKED — ${rev.blocking.length} required reviewer(s) never ran for this project:\n`);
+    for (const b of rev.blocking) process.stdout.write(`    ${b.agent} — required by ${b.why}\n`);
+    process.stdout.write(`  Run the reviewer, or sign an exception: /exception create --gate ${gate} --scope reviewer:<agent> --reason "…"\n`);
+  }
+
+  const cwd = process.cwd();
+  const ev = evaluateShipEvidence(shipBlockers(latestVerdicts(cwd), lastCodeChange(cwd), { as }), exceptions, { gate });
+  for (const c of ev.covered) process.stdout.write(`  ⚠ ${c.agent}: ${c.why} — sanctioned by signed exception ${c.exception}\n`);
+  if (!ev.pass) {
+    process.stdout.write(`✗ ${gate} BLOCKED — ${ev.blocking.length} verdict problem(s):\n`);
+    for (const b of ev.blocking) process.stdout.write(`    ${b.agent} — ${b.why}\n`);
+    process.stdout.write(`  Re-run the agent, or sign an exception: /exception create --gate ${gate} --scope reviewer:<agent> --reason "…"\n`);
+  }
+  const filesPass = rev.pass && ev.pass;
+
+  const tasks = loadTasks();
+  if (tasks === null) {
+    process.stdout.write('gate-check: beads (bd) unavailable — task states not evaluated; treat them as a manual check.\n');
+    process.exit(filesPass ? 0 : 1); // bd absent skips the task check, never the file checks
+  }
+  const r = evaluateGate(tasks, exceptions, { gate });
+
+  for (const c of r.covered) {
+    process.stdout.write(`  ⚠ ${c.id} [${c.state}] — sanctioned by signed exception ${c.exception}\n`);
+  }
+  if (r.pass) {
+    process.stdout.write(`✓ ${gate}: no blocking tasks (${r.covered.length} covered by exception).\n`);
+    process.exit(filesPass ? 0 : 1);
+  }
+  process.stdout.write(`✗ ${gate} BLOCKED — ${r.blocking.length} task(s) in a terminal-fail state with no signed exception:\n`);
+  for (const b of r.blocking) process.stdout.write(`    ${b.id} [${b.state}] ${b.title}\n`);
+  process.stdout.write(`  Fix the task, or create a signed exception: /exception create --gate ${gate} --reason "…"\n`);
+  process.exit(1);
+}
+
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) main();

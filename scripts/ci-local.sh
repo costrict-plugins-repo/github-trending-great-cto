@@ -1,0 +1,507 @@
+#!/usr/bin/env bash
+# scripts/ci-local.sh — run the CI gates locally (macOS / Linux) before pushing.
+#
+# Mirrors what the GitHub Actions workflows check, so "green here" ≈ "green in CI":
+#   - structural validation        (plugin-ci.yml)
+#   - docs-reference in sync        (plugin-ci.yml)
+#   - root + hooks + lib + eval + board unit tests   (runtime-ci.yml, evals-runner.yml, plugin-ci.yml)
+#   - CLI build + unit tests        (cli-ci.yml)
+#   - CLI pack (release readiness)
+#
+# Usage:
+#   bash scripts/ci-local.sh            # full gate
+#   bash scripts/ci-local.sh --e2e      # also run the heavier archetype e2e suite
+#   bash scripts/ci-local.sh --e2e --serial # same gates, one root/lib test file worker
+#   bash scripts/ci-local.sh --quick    # skip cli tests/pack (fast inner-loop)
+#
+# Exit 0 = no executed gate failed. All gates run; skipped checks are reported.
+
+set -uo pipefail
+cd "$(dirname "$0")/.."   # repo root
+
+# Tests build throwaway repositories and commit into them. Those commits inherit
+# the operator's global `commit.gpgsign` / `tag.gpgSign`, so one unreachable
+# signing agent hung `ssh-keygen` for 16 minutes and failed a release gate on
+# code that had passed twice (2026-10-01). Sixteen test files commit; this turns
+# signing off for every git the gate starts, without touching anyone's config.
+export GIT_CONFIG_COUNT=2
+export GIT_CONFIG_KEY_0=commit.gpgsign GIT_CONFIG_VALUE_0=false
+export GIT_CONFIG_KEY_1=tag.gpgSign    GIT_CONFIG_VALUE_1=false
+
+# Test imports must not leave opaque Python bytecode inside the plugin tree.
+# A subsequent security scan must inspect shipped source, not local caches.
+export PYTHONDONTWRITEBYTECODE=1
+
+E2E=0; QUICK=0; GATE_TEST_CONCURRENCY=2
+for a in "$@"; do
+  case "$a" in
+    --e2e) E2E=1 ;;
+    --quick) QUICK=1 ;;
+    --serial) GATE_TEST_CONCURRENCY=1 ;;
+    *) echo "unknown flag: $a"; exit 2 ;;
+  esac
+done
+
+FAIL=0
+SKIP_TOTAL=0
+SKIP_LINES=""
+step() {
+  local name="$1"; shift
+  printf '\n\033[1m── %s\033[0m\n' "$name"
+  # Output goes to the terminal AND a log, so the step can be asked how many tests
+  # it skipped. `node --test` exits 0 when tests skip: judged by exit code alone, a
+  # board e2e that pressed no button printed ✓ and the gate ALL GATES GREEN.
+  # No arrays below — macOS /bin/bash is 3.2, and with `set -u` an empty one is fatal.
+  local log rc skips
+  log="$(mktemp "${TMPDIR:-/tmp}/ci-local-step.XXXXXX")"
+  "$@" 2>&1 | tee "$log"
+  rc=${PIPESTATUS[0]}
+  skips="$(node scripts/lib/count-skips.mjs "$log" 2>/dev/null)" || skips=""
+  rm -f "$log"
+  if [ "$rc" -eq 0 ]; then
+    printf '\033[32m   ✓ %s\033[0m\n' "$name"
+  else
+    printf '\033[31m   ✗ %s (exit %s)\033[0m\n' "$name" "$rc"
+    FAIL=1
+  fi
+  if [ -z "$skips" ]; then
+    printf '\033[33m   ⚠ %s: skipped tests could not be counted\033[0m\n' "$name"
+  elif [ "$skips" -gt 0 ]; then
+    printf '\033[33m   ⚠ %s: %s test(s) skipped — not checked\033[0m\n' "$name" "$skips"
+    SKIP_TOTAL=$((SKIP_TOTAL + skips))
+    SKIP_LINES="${SKIP_LINES}   - ${name}: ${skips}\n"
+  fi
+}
+
+NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
+echo "ci-local: node $(node -v) on $(uname -s)"
+echo "   root/lib test worker concurrency: $GATE_TEST_CONCURRENCY (deadlines and assertions unchanged)"
+[ "$NODE_MAJOR" -lt 22 ] && echo "   ⚠ project targets Node 22 (.nvmrc); you are on $(node -v)"
+
+# ── The privacy guard is actually in force ──
+#
+# The build comes FIRST, before CLI tests and the "installs for a stranger" step
+# read its gitignored output. The board now ships a dependency-free gate policy,
+# but its parity test still compares that policy with the built CLI. With the
+# build at the end of this file a fresh worktree failed
+# them before it ran, and --quick never built at all. 3.46.2 moved it ahead of the
+# unit tests only; the stranger step sits earlier still and kept failing in a
+# fresh worktree. It takes about a second.
+step "cli build (tests import it)" bash -c 'cd packages/cli && npm run build'
+step "plugin gate policy in sync" node scripts/build-gate-policy.mjs --check
+
+# First, because it is the check that fails silently. The pre-push hook was
+# installed, executable and current for months while `core.hooksPath` pointed at
+# a directory this repository had moved out of — so git ran no hooks at all, and
+# three private project names reached a public remote with nothing objecting.
+# An uninstalled guard and a guard that passed produce identical output.
+step "pre-push guard in force" node scripts/lib/hook-install.mjs --quiet
+
+# ── Structural + docs-reference (plugin-ci) ──
+step "structural validation" python3 tests/structural/validate.py
+# The lesson-rules pack holds at zero findings across the repository, so a
+# finding here is a regression against a rule a real incident bought. Test
+# files are excluded — they carry the hunted shapes as fixtures.
+step "lesson rules (incident-bought)" node scripts/lib/lesson-rules.mjs --sweep --strict
+step "agent-shield (config as attack surface)" node scripts/agent-shield-check.mjs
+
+# The plugin read the way a stranger installing it would — manifest, permissions,
+# MCP commands, secrets — by the same pinned HOL scanner the removed GitHub
+# workflow ran (Actions is billing-locked, so that workflow never did). Score
+# >= 80 and no critical/high finding; no python3.12 or no network on the first
+# install reports "not measured" as a skipped check, never as a pass.
+step "HOL plugin scanner (a stranger's read of the plugin)" bash scripts/hol-scan.sh
+step "skill-lint (every SKILL.md: frontmatter, size, dead references)" node scripts/skill-lint.mjs
+step "docs-reference in sync" node scripts/gen-docs-reference.mjs --check
+# agents-full/ is what the plugin registers (ADR-027); stale output would ship an
+# agent without the shared contracts its source points at.
+step "agent bundle in sync" node scripts/build-agent-bundle.mjs --check
+# The plugin's mod (hooks/hooks.json → modules: the gate pane) checked by the engine
+# that loads it. No claude CLI is a skipped check, not a pass.
+step "mod: validate + plugin test (gate pane)" bash scripts/mods-test.sh
+# Both of these were wired ONLY to .github/workflows/runtime-ci.yml, and GitHub
+# Actions has been billing-locked for weeks — every run fails in seconds with no
+# logs. So they were configured, correct, and had not executed: six structural
+# errors accumulated over nineteen days behind a check that reads as enabled.
+# A guard that only runs where CI cannot run is a guard nobody has.
+# See docs/plans/PLAN-2026-08-17-guards-that-do-not-run.md (GUARD-R1).
+step "artifact structure (enforced)" node scripts/hooks/artifact-lint.mjs --enforce
+step "guards run where CI runs" node scripts/lib/guard-parity.mjs --strict
+# The sibling question. guard-parity asks whether a guard EXECUTES; this asks
+# whether a declaration is CONSUMED. Four agents could write a verdict nothing
+# would act on — including senior-dev's own refuse-a-bad-plan escape hatch — and
+# all four were found by this check rather than by anyone noticing.
+step "declarations have consumers" node scripts/lib/declared-consumed.mjs --strict
+# The question underneath the other two. guard-parity asks whether a guard
+# EXECUTES; declared-consumed asks whether a declaration is CONSUMED; this asks
+# whether the dispatcher could ACT AT ALL in a given project.
+#
+# It was bought by the map being resolved against the project instead of the
+# plugin: thirteen of seventeen registered projects hit `return process.exit(0)`
+# and said nothing — no dispatch, no verdict, no task, nowhere to look. The
+# pipeline reported success while being incapable of running.
+step "the pipeline can run where it is installed" node scripts/lib/pipeline-health.mjs --strict
+# The same question one layer down. A CSS rule written above the rules it
+# overrides loses at equal specificity and applies to nothing, while reading as
+# entirely correct in the diff — it happened twice in two days on the board's
+# phone layout, and both times it was found by looking at the rendered page
+# rather than the source. Declared is not applied.
+step "css declarations apply" bash -c '
+  for f in packages/board/public/index.html packages/board/public/share.html; do
+    node scripts/lib/css-cascade.mjs "$f" || exit 1
+  done
+'
+
+# Two layers further down, and the reason both of these are wired here rather
+# than only unit-tested: css-tokens.mjs and css-type-scale.mjs already existed,
+# already had passing tests, and were pointed at NOTHING. Run against the board
+# they exited 0 in silence — including against a file with an undeclared token
+# and an off-scale size planted in it — because neither had a CLI entry point at
+# all. A check nobody calls and a check that cannot fail are the same artefact.
+
+# A var(--x) with no --x is dropped at computed-value time and the element
+# renders as if that line were never written; with a fallback it paints a
+# hardcoded value and survives the theme switch that was supposed to change it.
+# Both look exactly like a declaration that worked.
+step "css tokens resolve" bash -c '
+  for f in packages/board/public/index.html packages/board/public/share.html; do
+    node scripts/lib/css-tokens.mjs "$f" || exit 1
+  done
+'
+
+# One level up from the token: the CLASS that carries it. A `class="muted"` with
+# no `.muted` rule is dropped just as quietly — the span renders as ordinary
+# prose — and `.muted` was applied 70 times on the board and declared nowhere.
+# The same scan answers a second question a parity check cannot: whether the
+# rule survives PARSING. A stray `}` does not error; at the top level it opens a
+# rule whose prelude runs to the next `{`, swallowing the selector after it.
+# Two of those were live here, and each was introduced by a commit about
+# something else — `.budgets-table th` and `.icon-btn` had been rendering
+# unstyled with nothing to read as wrong.
+#
+# share.html only, and the asymmetry is the point rather than an oversight:
+# index.html carries seven classes that are deliberately names rather than
+# styles (a JS handle, grid children, cells the parent styles), so its parity is
+# asserted in packages/board/harnesses.test.mjs where the exemptions live beside
+# the reason each one is safe. An allowlist passed on a command line is one
+# nobody reads. share.html has no exemptions and this keeps it that way.
+step "css classes declared" bash -c '
+  node scripts/lib/css-classes.mjs packages/board/public/share.html
+'
+
+# Type scale, index.html only — and the omission is deliberate rather than
+# overlooked. share.html is a self-contained report published to an external
+# host, with its own palette and its own visual language (a 92px hero figure
+# that belongs to nothing in the admin chrome). It carries 16 distinct sizes
+# including 9.5 and 10.5 — the shape of a scale being invented one declaration
+# at a time — and giving it one is a design decision about a public-facing
+# artefact, not a mechanical snap. Named here so it reads as known and unbudgeted
+# rather than as covered.
+step "css type scale" bash -c '
+  node scripts/lib/css-type-scale.mjs packages/board/public/index.html
+'
+
+# The three checks above ask whether a declaration APPLIES, whether a token
+# RESOLVES, and whether the type scale is CONSISTENT — all questions about the
+# code. None asks whether the result can be read.
+#
+# A stylesheet in this project once used a colour token in 61 places and defined
+# it in none; every one fell through to a light-theme fallback and the densest
+# block on the page rendered at 2.62:1 against a 4.5:1 floor. A person found it
+# months later. This is arithmetic over the tokens as declared, so it needs no
+# browser and no judgement, and it runs in milliseconds.
+step "colour contrast (WCAG AA)" bash -c '
+  node --test tests/lib/contrast.test.mjs
+'
+
+# And the one check that actually opens the page. Everything above reads the
+# source, so none of it sees the cascade, the media queries or the JavaScript.
+# The board is a 7,600-line single-page app whose appearance has only ever been
+# verified by a person looking at it.
+#
+# Not pixel diffs: font rasterisation differs between macOS and Linux, so
+# committed PNGs would be flaky by construction and a failure would report
+# "pixels differ" rather than what differed. The baseline is a JSON signature of
+# what rendered — a diff names the font size that appeared or the anchor that
+# vanished, and it reviews like code.
+#
+# Skips honestly when no browser is present. A check that could not run must not
+# look like a check that passed.
+step "rendered layout matches its baseline" bash -c '
+  node --test tests/lib/layout-snapshot.test.mjs
+'
+
+# The verifier that checks the agents must itself be checked, and in both
+# directions. A verifier that only ever returns rework sends correct work back
+# forever and gets switched off within a day; one that only ever returns
+# verified is the self-report it was built to replace. The suite carries one
+# fixture of each, with the answer known before the run.
+step "independent verifier: both directions" bash -c '
+  node --test tests/lib/independent-verify.test.mjs
+'
+
+# A cost figure must not depend on when the repository was cloned. `git clone`
+# writes every file at clone time, so dating a plan by mtime collapsed thirteen
+# dates into one and made the 30-day window return the project's entire history.
+# The test changes timestamps and asserts the answer does not move.
+step "plan dates ignore the filesystem" bash -c '
+  node --test tests/lib/plan-date.test.mjs
+'
+
+# Every agent read $0.00 while the real spend sat measured on the same disk, in
+# a file the board could not parse, priced by a guess that tripled it. Four
+# links, each present and each broken in a way that looked like "nothing has
+# been measured yet".
+step "measured cost reaches the board" bash -c '
+  node --test tests/lib/measured-cost.test.mjs
+'
+
+# The other half: a cap that cannot refuse is not a cap. Budgets existed for
+# weeks and never held anything back — the rule they rest on (an estimate never
+# refuses) was, in practice, a permanent open gate, because nothing measured ever
+# reached the judge. Walks the whole chain and asserts all four states.
+step "agent budgets actually refuse" bash -c '
+  node --test tests/hooks/budget-fires.test.mjs
+'
+
+# Quality kept apart from what happened. The property that earns the separation:
+# an unassessed run has a NULL value, never 0, and a pass rate divides by the
+# assessed count. Nine unverifiable runs and one verified one is 100% of 1, not
+# 10% — the second is a number about work nobody looked at.
+step "scores: unassessed is not zero" bash -c '
+  node --test tests/lib/scores.test.mjs
+'
+
+# One number must not mean two things. `runs` was incremented once per priced
+# verdict and once per closed task on days with no cost, so its meaning changed
+# from day to day — and it disagreed with the verdict logs in both directions.
+# The property: agent runs in a window equals verdicts in that window, whatever
+# was or was not priced.
+step "agent runs match the verdict logs" bash -c '
+  node --test tests/lib/cost-runs.test.mjs
+'
+
+# Verification used to be a sentence in a directive, and it ran on a third of the
+# work: 31 agent runs, 10 scores. The dispatch is now conditional on a score for
+# THIS run. The properties that keep it a gate rather than a trap: an earlier
+# run's score does not satisfy a later one, `unverifiable` unblocks (the LOOK is
+# what is required, not a pass), and the bypass says the stage was not checked
+# rather than implying it passed.
+step "verification is required, not suggested" bash -c '
+  node --test tests/hooks/verify-gate.test.mjs
+'
+
+# `tests=46` counts tests that RAN, not tests that would catch anything. The
+# mechanical half of that question costs nothing: a body with no assertion cannot
+# fail for the reason its name gives. Run over the suite it ships with — 203
+# files, 2670 tests — because a scanner nobody points at real code is where its
+# three false-accusation bugs came from.
+step "tests assert what their names claim" bash -c '
+  node --test tests/lib/test-substance.test.mjs
+'
+
+# The board can now write the OpenRouter key, and that file holds other
+# credentials — one careless `cat >` destroyed it before. What is asserted is
+# mostly about not losing one: neighbours preserved, replaced in place rather
+# than appended beside itself, backed up before being touched, 0600, and a
+# malformed key refused before anything is written. Plus the one that matters
+# for the board: the full key never appears in a status payload.
+step "the key can be set without losing one" bash -c '
+  node --test tests/lib/router-key.test.mjs
+'
+
+# One variable moved three models. `GREAT_CTO_ROUTER_MODEL` is read by five
+# consumers including the eval ACTOR, so setting it for a cheap verifier judge
+# silently changed what the eval suite runs — pass rate 1/8, cost $0.000, and
+# neither symptom names the cause. The lanes are asserted apart here because the
+# second attempt at a name collided too.
+step "model lanes do not move each other" bash -c '
+  node --test tests/lib/model-lanes.test.mjs
+'
+
+# What a stage produces is declared in the map, not in JavaScript. Borrowed from
+# Pipelex, where every step declares its typed output — here one direction,
+# because what a stage consumes is implied by what its predecessor produced.
+#
+# The check REPORTS coverage and fails only on a contract that is declared and
+# unreadable. Failing on absence would push people to invent contracts to silence
+# it, and an invented contract makes verification reject work for not producing
+# something nobody wanted.
+step "stage output contracts" bash -c '
+  node scripts/lib/pipeline-contract.mjs shared/pipeline.toml
+  node --test tests/lib/pipeline-contract.test.mjs
+'
+
+# Install it the way someone who just found it would.
+#
+# `great-cto init` clones the repo into the plugin cache, and packages/cli/dist
+# is a build artefact — five of its thirty-two files are in git by accident,
+# archetypes.js is not. So a cloned plugin got 5 of 32 and the board died on
+# ERR_MODULE_NOT_FOUND. It worked for the author (install-local.sh from a built
+# working tree) and from the npm tarball (ships all 32), and failed on the one
+# path a new user takes. Nothing in this suite walked that path, so the board was
+# unstartable for every new user across several releases with CI fully green.
+step "installs for a stranger, not just the author" bash -c '
+  node --test tests/install-as-a-stranger.test.mjs
+'
+
+# The coverage gate is diff-shaped: it asks whether a CHANGED agent has an eval,
+# so it needs a base to compare against. `||  exit 1` rather than `&&` chaining —
+# a trailing `exit 0` after an `&&` would swallow the gate's own failure, which
+# is the fail-open shape this file exists to prevent.
+step "agent → eval coverage (changed agents)" bash -c '
+  BASE=$(git merge-base HEAD origin/main 2>/dev/null || git rev-parse HEAD~1 2>/dev/null || true)
+  if [ -z "$BASE" ]; then echo "  no base ref to diff against — not measured"; exit 0; fi
+  EDITED=$(git diff --name-only --diff-filter=M "$BASE"...HEAD -- "agents/*.md" | tr "\n" " ")
+  ADDED=$(git diff --name-only --diff-filter=A "$BASE"...HEAD -- "agents/*.md" | tr "\n" " ")
+  if [ -n "$EDITED" ]; then node scripts/coverage-gate.mjs --changed $EDITED --require present || exit 1; fi
+  if [ -n "$ADDED" ]; then node scripts/coverage-gate.mjs --changed $ADDED --require exercised || exit 1; fi
+  if [ -z "$EDITED$ADDED" ]; then echo "  no agent files changed since base"; fi
+  exit 0
+'
+
+# A label on nine rows in ten and a bucket holding three quarters of the corpus
+# are the same defect: a classification that has stopped classifying. Measured on
+# the live board — `unknown` on 198 of 217 documents in one project, "Other" on
+# 165 of the same 217. Both passed every unit test they had, because the tests
+# were written against fixtures with this repository's own directory names.
+#
+# So this gate runs the classifier over a REAL tree (this repository's docs/) and
+# asserts the properties rather than the numbers: absence of a declared date is
+# never a finding about the document, the three freshness states stay three,
+# nothing is dropped from the listing, and "Other" is not the largest group.
+step "docs screen classifies more than it shrugs at" bash -c '
+  node --test tests/lib/docs-classify.test.mjs
+'
+
+# ── Unit tests: root + hooks + lib + eval + board (runtime-ci/evals/plugin) ──
+# Board fixtures have real child-start and IPC deadlines. Unbounded file
+# scheduling can expire a receipt before its held Git fixture reaches the
+# handshake. Bound scheduling, not those deadlines, and retain every suite.
+step "root + hooks + board tests" node --test --test-concurrency="$GATE_TEST_CONCURRENCY" tests/*.test.mjs tests/hooks/*.test.mjs tests/helpers/*.test.mjs packages/board/*.test.mjs
+# Each library file can launch Git, browsers and signal-handling fixtures.
+# Unbounded file parallelism starved the fixed 1s scorer-ready window in a
+# canonical 3301-test run. Bound scheduling, not case/IPC/cleanup deadlines;
+# retain the full inventory and every original assertion.
+step "lib tests" node --test --test-concurrency="$GATE_TEST_CONCURRENCY" tests/lib/*.test.mjs scripts/lib/*.test.mjs
+step "eval tests" node --test tests/eval/*.test.mjs
+# `|| true` used to end this line, from the days when tests/docs/ might be empty
+# in a partial checkout. It made the step incapable of failing — and on v3.28.1
+# the README parity check was RED here while the gate reported ALL GATES GREEN.
+# A guard wired into a step that cannot fail is a guard that is declared and
+# never consumed, which is the defect this repository exists to find.
+# The empty case is handled by asking, not by swallowing the exit code.
+step "docs tests" bash -c 'ls tests/docs/*.test.mjs >/dev/null 2>&1 || { echo "no tests/docs — nothing to run"; exit 0; }; node --test tests/docs/*.test.mjs'
+
+# ── The board, driven in a real browser ─────────────────────────────────────
+#
+# The static checks above assert on strings in a 9,000-line inline bundle. They
+# cannot tell a wired button from a painted one: 3.27.1 shipped a board whose
+# blocked tasks could be opened, read, and not decided — the endpoint had
+# existed since the kanban, the button had not — and every gate was green.
+# This step presses the buttons. It SKIPS (loudly) when Playwright or the
+# server is unavailable; a skip is "not checked", never "checked and fine".
+step "board e2e (browser)" node --test tests/e2e/*.test.mjs
+
+# ── The pipeline, against a written-down answer ──
+#
+# The dispatcher decides whether an irreversible operation gets a human in front
+# of it, and until now the only way to see what it would decide was to run it on a
+# real project with real agents at a real cost per look. So the part of this
+# product that the whole product is for had no check in CI at all.
+#
+# A second, no key, no network. Borrowed from anthropics/oncall-kit — a fixture
+# with an answer key that doubles as the regression test — and extended from the
+# shape this repository already used for archetype detection.
+#
+# It earned its place before it was finished: writing scenario 06 found that both
+# ways of reaching "nothing has checked this stage" printed the same sentence, and
+# that for one of them the sentence named a setting nobody had changed.
+step "pipeline decisions match the key" node tests/pipeline-fixture/run.mjs
+
+# ── The pipeline test suite, blocking (L1–L5) ──
+#
+# `scripts/test-pipeline.sh` existed for months and this file did not call it.
+# Nothing else did either — the only references anywhere were CHANGELOG entries
+# and a permission entry in .claude/settings.local.json. So it was WRITTEN and
+# NOT RUN, the third state the test strategy names, and it had rotted exactly the
+# way an unrun suite does: it asserted 34 agents against a repository that ships
+# 70, a `--platform aider` flag main.ts has never parsed, a `CONVENTIONS.md` no
+# version of this CLI has ever written, and a pytest directory that .gitignore
+# excludes from every clone. Four failures, none of them about the product.
+#
+# It also had a side effect worth naming, because it is why running it was
+# unpleasant enough to stop: an unconditional `pkill -f packages/board/server` in
+# its EXIT trap. Every run — including `--quick`, which never starts a board —
+# killed whatever board the operator had open. It now starts its own on an
+# ephemeral port and kills only the process it started.
+#
+# Bounded, because the L4b phase-task checks drive `bd` and Dolt takes a lock:
+# two clean runs here measured 236s and 739s for identical input. A gate that can
+# hang is worse than one that can fail — it stops a push with no verdict at all.
+# So a timeout, and a timeout REPORTS AS A FAILURE, never as a pass.
+#
+# This is right BECAUSE this is a fail-closed pre-push gate: there is nothing to
+# resume to, so "still running" and "failed" collapse into one blocking answer.
+# Do not copy the collapse into an async runner. Where a long tool call can yield
+# an execution_id and be polled on a later turn, a wait-timeout is an OBSERVATION
+# ("still running"), not a failure, and hard-timeout / cancelled / orphaned are
+# distinct terminal states. Same "three states, not two" rule, seen from the
+# other side — the context, not the rule, decides how the third state is spelled.
+run_bounded() {   # run_bounded <seconds> <command...>
+  local limit="$1"; shift
+  if command -v timeout >/dev/null 2>&1; then
+    timeout --preserve-status "$limit" "$@"; return $?
+  elif command -v gtimeout >/dev/null 2>&1; then
+    gtimeout --preserve-status "$limit" "$@"; return $?
+  fi
+  # Stock macOS has neither. The watchdog TERMs the suite, whose own EXIT trap
+  # then stops the board it started.
+  "$@" & local pid=$!
+  ( sleep "$limit"; kill -TERM "$pid" 2>/dev/null ) & local watch=$!
+  wait "$pid"; local rc=$?
+  kill "$watch" 2>/dev/null; wait "$watch" 2>/dev/null
+  return "$rc"
+}
+
+if [ "$QUICK" -eq 1 ]; then
+  # The fast inner loop gets L1+L2 (~90s). Named as a subset rather than passed
+  # off as the suite: --quick skips the board and the plugin-sync levels.
+  if [ -n "${GREAT_CTO_TEST_PLUGIN_DIR:-}" ]; then
+    step "pipeline suite L1+L2 (--quick)" run_bounded 300 bash scripts/test-pipeline.sh --quick "--plugin-dir=$GREAT_CTO_TEST_PLUGIN_DIR"
+  else
+    step "pipeline suite L1+L2 (--quick)" run_bounded 300 bash scripts/test-pipeline.sh --quick
+  fi
+else
+  if [ -n "${GREAT_CTO_TEST_PLUGIN_DIR:-}" ]; then
+    step "pipeline suite L1-L5" run_bounded 900 bash scripts/test-pipeline.sh "--plugin-dir=$GREAT_CTO_TEST_PLUGIN_DIR"
+  else
+    step "pipeline suite L1-L5" run_bounded 900 bash scripts/test-pipeline.sh
+  fi
+fi
+
+# ── CLI tests + pack (cli-ci + release); the build ran before the unit tests ──
+if [ "$QUICK" -eq 0 ]; then
+  step "cli unit tests" bash -c 'cd packages/cli && node --test tests/*.test.mjs'
+  step "cli pack (release readiness)" bash -c 'cd packages/cli && npm pack >/dev/null'
+fi
+
+# ── Optional heavier e2e ──
+if [ "$E2E" -eq 1 ]; then
+  step "archetype e2e" bash -c 'cd packages/cli && npm run test:e2e'
+fi
+
+printf '\n'
+if [ "$FAIL" -eq 0 ] && [ "$SKIP_TOTAL" -eq 0 ]; then
+  printf '\033[42;30m CI-LOCAL: ALL GATES GREEN \033[0m\n'
+  exit 0
+elif [ "$FAIL" -eq 0 ]; then
+  # Exit 0 on purpose: a skip is not a failure, and cd-local keys on the exit code.
+  # It is not a pass either, so it does not get the banner that means one.
+  printf '\033[43;30m CI-LOCAL: GREEN, %s TEST(S) SKIPPED — NOT CHECKED \033[0m\n' "$SKIP_TOTAL"
+  printf '%b' "$SKIP_LINES"
+  exit 0
+else
+  printf '\033[41;97m CI-LOCAL: FAILURES ABOVE \033[0m\n'
+  exit 1
+fi

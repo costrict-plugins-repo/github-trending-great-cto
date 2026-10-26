@@ -1,0 +1,515 @@
+#!/usr/bin/env node
+/**
+ * pipeline-position — the pull view over the state pipeline-dispatcher.mjs
+ * pushes.
+ *
+ * Why this exists
+ * ---------------
+ * `pipeline-dispatcher.mjs` computes "what runs next" but only as a
+ * PostToolUse hook, the instant a subagent finishes. There is no way to
+ * *ask* "where are we?" at an arbitrary moment — after a compaction, at
+ * session start, or when a run stalled hours ago. This module answers that,
+ * from the exact same state: `shared/pipeline.toml`, the verdict logs, and
+ * the project's active gates.
+ *
+ * It never disagrees with the dispatcher's directive because it never
+ * re-derives the transition decision — `pipelinePosition()` delegates the
+ * blocked / gate / next / join-wait / done question to the dispatcher's own
+ * exported `decideNext`, and only translates its `kind` into a position
+ * report (ARCH-pipeline-position.md, D1; ADR-010).
+ *
+ * Two things this lib does differently from the dispatcher on purpose:
+ *
+ *  1. It reads EVERY known agent's latest verdict regardless of age, and
+ *     labels each fresh/stale, instead of reusing the dispatcher's 30-min
+ *     `latestVerdict` filter. A 3-day-old `architect` verdict with nothing
+ *     after it is the true position ("stalled at architect for 3 days") —
+ *     hiding it would answer "nothing is happening" (D2).
+ *
+ *  2. It reads the agent identity from the verdict LINE, not the log
+ *     filename. A real `.great_cto/verdicts/` holds `2026-06-27.log`
+ *     carrying a `project-auditor` verdict and an empty `senior-dev.log`;
+ *     trusting the filename would treat a date as an agent and mask the
+ *     stage that actually ran (mirrors `newestStage()` in
+ *     `scripts/hooks/pipeline-stall-guard.mjs`).
+ *
+ * Read-only: no writes, no spawns, no network (ARCH Safeguards S2). It only
+ * reads `shared/pipeline.toml`, `<dir>/verdicts/*.log`, and `<dir>/PROJECT.md`.
+ *
+ * I/O:
+ *   node scripts/lib/pipeline-position.mjs [--json] [--dir <projdir>] [--exit-code]
+ *   default: human table + one-line summary, exit 0.
+ *   --json: the structured object documented below, exit 0.
+ *   --dir: project dir for verdicts/ and PROJECT.md (default .great_cto).
+ *   --exit-code: exit 2 when position === 'blocked', else 0 (off by default —
+ *     this tool stays purely informational unless asked to gate a script).
+ */
+
+import { readFileSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  parsePipelineToml, parseVerdictLine, normalizeAgent, decideNext, FRESH_MS,
+} from '../hooks/pipeline-dispatcher.mjs';
+import { gatesForApprovalLevel, levelFromProjectMd } from './approval-level.mjs';
+import { nativeRuntimePolicy } from './runtime-gate-policy.mjs';
+import { readGateBeads, gateStates as readGateStates } from './gate-state.mjs';
+
+// Any verdict of BLOCKED / FAIL / REJECTED halts the chain at that stage —
+// documented in shared/pipeline.toml's own header comment and pinned by
+// tests/hooks/pipeline-dispatcher.test.mjs. Not exported from the dispatcher
+// today (only `FRESH_MS` is, per this task's scope), so this is a small,
+// stable, tested-for-parity copy used for DISPLAY (stage status, pending join
+// partners) — decideNext remains the sole authority on `kind` (S3).
+const BLOCKED_TOKENS = new Set(['BLOCKED', 'FAIL', 'FAILED', 'REJECTED']);
+
+// decideNext's own fallback rule for an unmapped "*-reviewer" agent (see
+// "unmapped *-reviewer falls back to sign-off → senior-dev rule" in
+// tests/hooks/pipeline-dispatcher.test.mjs). Mirrored here only to read
+// `.next` for the `next` display field when `transitions` has no entry for
+// the agent; decideNext applies the identical fallback internally for `kind`,
+// so the two cannot disagree (pinned by the S3 tests in this module's suite).
+const REVIEWER_FALLBACK_RULE = { on: ['APPROVED', 'SIGNED-OFF', 'DONE'], next: ['senior-dev'] };
+
+/**
+ * Which of a rule's declared gate(s) are active at this project's approval
+ * level. Mirrors decideNext's own gate-name matching (gate: prefix optional,
+ * `activeGates == null` means "honour every declared gate") — the same
+ * public contract `gateApplies()` in approval-level.mjs exposes for a single
+ * gate; this is the array form over data already computed by the caller.
+ */
+function activeGatesOf(gateField, activeGates) {
+  const list = Array.isArray(gateField) ? gateField : gateField ? [gateField] : [];
+  return list
+    .filter((g) => {
+      if (!activeGates) return true;
+      const bare = String(g).replace(/^gate:/, '');
+      return activeGates.includes(bare) || activeGates.includes(g);
+    })
+    .map((g) => String(g).replace(/^gate:/, ''));
+}
+
+/** Join partners not yet satisfied — mirrors decideNext's own pendingJoin filter. */
+function pendingJoinPartners(join, verdicts) {
+  return (join || []).filter((j) => {
+    const v = verdicts[j];
+    return !v || BLOCKED_TOKENS.has(v.verdict);
+  });
+}
+
+/**
+ * Read every known agent's latest verdict from a verdicts directory,
+ * regardless of age (D2 — this lib shows stale, it does not hide it).
+ *
+ * An agent is "known" if it's a key in `transitions`, or its name (from the
+ * LINE, not the filename) ends in "-reviewer" — matching decideNext's own
+ * fallback so a reviewer's verdict is never treated as a stray log.
+ *
+ * @param {string} dir - path to the verdicts directory
+ * @param {{transitions?: object, now?: number, freshMs?: number}} opts
+ * @returns {Object<string, {agent,verdict,ts,ageMs,fresh,canonical,hasCost}>}
+ */
+export function readAllVerdicts(dir, { transitions = {}, now = Date.now(), freshMs = FRESH_MS } = {}) {
+  const out = {};
+  let files;
+  try { files = readdirSync(dir).filter((f) => f.endsWith('.log')); } catch { return out; }
+
+  for (const f of files) {
+    let body;
+    try { body = readFileSync(join(dir, f), 'utf8').trim(); } catch { continue; }
+    if (!body) continue; // e.g. an empty senior-dev.log — nothing recorded yet
+
+    const lastLine = body.split('\n').pop();
+    const parsed = parseVerdictLine(lastLine);
+    if (!parsed) continue;
+
+    // Agent identity comes from the LINE, not the filename.
+    const agent = normalizeAgent(parsed.agent || f.replace(/\.log$/, ''));
+    if (!agent) continue;
+
+    const known = Boolean(transitions[agent]) || agent.endsWith('-reviewer');
+    if (!known) continue; // stray log (e.g. a date-named file) — ignored
+
+    let mtimeMs = now;
+    try { mtimeMs = statSync(join(dir, f)).mtimeMs; } catch { /* fall back to now */ }
+
+    const parsedTsMs = parsed.ts && !Number.isNaN(Date.parse(parsed.ts)) ? Date.parse(parsed.ts) : null;
+    const effectiveMs = parsedTsMs ?? mtimeMs;
+    const ageMs = now - effectiveMs;
+
+    const entry = {
+      agent,
+      verdict: parsed.verdict,
+      ts: new Date(effectiveMs).toISOString(),
+      ageMs,
+      fresh: ageMs <= freshMs,
+      canonical: parsed.canonical,
+      hasCost: parsed.hasCost,
+    };
+
+    // Two files resolving to the same agent (rare) — keep the newer event.
+    if (!out[agent] || effectiveMs > Date.parse(out[agent].ts)) out[agent] = entry;
+  }
+  return out;
+}
+
+/**
+ * The pipeline's stage order: a BFS from `product-owner` (the one agent
+ * never named in another agent's `next`) following `next` edges — this is
+ * the main chain. Off-chain contract-stage specialists (ai-prompt-architect,
+ * db-migration-reviewer, design-advisor, performance-engineer,
+ * growth-engineer — also never named in anyone's `next`, but not part of the
+ * main chain) are appended only when they have a recorded verdict, per
+ * ARCH-pipeline-position.md.
+ *
+ * @param {object} transitions
+ * @param {object} [verdicts] - keyed by agent; presence gates off-chain nodes
+ * @returns {string[]} agent names in pipeline order
+ */
+export function pipelineOrder(transitions, verdicts = {}) {
+  const agents = Object.keys(transitions);
+  const referenced = new Set();
+  for (const a of agents) for (const n of (transitions[a]?.next || [])) referenced.add(n);
+  const roots = agents.filter((a) => !referenced.has(a));
+  const mainRoots = roots.includes('product-owner') ? ['product-owner'] : roots;
+  const offChainRoots = roots.filter((r) => !mainRoots.includes(r));
+
+  const order = [];
+  const visited = new Set();
+  const walk = (start, { onlyIfVerdict = false } = {}) => {
+    const queue = [...start];
+    while (queue.length) {
+      const a = queue.shift();
+      if (visited.has(a)) continue;
+      if (onlyIfVerdict && !verdicts[a]) continue;
+      visited.add(a);
+      order.push(a);
+      for (const n of (transitions[a]?.next || [])) queue.push(n);
+    }
+  };
+  walk(mainRoots);
+  for (const r of offChainRoots) walk([r], { onlyIfVerdict: true });
+  return order;
+}
+
+/**
+ * The pure position computation (ARCH-pipeline-position.md algorithm,
+ * steps 4-8). No IO — `transitions`/`verdicts`/`activeGates` are supplied by
+ * the caller (the CLI's `main()` below does the reading).
+ *
+ * @param {{transitions?: object, verdicts?: object, activeGates?: string[]|null, now?: number}} args
+ * @returns {{
+ *   cursor: {agent,verdict,ts,ageMs,fresh,canonical,hasCost} | null,
+ *   position: 'blocked'|'awaiting-gate'|'ready-to-dispatch'|'join-wait'|'complete'|'no-verdict'|'idle',
+ *   next: string[],
+ *   gates: string[],
+ *   notified: string[],  // gates that STOOD DOWN rather than blocking, because the
+ *                        // agent conclusively passed its holdout (phase 5). Named
+ *                        // rather than omitted: a decision that was not asked for
+ *                        // still has to be visible, or it is indistinguishable
+ *                        // from a gate nobody configured. A gate appears here only
+ *                        // once its stand-down has been durably recorded.
+ *   standDown: {         // GATE-R3 — which of three things happened, never two:
+ *     state: 'recorded'        //   the gate stood down and there is a record of it
+ *          | 'unrecordable'    //   it would have, the record failed, so it waits
+ *          | 'not-applicable', //   no gate on this edge was tiered
+ *     why: string,
+ *     gates: string[],
+ *   },
+ *   stages: Array<{agent,status,verdict,ts,ageMs,fresh}>,
+ *   summary: string,
+ * }}
+ */
+/**
+ * Approval state for the gates on this edge; unreadable → unapproved → waits.
+ *
+ * `readGates` is injectable because reading approval means shelling out to the
+ * Beads store, and a unit test that reaches the developer's live store passes or
+ * fails on whichever gates happen to be open that day. Three tests in this
+ * module's own suite did exactly that the moment gate reading landed.
+ */
+function gateStatesFor(rule, verdictTs, readGates) {
+  const gates = Array.isArray(rule?.gate) ? rule.gate : rule?.gate ? [rule.gate] : [];
+  if (!gates.length) return null;
+  let beads = [];
+  // A store that throws must read as unapproved, not crash the view — the whole
+  // point of this direction is that every way of failing waits.
+  try { beads = readGates() || []; } catch { beads = []; }
+  return readGateStates(gates, beads, { verdictTs: verdictTs ?? null });
+}
+
+/**
+ * Attempt the stand-down record, and never let it throw into the position.
+ *
+ * A recorder that throws must read as "not recorded" — which restores the gate —
+ * rather than crashing the view. Every way of failing here has to end with the
+ * human still being asked.
+ */
+function safeRecord(recordStandDown, { gates, agent, tier, evidence, at }) {
+  try {
+    // One record per gate. A single line covering two gates would make removing
+    // one of them later a rewrite of history rather than an append.
+    let last = { recorded: false, why: 'no gates on this edge to record' };
+    for (const g of gates) {
+      last = recordStandDown({ gate: g, agent, tier, evidence, at }) || { recorded: false, why: 'recorder returned nothing' };
+      if (!last.recorded) return last;
+    }
+    return last;
+  } catch (e) {
+    return { recorded: false, why: `recorder threw: ${String(e?.message || e)}` };
+  }
+}
+
+export function pipelinePosition({ transitions = {}, verdicts = {}, activeGates = null, now = Date.now(), readGates = readGateBeads, notifyOnly = null, recordStandDown = null, tierName = 'notify', tierWhy = '' } = {}) {
+  // Cursor = the verdict entry with the newest event timestamp (D2).
+  let cursor = null;
+  for (const agent of Object.keys(verdicts)) {
+    const v = verdicts[agent];
+    if (!cursor || v.ts > cursor.ts) cursor = v;
+  }
+
+  let position;
+  let next = [];
+  let gates = [];
+  // Gates that stood down rather than blocking — named so a reader can see which
+  // decision was not asked for, and why. Only gates whose stand-down was RECORDED
+  // appear here; one that could not be recorded did not stand down.
+  let notified = [];
+  // GATE-R3: three states, because two cannot carry the difference between a
+  // gate that stood down, a gate that would have but could not be recorded, and
+  // a gate that was never tiered at all.
+  let standDown = { state: 'not-applicable', why: 'no gate on this edge stood down', gates: [] };
+  let summary;
+
+  if (!cursor) {
+    position = 'idle';
+    summary = 'Position: idle — no verdicts recorded yet.';
+  } else {
+    const rule = transitions[cursor.agent]
+      || (cursor.agent.endsWith('-reviewer') ? REVIEWER_FALLBACK_RULE : null);
+
+    const joinVerdicts = {};
+    for (const j of (rule?.join || [])) joinVerdicts[j] = verdicts[j] || null;
+
+    // The sole source of transition truth (S3) — this lib never re-decides
+    // blocked/gate/next/join-wait/done itself.
+    const decision = decideNext({
+      agent: cursor.agent,
+      transitions,
+      verdict: { agent: cursor.agent, verdict: cursor.verdict, canonical: cursor.canonical, hasCost: cursor.hasCost, ts: cursor.ts },
+      joinVerdicts,
+      activeGates,
+      // Whether a gate is actually approved, not merely declared. Without this
+      // the view reports `awaiting-gate` after the CTO has closed the bead —
+      // which is what it did on the run this was found on.
+      gateStates: gateStatesFor(rule, cursor.ts, readGates),
+    });
+    // decideNext returns null for an unrecognized verdict token (not blocked,
+    // not in the rule's `on` list) — that is functionally "nothing to act
+    // on", which is what `no-verdict` means from this lib's perspective too.
+    const kind = decision?.kind ?? 'no-verdict';
+
+    switch (kind) {
+      case 'blocked':
+        position = 'blocked';
+        summary = `Position: blocked — ${cursor.agent} returned ${cursor.verdict}.`;
+        break;
+      case 'gate':
+        next = rule?.next || [];
+        gates = activeGatesOf(rule?.gate, activeGates);
+        // Phase 5: a gate whose agent has earned it stands down to notify-only.
+        //
+        // The gate is not deleted and not hidden — it is ANNOUNCED. The entry
+        // still reaches the board's inbox, the human may still intervene; what
+        // changes is that the pipeline no longer waits to be told to continue.
+        // A gate that silently vanished would be indistinguishable from a gate
+        // nobody configured, which is the defect this repository spent the week
+        // removing.
+        if (notifyOnly?.has?.(cursor.agent)) {
+          // GATE-R1/R2: the stand-down is recorded BEFORE the pipeline is told it
+          // may proceed, and if it cannot be recorded the gate does not stand
+          // down at all.
+          //
+          // Six days of this feature had no such guarantee. The entry was meant
+          // to reach the board's inbox, and if that write failed the stage
+          // proceeded anyway — leaving a gate that stood down and a gate that
+          // stood down and told nobody indistinguishable. An unrecordable
+          // stand-down is a stand-down nobody can audit.
+          //
+          // The recorder is injected because this module is forbidden to write
+          // (ARCH S2, with a test asserting no fs-write). No recorder therefore
+          // means no stand-down — the default fails closed rather than assuming
+          // somebody else wrote it down.
+          const wanted = gates.map((g) => `gate:${g}`);
+          const evidence = tierWhy || `${cursor.agent} is in the project's notify-only set`;
+          const attempt = recordStandDown
+            ? safeRecord(recordStandDown, { gates, agent: cursor.agent, tier: tierName, evidence, at: now })
+            : { recorded: false, why: 'no stand-down recorder supplied — nothing would have witnessed this' };
+
+          if (attempt.recorded) {
+            position = 'ready-to-dispatch';
+            notified = wanted;
+            standDown = { state: 'recorded', why: attempt.why, gates: wanted };
+            summary = `Position: ready-to-dispatch — ${cursor.agent} succeeded; `
+              + `${next.join(', ')} proceeding. ${wanted.join(' + ')} is notify-only (${tierName}): `
+              + `${evidence}. Recorded, so this announces rather than waits.`;
+            break;
+          }
+
+          position = 'awaiting-gate';
+          standDown = { state: 'unrecordable', why: attempt.why, gates: wanted };
+          summary = `Position: awaiting-gate — ${cursor.agent} succeeded, and ${wanted.join(' + ')} `
+            + `would have stood down, but the record could not be written (${attempt.why}). `
+            + `Fail-closed: the gate waits, because a stand-down nobody can audit is not one.`;
+          break;
+        }
+        position = 'awaiting-gate';
+        summary = `Position: awaiting-gate — ${cursor.agent} succeeded; `
+          + `${next.join(', ')} behind ${gates.map((g) => `gate:${g}`).join(' + ')}.`;
+        break;
+      case 'next':
+        position = 'ready-to-dispatch';
+        next = rule?.next || [];
+        summary = `Position: ready-to-dispatch — ${cursor.agent} succeeded; spawn ${next.join(', ')}.`;
+        break;
+      case 'join-wait':
+        position = 'join-wait';
+        next = pendingJoinPartners(rule?.join, verdicts);
+        gates = activeGatesOf(rule?.gate, activeGates);
+        summary = `Position: join-wait — ${cursor.agent} succeeded; waiting on ${next.join(', ')}.`;
+        break;
+      case 'done':
+        position = 'complete';
+        summary = `Position: complete — ${cursor.agent} succeeded; end of chain.`;
+        break;
+      case 'no-verdict':
+      default:
+        position = 'no-verdict';
+        summary = `Position: no-verdict — ${cursor.agent}'s recorded verdict ("${cursor.verdict}") is not actionable.`;
+        break;
+    }
+
+    // Surfaced beyond the ARCH's minimal cursor shape on purpose: a JSON
+    // verdict line reads fine but silently zeroes /api/cost and stalls the
+    // pipeline exactly like a missing verdict — the pull-view exists to
+    // reveal that, not just echo decideNext's embedded prose note.
+    if (cursor.canonical === false) {
+      summary += ` NOTE: ${cursor.agent} wrote a non-canonical verdict line — cost tracking may be broken for this stage.`;
+    }
+  }
+
+  const order = pipelineOrder(transitions, verdicts);
+  const stages = order.map((agent) => {
+    const v = verdicts[agent] || null;
+    let status;
+    if (v && BLOCKED_TOKENS.has(v.verdict)) status = 'blocked';
+    else if (cursor && agent === cursor.agent) status = 'current';
+    else if (next.includes(agent)) status = 'next';
+    else if (v) status = 'done';
+    else status = 'pending';
+    return {
+      agent, status,
+      verdict: v?.verdict ?? null,
+      ts: v?.ts ?? null,
+      ageMs: v?.ageMs ?? null,
+      fresh: v?.fresh ?? false,
+    };
+  });
+
+  return { cursor, position, next, gates, notified, standDown, stages, summary };
+}
+
+// ── CLI ──────────────────────────────────────────────────────────────────
+
+const STAGE_ICON = { current: '▶', done: '✓', blocked: '✗', next: '→', pending: ' ' };
+
+function renderHuman(result, { label, level, source = null }) {
+  // Attribution first. Run from a home directory that happens to hold
+  // `shared/pipeline.toml` and `.great_cto/verdicts/`, this tool read eighteen
+  // other projects' logs and reported a position from a five-week-old verdict.
+  // It was not wrong about what it read — it never said what that was.
+  const lines = [`Pipeline: ${label}   (approval-level: ${level})`];
+  if (source) lines.push(`  reading: ${source.project}`, `  map:     ${source.map}`);
+  lines.push('');
+  for (const s of result.stages) {
+    const icon = STAGE_ICON[s.status] ?? ' ';
+    const verdictCol = s.verdict ?? '—';
+    const ageCol = s.ts ? `${Math.round(s.ageMs / 60000)}m ago${s.fresh ? '' : ' (stale)'}` : 'pending';
+    const marker = s.status === 'current' ? '  ← current' : '';
+    lines.push(`  ${icon} ${s.agent.padEnd(20)} ${String(verdictCol).padEnd(12)} ${ageCol}${marker}`);
+  }
+  lines.push('', result.summary);
+  return lines.join('\n');
+}
+
+function readProjectLabel(projDir) {
+  try {
+    const text = readFileSync(join(projDir, 'PROJECT.md'), 'utf8');
+    const m = text.match(/^#\s+(.+)$/m);
+    if (m) return m[1].trim();
+  } catch { /* fall through */ }
+  return 'project';
+}
+
+function main() {
+  const argv = process.argv.slice(2);
+  const asJson = argv.includes('--json');
+  const exitCodeMode = argv.includes('--exit-code');
+  const dirFlagIdx = argv.indexOf('--dir');
+  const projDir = dirFlagIdx > -1 ? argv[dirFlagIdx + 1] : (process.env.GREAT_CTO_DIR || '.great_cto');
+
+  const pipelinePath = join('shared', 'pipeline.toml');
+  if (!existsSync(pipelinePath)) {
+    process.stderr.write(`pipeline-position: ${pipelinePath} not found — not a great_cto project.\n`);
+    process.exit(1);
+  }
+
+  let transitions;
+  try {
+    transitions = parsePipelineToml(readFileSync(pipelinePath, 'utf8'));
+  } catch (e) {
+    process.stderr.write(`pipeline-position: failed to read ${pipelinePath}: ${e.message}\n`);
+    process.exit(1);
+  }
+
+  // Which project this answer is about, resolved to absolute paths.
+  //
+  // Run from a home directory that happens to hold `shared/pipeline.toml` and
+  // `.great_cto/verdicts/` — both of which the bootstrap can leave there — this
+  // tool read eighteen other projects' verdict logs and confidently reported a
+  // position from a five-week-old verdict. It was not wrong about what it read;
+  // it just never said what that was. An unattributed answer about "the
+  // pipeline" is the same defect this whole module exists to fix, one level up.
+  const source = { map: resolve(pipelinePath), project: resolve(projDir) };
+
+  const now = Date.now();
+  const verdicts = readAllVerdicts(join(projDir, 'verdicts'), { transitions, now });
+
+  let level = 'gates-only';
+  let activeGates = null;
+  let adaptive = null;
+  try {
+    const pm = readFileSync(join(projDir, 'PROJECT.md'), 'utf8');
+    const archetype = (pm.match(/^archetype:\s*(\S+)/m) || [])[1];
+    level = levelFromProjectMd(pm);
+    activeGates = gatesForApprovalLevel(level, { archetype });
+    adaptive = nativeRuntimePolicy({ root: resolve(projDir, '..'), level, archetype, briefReadable: level !== 'ship-only' });
+    if (adaptive) activeGates = adaptive.activeGates;
+  } catch { /* no PROJECT.md — honour every declared gate, matches dispatcher's own fallback */ }
+
+  const result = pipelinePosition({ transitions, verdicts, activeGates, now });
+
+  if (asJson) {
+    const output = { ...result, source };
+    if (adaptive) output.adaptive = adaptive;
+    process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+  } else {
+    process.stdout.write(renderHuman(result, { label: readProjectLabel(projDir), level, source }) + '\n');
+  }
+
+  if (exitCodeMode && result.position === 'blocked') process.exit(2);
+  process.exit(0);
+}
+
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) main();

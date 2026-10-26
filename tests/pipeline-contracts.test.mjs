@@ -1,0 +1,946 @@
+// E2E test — pipeline contracts (closes G5, X7, X8, X2, X1).
+//
+// Five contracts that the pipeline depends on and that prior tests didn't
+// cover. All zero-LLM-cost. Runs in <5 seconds total.
+//
+//   G5: gate-count per (archetype × project_size) matches typed map
+//   X7: verdict-log line + file-block regex match the parsers in board
+//   X8: synthetic full-pipeline cost stays under archetype budget
+//   X2: continuous-learner lessons.md extraction format
+//   X1: senior-dev TDD-cycle smoke (RED → GREEN check on a tiny stub)
+//
+// Run: node --test tests/pipeline-contracts.test.mjs
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, appendFileSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
+import { spawn, spawnSync } from 'node:child_process';
+import { startBoard } from './helpers/board-start.mjs';
+import { reap } from './helpers/reap.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(__dirname, '..');
+const CLI_ENTRY = join(REPO_ROOT, 'packages', 'cli', 'index.mjs');
+
+test('canonical root fixture scheduling is bounded without dropping test inventories', () => {
+  const script = readFileSync(join(REPO_ROOT, 'scripts/ci-local.sh'), 'utf8');
+  assert.match(script, /step "root \+ hooks \+ board tests" node --test --test-concurrency="\$GATE_TEST_CONCURRENCY" tests\/\*\.test\.mjs tests\/hooks\/\*\.test\.mjs tests\/helpers\/\*\.test\.mjs packages\/board\/\*\.test\.mjs/);
+});
+
+// ── G5: typed-map gate-count integrity ─────────────────────────────────────
+
+test('G5 gate-count: typed map produces expected gate counts per archetype × size', async () => {
+  const m = await import('../packages/cli/dist/archetypes.js');
+
+  // Per archetype + size, what should gatesFor() return?
+  // This is a snapshot test: if you change GATES_BY_ARCHETYPE intentionally,
+  // update this table. If you change the SIZE filtering logic, this catches it.
+  const expectations = [
+    // archetype       size       expected gate count   key gates
+    { a: 'web-service',  s: 'nano',    n: 1,  must: ['plan'] },
+    { a: 'web-service',  s: 'small',   n: 2,  must: ['plan', 'ship'] },
+    { a: 'web-service',  s: 'medium',  n: 3,  must: ['plan', 'qa', 'ship'] },
+    { a: 'fintech',      s: 'medium',  n: 5,  must: ['plan', 'qa', 'security', 'ship', 'compliance'] },
+    { a: 'fintech',      s: 'enterprise', n: 5, must: ['compliance'] },
+    { a: 'healthcare',   s: 'medium',  n: 5,  must: ['compliance'] },
+    { a: 'web3',         s: 'medium',  n: 5,  must: ['oracle-review'] },
+    { a: 'gov-public',   s: 'medium',  n: 6,  must: ['gov-review', 'compliance'] },
+    { a: 'insurance',    s: 'medium',  n: 6,  must: ['insurance-review'] },
+    { a: 'edtech',       s: 'medium',  n: 6,  must: ['edtech-review'] },
+    { a: 'mlops',        s: 'medium',  n: 5,  must: ['cost'] },
+    { a: 'ai-system',    s: 'medium',  n: 5,  must: ['cost'] },
+    { a: 'agent-product', s: 'medium', n: 5,  must: ['cost'] },
+    { a: 'greenfield',   s: 'nano',    n: 1,  must: ['plan'] },
+    { a: 'greenfield',   s: 'medium',  n: 1,  must: ['plan'] },
+  ];
+
+  for (const e of expectations) {
+    const gates = m.gatesFor(e.a, e.s);
+    assert.equal(gates.length, e.n,
+      `${e.a} × ${e.s}: expected ${e.n} gates, got ${gates.length}: [${gates.join(', ')}]`);
+    for (const required of e.must) {
+      assert.ok(gates.includes(required),
+        `${e.a} × ${e.s}: must include gate '${required}', got [${gates.join(', ')}]`);
+    }
+  }
+
+  // Reviewer integrity: every archetype maps to at least 1 reviewer (except greenfield)
+  for (const arch of Object.keys(m.REVIEWERS_BY_ARCHETYPE)) {
+    if (arch === 'greenfield') continue;
+    const reviewers = m.reviewersFor(arch);
+    assert.ok(reviewers.length >= 1,
+      `archetype '${arch}' must have at least 1 reviewer`);
+  }
+});
+
+// ── X7: verdict + file-block format schemas ─────────────────────────────────
+
+test('X7 schema: verdict log line parses against readVerdicts contract', () => {
+  // readVerdicts() in packages/board/server.mjs parses lines as:
+  //   <ts> <verdict> <details...> cost=$<USD>
+  // splits on whitespace, parts[1] is verdict, last cost=$X is captured.
+  // Test schema both ways (valid format passes parser; bad formats fail).
+
+  const verdictParser = (line) => {
+    const parts = line.split(' ');
+    const costMatch = line.match(/\bcost=\$?(\d+\.?\d*)\b/i);
+    return {
+      ts: parts[0],
+      verdict: parts[1] || '',
+      cost_usd: costMatch ? parseFloat(costMatch[1]) : null,
+    };
+  };
+
+  const valid = [
+    '2026-05-14T08:47:24Z APPROVED feature=stripe-webhook cost=$0.35',
+    '2026-05-14T08:48:00Z DONE feature=hello-endpoint files=2 cost=$0.42',
+    '2026-05-14T08:49:00Z PASS feature=qa-test reason="all-green" cost=$0.15',
+    '2026-05-14T08:50:00Z BLOCKED feature=foo reason="missing" cost=$0.20',
+  ];
+
+  for (const line of valid) {
+    const p = verdictParser(line);
+    assert.match(p.ts, /^\d{4}-\d{2}-\d{2}T/, `ts shape: ${line}`);
+    assert.match(p.verdict, /^(APPROVED|DONE|PASS|BLOCKED|FAIL)$/,
+      `verdict must be canonical (not '${p.verdict}'): ${line}`);
+    assert.ok(p.cost_usd > 0 && p.cost_usd < 100,
+      `cost must be present + sane: ${line}`);
+  }
+
+  // The pipe-separated form is the gotcha from earlier debugging session —
+  // it parses to verdict='|' which is bug source. Document it:
+  const pipeForm = '2026-05-14T10:00:00Z | architect | APPROVED | feature=x | cost=$0.30';
+  const parsed = verdictParser(pipeForm);
+  assert.equal(parsed.verdict, '|',
+    'documented pitfall: pipe-separated form yields verdict=|. ALWAYS use space-separated canonical form.');
+});
+
+test('X7 schema: file-block regex extracts paths and content correctly', () => {
+  // parseFiles() in tests/openrouter-multi-archetype.mjs uses this regex.
+  // Lock it down so the LLM-driven tests don't silently lose file outputs.
+  const text = `
+Here's the architecture.
+
+<file path="docs/architecture/ARCH-test.md">
+# ARCH
+content line 1
+content line 2
+</file>
+
+<file path="src/handler.js">
+function go() {}
+</file>
+
+VERDICT: DONE reason="ok"
+`;
+  const files = [];
+  const re = /<file path="([^"]+)">([\s\S]*?)<\/file>/g;
+  let m;
+  while ((m = re.exec(text))) files.push({ path: m[1].trim(), content: m[2].trim() });
+
+  assert.equal(files.length, 2, 'should extract 2 files');
+  assert.equal(files[0].path, 'docs/architecture/ARCH-test.md');
+  assert.ok(files[0].content.includes('content line 1'));
+  assert.equal(files[1].path, 'src/handler.js');
+  assert.ok(files[1].content.includes('function go()'));
+});
+
+// ── X8: cost-budget regression ─────────────────────────────────────────────
+
+test('X8 cost-budget: synthetic 8-stage pipeline stays under $1.50', () => {
+  // Hardcoded budget per archetype tier. If a future agent-prompt change
+  // bloats the per-call cost, this test fires before users see surprise bills.
+  // Per-stage cost estimates from skills/cost-model/SKILL.md.
+  const STAGE_COSTS = {
+    architect:        0.06,   // 14k prompt + 1.5k completion @ sonnet
+    pm:               0.03,
+    'senior-dev':     0.04,
+    'code-reviewer':  0.04,
+    'qa-engineer':    0.04,
+    'security-officer': 0.05,
+    devops:           0.04,
+    'l3-support':     0.04,
+  };
+
+  const fullPipelineCost = Object.values(STAGE_COSTS).reduce((a, b) => a + b, 0);
+
+  // Budget per pipeline run — alerts upstream if this creeps up.
+  // 1.5x current cost is the soft ceiling.
+  const BUDGET = 1.50;
+
+  assert.ok(
+    fullPipelineCost < BUDGET,
+    `Full 8-stage pipeline budget exceeded: $${fullPipelineCost.toFixed(2)} > $${BUDGET}. ` +
+    `Either reduce agent prompt sizes or document the cost increase explicitly.`
+  );
+
+  // Average per-stage cost sanity bound
+  const avgStage = fullPipelineCost / Object.keys(STAGE_COSTS).length;
+  assert.ok(
+    avgStage < 0.10,
+    `Average per-stage cost too high: $${avgStage.toFixed(3)}. Likely an over-sized prompt.`
+  );
+
+  // Cheapest stage is plausible (Haiku-class)
+  const minStage = Math.min(...Object.values(STAGE_COSTS));
+  assert.ok(
+    minStage <= 0.05,
+    `Cheapest stage cost $${minStage.toFixed(3)} — no Haiku-tier stages? Check model assignments.`
+  );
+});
+
+// ── X2: continuous-learner lessons.md format ───────────────────────────────
+
+test('X2 lessons.md: continuous-learner output schema is parseable', () => {
+  // The continuous-learner skill writes to .great_cto/lessons.md.
+  // The format must be readable by future agents that look up prior lessons.
+  // Define schema; if format ever drifts, this test catches it.
+
+  // Required fields per lesson entry, from the continuous-learner agent prompt
+  const REQUIRED_FIELDS = ['date', 'context', 'observation', 'pattern'];
+
+  // Valid example (per continuous-learner.md output spec)
+  const validEntry = `
+## 2026-05-14 — stripe webhook idempotency
+
+**Context:** Implementing /webhooks/stripe endpoint for billing module.
+**Observation:** Without idempotency key, Stripe's retry behaviour caused
+duplicate charges during a brief network blip.
+**Pattern:** Always check Idempotency-Key header on payment webhooks
+BEFORE processing the event body. Store seen keys in Redis for 24h.
+**Tags:** #payments #stripe #idempotency #incidents
+`;
+
+  // Schema check
+  const lower = validEntry.toLowerCase();
+  for (const field of REQUIRED_FIELDS) {
+    // Header (## YYYY-MM-DD ...) provides date; rest are inline labels
+    if (field === 'date') {
+      assert.match(validEntry, /##\s+\d{4}-\d{2}-\d{2}/,
+        'lesson must start with ## YYYY-MM-DD header');
+    } else {
+      assert.ok(lower.includes(`**${field}:**`) || lower.includes(`*${field}:*`),
+        `lesson must include **${field}:** label`);
+    }
+  }
+
+  // Tag schema — at least one #tag per lesson for searchability
+  assert.match(validEntry, /#\w+/, 'lessons must include at least one #tag');
+});
+
+// ── X1: senior-dev TDD-cycle smoke ──────────────────────────────────────────
+
+// ── BH-1: verdict='|' parsing regression ────────────────────────────────────
+
+test('BH-1: pipe-separated verdict lines parse to real verdict (not "|")', async () => {
+  // Pre-2026-05-14 the readVerdicts() parser took parts[1] from split(' ')
+  // for ALL verdict log formats. Pipe-form lines like:
+  //   "2026-05-09T13:09:58Z | architect | APPROVED | feature=x | cost=$0.30"
+  // produced verdict='|' (the second whitespace token), breaking the
+  // pipeline-status display for any agent writing in pipe form.
+  //
+  // Bug found 2026-05-14 while probing production board on great_cto repo
+  // itself — 3 of 8 stages showed verdict='|'. Fixed in same commit.
+  //
+  // This test seeds both formats and asserts the parser handles both.
+
+  const home = mkdtempSync(join(tmpdir(), 'bh1-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh1-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+
+    const today = new Date().toISOString().slice(0, 10);
+    // Pipe form — common from continuous-learner and review-style agents
+    writeFileSync(join(project, '.great_cto', 'verdicts', 'pm.log'),
+      `${today}T10:00:00Z | pm | PLAN_READY | feature=test | cost=$0.30\n`);
+    // Space form — canonical
+    writeFileSync(join(project, '.great_cto', 'verdicts', 'architect.log'),
+      `${today}T11:00:00Z APPROVED feature=test cost=$0.40\n`);
+
+    // Start board against this seeded state
+    // startBoard, not a hand-rolled wait: the loop this replaces `break`s on
+    // success but on TIMEOUT simply fell out and let the test carry on against
+    // a board that never came up — so the real failure surfaced later as an
+    // unrelated assertion. That is the BH-14 flake: not a taken port, a wait
+    // that could not say it had failed.
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      const r = await fetch(`http://127.0.0.1:${port}/api/pipeline`);
+      const stages = await r.json();
+      const pm = stages.find(s => s.stage === 'pm');
+      const arch = stages.find(s => s.stage === 'architect');
+
+      assert.ok(pm, 'pm stage missing from /api/pipeline');
+      assert.notEqual(pm.verdict, '|',
+        `pm pipe-form verdict should parse as "PLAN_READY", got '${pm.verdict}' (parser regression)`);
+      assert.equal(pm.verdict, 'PLAN_READY',
+        `pm pipe-form parsed wrong: got '${pm.verdict}', want 'PLAN_READY'`);
+
+      assert.equal(arch.verdict, 'APPROVED',
+        `architect space-form parsed wrong: got '${arch.verdict}', want 'APPROVED'`);
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    // maxRetries: the board is still flushing async writes (bd cache, session
+    // log) when teardown starts, and a file landing mid-rmdir is ENOTEMPTY.
+    // Failed under full-suite load only — in isolation the flush wins the race.
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-2: savings_x distinguishes unknown from zero ─────────────────────────
+
+test('BH-2: savings_x is null (not 0) when human estimate is missing', async () => {
+  // Pre-2026-05-14 /api/cost returned savings_x=0 in two distinct cases:
+  //   (a) total_llm > 0 but total_human == 0 (no human estimate)
+  //   (b) total_llm > 0 and total_human is genuinely 0 (LLM cost only)
+  // Conflating these on the dashboard misleads users — looks like "no
+  // savings" when it should be "n/a, no human estimate".
+  //
+  // Now: savings_x is null when EITHER total is zero — UI can show "—".
+
+  const home = mkdtempSync(join(tmpdir(), 'bh2-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh2-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+
+    const today = new Date().toISOString().slice(0, 10);
+    writeFileSync(join(project, '.great_cto', 'verdicts', 'architect.log'),
+      `${today}T10:00:00Z APPROVED feature=test cost=$0.42\n`);
+    // No plans, no human estimate
+
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      const r = await fetch(`http://127.0.0.1:${port}/api/cost?days=1`);
+      const data = await r.json();
+
+      assert.ok(data.total_llm > 0, 'precondition: LLM cost should be > 0');
+      assert.equal(data.total_human, 0, 'precondition: no human estimate');
+      assert.equal(data.savings_x, null,
+        `savings_x should be null when total_human=0 (was: ${data.savings_x}). ` +
+        `null means "no estimate", 0 would mean "estimated zero savings" — distinct.`);
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-3: legacy agent bucket separation ────────────────────────────────────
+
+test('BH-3: non-canonical agents go to legacy_agent_runs, not the main agent map', async () => {
+  // Previously: non-canonical verdict files (backend.log, frontend.log,
+  // docs.log, ops.log, qa.log, security.log) were bucketed under
+  // agents['unknown']. That became the TOP entry in /api/metrics.agents,
+  // hiding real specialist activity. Now they go into a separate
+  // legacy_agent_runs field, surfaced honestly.
+
+  const home = mkdtempSync(join(tmpdir(), 'bh3-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh3-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+
+    const today = new Date().toISOString().slice(0, 10);
+    // 1 canonical agent verdict
+    writeFileSync(join(project, '.great_cto', 'verdicts', 'architect.log'),
+      `${today}T10:00:00Z APPROVED feature=test cost=$0.42\n`);
+    // 2 NON-canonical (legacy) verdicts
+    writeFileSync(join(project, '.great_cto', 'verdicts', 'backend.log'),
+      `${today}T10:00:00Z DONE feature=test cost=$0.10\n`);
+    writeFileSync(join(project, '.great_cto', 'verdicts', 'frontend.log'),
+      `${today}T11:00:00Z DONE feature=test cost=$0.10\n`);
+
+    // startBoard, not a hand-rolled wait: the loop this replaces `break`s on
+    // success but on TIMEOUT simply fell out and let the test carry on against
+    // a board that never came up — so the real failure surfaced later as an
+    // unrelated assertion. That is the BH-14 flake: not a taken port, a wait
+    // that could not say it had failed.
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      const r = await fetch(`http://127.0.0.1:${port}/api/metrics`);
+      const data = await r.json();
+      const agents = data.agents || {};
+      const legacy = data.legacy_agent_runs || {};
+
+      // Architect should appear in canonical agents
+      // (only if architect is in ~/.claude/agents/great_cto-* — may not be
+      // in test home, so this is conditional)
+      // The KEY contract: 'unknown' should NOT appear as an entry in agents
+      assert.ok(!('unknown' in agents),
+        `'unknown' key should NOT appear in canonical agents map. ` +
+        `Got keys: ${Object.keys(agents).join(', ')}`);
+
+      // legacy_agent_count must be defined (even if 0)
+      assert.equal(typeof data.legacy_agent_count, 'number',
+        'legacy_agent_count must be a number');
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-4: query-param clamping (days, limit) ───────────────────────────────
+
+test('BH-4: /api/cost?days clamps malformed input to safe defaults', async () => {
+  // Pre-fix: ?days=999 returned 1000 buckets (memory bloat);
+  //          ?days=abc returned 0 buckets + daily_avg=null;
+  //          ?days=-5 returned 0 buckets silently.
+  // Post-fix: clamp to [1, 365]; non-numeric → default 30.
+
+  const home = mkdtempSync(join(tmpdir(), 'bh4a-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh4a-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      // ?days=999 → clamped to 365 (366 buckets = 365 + today)
+      const big = await (await fetch(`http://127.0.0.1:${port}/api/cost?days=999`)).json();
+      assert.ok(big.series.length <= 366,
+        `?days=999 should clamp series to ≤366, got ${big.series.length}`);
+
+      // ?days=abc → fallback to default 30 → 31 buckets
+      const bad = await (await fetch(`http://127.0.0.1:${port}/api/cost?days=abc`)).json();
+      assert.equal(bad.series.length, 31,
+        `?days=abc should fallback to 30 → 31 buckets, got ${bad.series.length}`);
+
+      // ?days=-5 → fallback to default 30 → 31 buckets
+      const neg = await (await fetch(`http://127.0.0.1:${port}/api/cost?days=-5`)).json();
+      assert.equal(neg.series.length, 31,
+        `?days=-5 should fallback to 30 → 31 buckets, got ${neg.series.length}`);
+
+      // daily_avg should always be a finite number (no null/NaN)
+      for (const data of [big, bad, neg]) {
+        assert.ok(Number.isFinite(data.daily_avg),
+          `daily_avg must be a finite number, got ${data.daily_avg}`);
+      }
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-6 / BH-7 / BH-8: POST /api/tasks input validation ──────────────────
+
+test('BH-6/7/8: POST /api/tasks rejects malformed input with 400 (not 500)', async (t) => {
+  // Bug-hunt 2026-05-15 found 3 ways to crash POST /api/tasks:
+  //   BH-6: invalid JSON body → 500 (parser exception bubbled up)
+  //   BH-7: 10K-char title → 500 (bd argv too long; needed cap)
+  //   BH-8: priority=99 → 200 silently ignored (typo "11" meant "P1"
+  //          dropped on the floor — user thinks it worked)
+  // Each is now an explicit 400 with a structured error.
+
+  // Build a real bd-initialised project so /api/tasks can reach the handler
+  const home = mkdtempSync(join(tmpdir(), 'bh-tasks-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh-tasks-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+    const init = spawnSync('bd', ['init'], { cwd: project, encoding: 'utf8' });
+    if (init.status !== 0) {
+      // Was: console.log('skipped') and a bare return — a pass in the summary.
+      // And "bd not available" was a guess: a failed `init` with bd installed
+      // (a lock, a full disk) took the same exit. The skip now carries what bd
+      // said, and the summary counts it as a skip, not a pass.
+      return t.skip(`bd init failed — not checked, not passed: ${(init.stderr || init.stdout || init.error?.message || '').trim().slice(0, 160)}`);
+    }
+
+    // startBoard, not a hand-rolled wait: the loop this replaces `break`s on
+    // success but on TIMEOUT simply fell out and let the test carry on against
+    // a board that never came up — so the real failure surfaced later as an
+    // unrelated assertion. That is the BH-14 flake: not a taken port, a wait
+    // that could not say it had failed.
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      const post = async (body) =>
+        fetch(`http://127.0.0.1:${port}/api/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        });
+
+      // BH-6: invalid JSON → 400
+      const r1 = await post('not-valid-json{');
+      assert.equal(r1.status, 400,
+        `BH-6: invalid JSON should yield HTTP 400, got ${r1.status}`);
+      const e1 = await r1.json();
+      assert.equal(e1.error, 'invalid_json',
+        `BH-6: error code should be 'invalid_json', got '${e1.error}'`);
+
+      // BH-7: too-long title → 400
+      const longTitle = 'a'.repeat(600);
+      const r2 = await post(JSON.stringify({ title: longTitle }));
+      assert.equal(r2.status, 400,
+        `BH-7: 600-char title should yield HTTP 400, got ${r2.status}`);
+      const e2 = await r2.json();
+      assert.equal(e2.error, 'title_too_long',
+        `BH-7: error code should be 'title_too_long', got '${e2.error}'`);
+
+      // BH-8: priority=99 → 400
+      const r3 = await post(JSON.stringify({ title: 'ok', priority: 99 }));
+      assert.equal(r3.status, 400,
+        `BH-8: priority=99 should yield HTTP 400, got ${r3.status}`);
+      const e3 = await r3.json();
+      assert.equal(e3.error, 'invalid_priority',
+        `BH-8: error code should be 'invalid_priority', got '${e3.error}'`);
+
+      // Sanity: valid input still works (priority=2 OK, normal title OK)
+      const r4 = await post(JSON.stringify({ title: 'a valid task', priority: 2 }));
+      assert.equal(r4.status, 200,
+        `Valid input should still succeed, got HTTP ${r4.status}`);
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-5: project resolution headers ────────────────────────────────────────
+
+test('BH-5: X-Project-Resolved + X-Project-Fallback headers explain routing', async () => {
+  // Pre-fix: ?project=<unknown> silently returned cwd's data — user
+  // couldn't tell projectX-data from projectY-data on the wire.
+  // Now: response headers explicitly disclose resolution path.
+
+  const home = mkdtempSync(join(tmpdir(), 'bh5-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh5-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      // No project param → resolved=cwd
+      const r1 = await fetch(`http://127.0.0.1:${port}/api/inbox`);
+      assert.equal(r1.headers.get('x-project-resolved'), 'cwd',
+        `no project param should yield resolved=cwd, got '${r1.headers.get('x-project-resolved')}'`);
+
+      // Unknown project slug → resolved=fallback + X-Project-Fallback present
+      const r2 = await fetch(`http://127.0.0.1:${port}/api/inbox?project=nonexistent-xyz`);
+      assert.equal(r2.headers.get('x-project-resolved'), 'fallback',
+        `unknown slug should yield resolved=fallback`);
+      const fallback = r2.headers.get('x-project-fallback');
+      assert.ok(fallback && fallback.includes('nonexistent-xyz'),
+        `X-Project-Fallback should mention requested slug, got '${fallback}'`);
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-13: observability — sseClients counter surfaced ──────────────────────
+
+test('BH-13: /api/metrics surfaces sse_clients + bd_cache_entries counters', async () => {
+  // Observability hook so users (and monitoring) can spot SSE leaks.
+
+  const home = mkdtempSync(join(tmpdir(), 'bh13-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh13-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      const r = await (await fetch(`http://127.0.0.1:${port}/api/metrics`)).json();
+      assert.ok(r.server, '/api/metrics should include "server" observability section');
+      assert.equal(typeof r.server.sse_clients, 'number',
+        'server.sse_clients must be a number');
+      assert.equal(typeof r.server.bd_cache_entries, 'number',
+        'server.bd_cache_entries must be a number');
+      assert.ok(r.server.sse_clients >= 0,
+        'sse_clients should be >= 0');
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-14: /api/tasks/<id>/status validation ───────────────────────────────
+
+test('BH-14: /api/tasks/<id>/status rejects bad JSON + bad status with 400', async (t) => {
+  // Pre-fix: invalid JSON in body → 500 (parser exception in catch).
+  //          missing/null/invalid status → 400 (already correct).
+  // Post-fix: invalid JSON → 400 with error='invalid_json'.
+
+  const bdProbe = spawnSync('bd', ['--version'], { encoding: 'utf8' });
+  // A bare `return` here made a test that checked nothing look like a test
+  // that passed. Skipping says "not checked" — the third state, and the one
+  // this repository keeps having to put back.
+  if (bdProbe.status !== 0) return t.skip('bd not installed — not checked, not passed');
+
+  const home = mkdtempSync(join(tmpdir(), 'bh14-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh14-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+    // No 5-second cap, and the result is read. Measured: `bd init` takes 1.9s
+    // alone and up to 8.7s when ten test files spawn it at once — which is what
+    // `node --test` does. The cap was exceeded by the suite's own parallelism,
+    // and because nothing looked at the result the test died twenty lines
+    // later with "precondition: task creation must succeed", which pointed at
+    // Dolt locking. It was never Dolt. A failure must fail under its own name.
+    const init = spawnSync('bd', ['init'], { cwd: project, encoding: 'utf8' });
+    if (init.status !== 0) throw new Error(`bd init failed (status ${init.status}${init.signal ? `, signal ${init.signal}` : ''}): ${init.stderr || init.stdout}`);
+
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      // Create a task to update later
+      const createRes = await fetch(`http://127.0.0.1:${port}/api/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'BH-14 status update probe' }),
+      });
+      const taskId = (await createRes.json()).id;
+      assert.ok(taskId, 'precondition: task creation must succeed');
+
+      const post = async (body) =>
+        fetch(`http://127.0.0.1:${port}/api/tasks/${taskId}/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        });
+
+      // Bad JSON → 400 with error=invalid_json
+      const r1 = await post('not-valid-json{');
+      assert.equal(r1.status, 400, 'bad JSON should yield 400');
+      const e1 = await r1.json();
+      assert.equal(e1.error, 'invalid_json', `expected error=invalid_json, got '${e1.error}'`);
+
+      // Invalid status → 400 with error=invalid_status
+      const r2 = await post(JSON.stringify({ status: 'frobnicated' }));
+      assert.equal(r2.status, 400, 'invalid status should yield 400');
+      const e2 = await r2.json();
+      assert.equal(e2.error, 'invalid_status', `expected error=invalid_status, got '${e2.error}'`);
+
+      // Empty status → 400
+      const r3 = await post(JSON.stringify({ status: '' }));
+      assert.equal(r3.status, 400, 'empty status should yield 400');
+
+      // Valid status → 200
+      const r4 = await post(JSON.stringify({ status: 'in_progress' }));
+      assert.equal(r4.status, 200, `valid status should yield 200, got ${r4.status}`);
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-22: velocity rolling-window honest labels ────────────────────────────
+
+test('BH-22: /api/metrics.velocity exposes last_7d + last_30d (honest labels)', async () => {
+  // Pre-fix: velocity only had this_week/this_month keys but the math is
+  //          rolling 7/30 days from now, not calendar week/month.
+  // Post-fix: added last_7d/last_30d keys; old keys kept as deprecated aliases.
+
+  const home = mkdtempSync(join(tmpdir(), 'bh22-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'bh22-proj-'));
+  try {
+    mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+    mkdirSync(join(project, '.great_cto'), { recursive: true });
+    writeFileSync(join(project, '.great_cto', 'PROJECT.md'), 'archetype: web-service\n');
+
+    const { port, proc: board } = await startBoard({
+      cliEntry: join(__dirname, '..', 'packages', 'cli', 'index.mjs'),
+      project, home, env: { GREAT_CTO_NO_UPDATE_CHECK: '1' },
+    });
+
+    try {
+
+      const r = await (await fetch(`http://127.0.0.1:${port}/api/metrics`)).json();
+      const v = r.velocity;
+      assert.equal(typeof v.last_7d, 'number', 'velocity.last_7d must exist (honest label)');
+      assert.equal(typeof v.last_30d, 'number', 'velocity.last_30d must exist');
+      // Backward-compat aliases — keep until v3.0
+      assert.equal(v.this_week, v.last_7d, 'this_week alias must equal last_7d');
+      assert.equal(v.this_month, v.last_30d, 'this_month alias must equal last_30d');
+    } finally {
+      // Kill AND wait — SIGKILL is asynchronous, and the rmSync below used to
+      // race a board still writing into its temp HOME (ENOTEMPTY).
+      await reap(board);
+    }
+  } finally {
+    rmSync(home, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+// ── BH-26: great-cto report CLI accepts --type flag ─────────────────────────
+
+test('BH-26: great-cto report parseReportArgs accepts --type flag', async () => {
+  const mod = await import('../packages/cli/dist/report.js');
+  const cwd = '/tmp';
+
+  // Positional
+  const p1 = mod.parseReportArgs(['great-cto', 'report', 'cost'], cwd);
+  assert.ok(p1, 'positional should parse');
+  assert.equal(p1.type, 'cost');
+
+  // --type=X
+  const p2 = mod.parseReportArgs(['great-cto', 'report', '--type=agents'], cwd);
+  assert.ok(p2, '--type=X should parse');
+  assert.equal(p2.type, 'agents');
+
+  // --type X
+  const p3 = mod.parseReportArgs(['great-cto', 'report', '--type', 'compliance'], cwd);
+  assert.ok(p3, '--type X should parse');
+  assert.equal(p3.type, 'compliance');
+
+  // Invalid
+  const p4 = mod.parseReportArgs(['great-cto', 'report', 'frobnicated'], cwd);
+  assert.equal(p4, null, 'invalid type should yield null');
+});
+
+test('X1 TDD: senior-dev RED → GREEN cycle works on a tiny stub', async () => {
+  // We don't drive a real LLM here (that's X6/multi-archetype). Instead,
+  // verify the TDD-cycle scaffolding works: scenario where impl is missing
+  // produces a meaningful failure; impl present produces a clean import.
+  //
+  // We use plain dynamic import() rather than nested node --test to avoid
+  // the test-runner's anti-recursion warning ("run() called recursively").
+
+  const project = mkdtempSync(join(tmpdir(), 'tdd-cycle-'));
+  try {
+    mkdirSync(join(project, 'src'), { recursive: true });
+
+    // RED: try to import a non-existent module — must throw
+    let redError = null;
+    try {
+      await import(`file://${project}/src/add.mjs`);
+    } catch (e) {
+      redError = e;
+    }
+    assert.ok(redError, 'RED phase: import of missing add.mjs should throw');
+    assert.match(redError.code || '', /ERR_MODULE_NOT_FOUND/,
+      `RED phase: should throw ERR_MODULE_NOT_FOUND, got ${redError.code}`);
+
+    // GREEN: write the impl, re-import should succeed and produce correct result
+    writeFileSync(join(project, 'src', 'add.mjs'),
+      'export function add(a, b) { return a + b; }\n');
+
+    const mod = await import(`file://${project}/src/add.mjs`);
+    assert.equal(typeof mod.add, 'function', 'GREEN: add() should be exported');
+    assert.equal(mod.add(2, 3), 5, 'GREEN: add(2,3) should equal 5');
+
+    // REFACTOR check — file is non-empty, parseable, has the expected export
+    const src = readFileSync(join(project, 'src', 'add.mjs'), 'utf8');
+    assert.match(src, /export function add/, 'REFACTOR check: export survives');
+  } finally {
+    rmSync(project, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
+test('BH-C1: CLI rejects unknown commands with exit code 2', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const { resolve } = await import('node:path');
+  const cli = resolve(import.meta.dirname || new URL('.', import.meta.url).pathname, '..', 'packages/cli/dist/main.js');
+
+  // Unknown bareword
+  const r1 = spawnSync('node', [cli, 'frobnicated'], { encoding: 'utf8' });
+  assert.equal(r1.status, 2, `unknown bareword should exit 2, got ${r1.status}`);
+  assert.match(r1.stderr + r1.stdout, /unknown command/i);
+
+  // Unknown long flag
+  const r2 = spawnSync('node', [cli, '--foo'], { encoding: 'utf8' });
+  assert.equal(r2.status, 2, `unknown flag should exit 2, got ${r2.status}`);
+
+  // Known command (--help) still exit 0
+  const r3 = spawnSync('node', [cli, '--help'], { encoding: 'utf8' });
+  assert.equal(r3.status, 0, `--help should exit 0, got ${r3.status}`);
+});
+
+test('BH-C4: CLI --port=N form parses correctly', async () => {
+  const { resolve } = await import('node:path');
+  const cli = resolve(import.meta.dirname || new URL('.', import.meta.url).pathname, '..', 'packages/cli/dist/main.js');
+
+  // Boot board with --port=N form, capture first line, then kill.
+  // detached + group-kill so the spawned server (a grandchild) is reaped too —
+  // otherwise it survives, holds the port, and its piped fds keep node:test's
+  // event loop alive past the last test (suite hangs with no final summary).
+  const { spawn } = await import('node:child_process');
+  // The port is asked of the kernel, not hard-coded. What this test checks is
+  // the `--port=N` FORM — one argument with an equals sign, rather than two —
+  // and that claim is independent of which number N is. 4455 was fixed here, so
+  // anything already holding it (another gate, a leftover board, a dev server)
+  // failed a test about argument parsing, and the failure named neither the
+  // port nor the collision.
+  const { freePort } = await import('./helpers/free-port.mjs');
+  const wantPort = await freePort();
+  const proc = spawn('node', [cli, 'board', `--port=${wantPort}`, '--no-open'], {
+    stdio: ['ignore', 'pipe', 'pipe'], detached: true,
+  });
+  let stdout = '';
+  proc.stdout.on('data', (b) => { stdout += b.toString(); });
+  proc.stderr.on('data', (b) => { stdout += b.toString(); });
+  // 'close' fires after BOTH the process exited and its stdio streams were
+  // fully drained. 'exit'/exitCode alone would race: this CLI prints the URL and
+  // then returns (the server keeps running as a detached grandchild), so exitCode
+  // goes non-null while the line may still be sitting in the pipe unread.
+  let closed = false;
+  proc.on('close', () => { closed = true; });
+  try {
+    // Poll for the port to appear, do not sleep a fixed 2500ms and hope. This
+    // file runs under `node --test`, which runs test FILES in parallel; on a
+    // loaded machine several of them spawn a board at once and a bind that
+    // normally takes ~300ms can take seconds. A fixed wait turns that into a
+    // failing assertion on code that is fine — and ci-local is a blocking gate,
+    // so a gate that fails at random on good work teaches --no-verify, which is
+    // the thing the gate exists to prevent. Waiting for the signal instead of
+    // for the clock is also FASTER in the common case: it returns as soon as
+    // the line appears rather than always paying the full budget.
+    const deadline = Date.now() + 20000;
+    while (Date.now() < deadline && !new RegExp(`:${wantPort}`).test(stdout)) {
+      if (closed) break;   // output is drained and finished — waiting longer adds nothing
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    assert.match(stdout, new RegExp(`:${wantPort}`), `--port=${wantPort} should bind to ${wantPort}, got: ${stdout.slice(0, 200)}`);
+  } finally {
+    // Group-kill reaps the spawned server (grandchild) so no fds linger past
+    // the suite.
+    // reap-exempt: this test removes no directory of its own, so there is
+    // nothing for the dying group to race — waiting would cost the suite time
+    // for a guarantee it does not need.
+    try { process.kill(-proc.pid, 'SIGKILL'); } catch {}
+    try { proc.kill('SIGKILL'); } catch {}
+  }
+});
+
+test('BH-A5: public share report fmtTime + speedup clamp prevent "0m / 28800× faster" rendering', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { resolve } = await import('node:path');
+  const vm = await import('node:vm');
+  const sharePath = resolve(import.meta.dirname || new URL('.', import.meta.url).pathname, '..', 'packages/board/public/share.html');
+  const html = readFileSync(sharePath, 'utf8');
+
+  // Extract fmtTime function body
+  const fmtMatch = html.match(/function fmtTime\(min\) \{[\s\S]*?\n  \}/);
+  assert.ok(fmtMatch, 'fmtTime function must be present in share.html');
+  const ctx = { Math, console };
+  vm.createContext(ctx);
+  vm.runInContext(fmtMatch[0] + '; this.fmtTime = fmtTime;', ctx);
+  const fmtTime = ctx.fmtTime;
+
+  // Sub-minute → seconds, never "0m"
+  assert.equal(fmtTime(0.05), '3s', 'tiny but non-zero must render in seconds');
+  assert.equal(fmtTime(0.5), '30s', '30-second task must render as "30s"');
+  assert.equal(fmtTime(0.01), '1s', 'sub-second min1 floor');
+  assert.notEqual(fmtTime(0.5), '0m', 'never round sub-minute to "0m"');
+
+  // Whole-minute and hour boundaries
+  assert.equal(fmtTime(1), '1m');
+  assert.equal(fmtTime(59), '59m');
+  assert.equal(fmtTime(60), '1.0h');
+  assert.equal(fmtTime(125), '2.1h');
+
+  // Edge: zero / negative / missing
+  assert.equal(fmtTime(0), '—');
+  assert.equal(fmtTime(null), '—');
+  assert.equal(fmtTime(-1), '—');
+
+  // Speedup clamp logic: when totalAiMin < 5, ratio must be suppressed
+  // Simulating the share.html code:
+  function speedup(totalAiMin, done) {
+    const humanH = done * 4;
+    const aiH = totalAiMin / 60;
+    const rawSpeedup = aiH > 0 && humanH > 0 ? humanH / aiH : 0;
+    return (totalAiMin >= 5 && rawSpeedup > 0 && rawSpeedup < 1000)
+      ? rawSpeedup.toFixed(rawSpeedup < 10 ? 1 : 0) : null;
+  }
+  // Degenerate case from the bug report: 14 tasks, ~7s of total AI time → 28800×
+  assert.equal(speedup(0.1166, 14), null, '7-second total → ratio must be suppressed');
+  // Normal case: 14 tasks, 4h total AI work → 56h/4h = 14×
+  assert.equal(speedup(240, 14), '14', 'normal ratio must render as integer');
+  // Reasonable: 14 tasks, 28h total AI work → 56h/28h = 2.0×
+  assert.equal(speedup(28 * 60, 14), '2.0', '2× ratio must render to one decimal');
+});

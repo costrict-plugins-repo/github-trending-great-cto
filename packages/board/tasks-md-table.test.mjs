@@ -1,0 +1,368 @@
+// Fix B: parseTasksMd must understand the Markdown *table* format the pipeline
+// falls back to when beads (embedded-dolt) can't open a path with a space —
+// not just the older `- [ ] TASK-001: …` checkbox format. Without this the
+// admin board shows an empty task list (and, downstream, empty docs) for any
+// project living on a space-containing path.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, chmodSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { parseTasksMd, setTaskStatusInTasksMd, getReadDegradation } from './lib/beads.mjs';
+
+function withTasksMd(body) {
+  const dir = mkdtempSync(join(tmpdir(), 'gcto-tasksmd-'));
+  mkdirSync(join(dir, '.great_cto'), { recursive: true });
+  writeFileSync(join(dir, '.great_cto', 'tasks.md'), body);
+  return dir;
+}
+
+// Synthetic fixture — generic app tasks only. Do NOT mirror any real project's
+// task IDs or titles here (this file ships in the public repo).
+const TABLE = `# Tasks
+
+> ⚠️ Beads unavailable — embedded-dolt cannot open a path with a space. Falling back to this file.
+
+| id | title | status | owner |
+|----|-------|--------|-------|
+| GATE-arch | **gate:arch — architecture review** \`[APPROVED by CTO 2026-01-02]\` | closed | CTO |
+| AUTH-01 | Add email/password login | done | senior-dev |
+| API-EXPORT | CSV export endpoint | in_progress | senior-dev |
+| UI-42 | Dark mode toggle | open | senior-dev |
+`;
+
+test('table format: parses every data row', () => {
+  const dir = withTasksMd(TABLE);
+  try {
+    const tasks = parseTasksMd(dir);
+    assert.equal(tasks.length, 4, 'all 4 rows parsed');
+    const ids = tasks.map(t => t.id);
+    assert.deepEqual(ids, ['GATE-arch', 'AUTH-01', 'API-EXPORT', 'UI-42']);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('table format: status + gate + owner mapping', () => {
+  const dir = withTasksMd(TABLE);
+  try {
+    const by = Object.fromEntries(parseTasksMd(dir).map(t => [t.id, t]));
+    assert.equal(by['GATE-arch'].status, 'done');       // closed → done
+    assert.equal(by['GATE-arch'].is_gate, true);        // GATE-* / gate: → gate
+    assert.equal(by['AUTH-01'].status, 'done');         // done → done
+    assert.equal(by['AUTH-01'].owner, 'senior-dev');
+    assert.equal(by['API-EXPORT'].status, 'in_progress');
+    assert.equal(by['UI-42'].status, 'backlog');        // open → backlog
+    assert.equal(by['UI-42'].owner, 'senior-dev');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('table format: strips bold, lifts trailing note into description', () => {
+  const dir = withTasksMd(TABLE);
+  try {
+    const g = parseTasksMd(dir).find(t => t.id === 'GATE-arch');
+    assert.ok(!g.title.includes('**'), 'bold markers stripped');
+    assert.ok(g.title.startsWith('gate:arch'), 'title kept');
+    assert.ok(/APPROVED by CTO/.test(g.description), 'trailing note moved to description');
+    assert.ok(!g.title.includes('APPROVED'), 'note not left in title');
+    assert.equal(g.source, 'tasks.md');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// This used to assert the dialects were mutually exclusive — the table was read
+// only when the checkbox pass found nothing. That rule cost more than it bought:
+// one stray checkbox line hid every table row, gates included. What the rule was
+// actually protecting against is a table that is not a task table, and the
+// id/title/status header requirement already covers that on its own.
+test('a table that is not a task table is still ignored', () => {
+  const dir = withTasksMd('- [ ] TASK-9: only this\n\n| metric | value |\n|--|--|\n| latency | 42ms |\n');
+  try {
+    const ids = parseTasksMd(dir).map(t => t.id);
+    assert.deepEqual(ids, ['TASK-9'], 'no id/title/status header → not a task table');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('checkbox format still parses (regression)', () => {
+  const dir = withTasksMd('- [ ] TASK-001: Do the thing [senior-dev] [~42min]\n  Description here\n- [x] TASK-002: Done item [qa-engineer]\n');
+  try {
+    const tasks = parseTasksMd(dir);
+    assert.equal(tasks.length, 2);
+    assert.equal(tasks[0].id, 'TASK-001');
+    assert.equal(tasks[0].status, 'backlog');
+    assert.equal(tasks[1].status, 'done');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('escaped pipes in a cell do not shift columns', () => {
+  // `\|` inside a title cell must NOT split into extra columns — that used to
+  // shove `open`/`1m\` into the owner slot and break the filter chips.
+  const body = `| id | title | status | owner |
+|----|-------|--------|-------|
+| API-11 | GET /equity?range=1d\\|1w\\|1m\\|all \`[done]\` | done | senior-dev |
+`;
+  const dir = withTasksMd(body);
+  try {
+    const t = parseTasksMd(dir);
+    assert.equal(t.length, 1);
+    assert.equal(t[0].owner, 'senior-dev', 'owner intact despite pipes in title');
+    assert.equal(t[0].status, 'done', 'status intact');
+    assert.ok(t[0].title.includes('1d|1w|1m|all'), 'pipes unescaped back into the title');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('extra-column table schema maps status/owner by header, not position', () => {
+  const body = `| id | title | size | horizon | status | owner |
+|----|-------|------|---------|--------|-------|
+| SIG-1 | consensus builder | M | H2 | in_progress | senior-dev |
+`;
+  const dir = withTasksMd(body);
+  try {
+    const t = parseTasksMd(dir);
+    assert.equal(t.length, 1);
+    assert.equal(t[0].status, 'in_progress', 'status read from its header column');
+    assert.equal(t[0].owner, 'senior-dev', 'owner read from its header column, not "M"/"H2"');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('sentence-shaped owner debris is dropped, not turned into a chip', () => {
+  const body = `| id | title | status | owner |
+|----|-------|--------|-------|
+| X-1 | a task | done | senior-dev — argon2id, 15min access, WhitelistGuard on routes |
+`;
+  const dir = withTasksMd(body);
+  try {
+    const t = parseTasksMd(dir);
+    assert.equal(t[0].owner, '', 'long sentence owner rejected');
+    assert.deepEqual(t[0].labels, [], 'no junk label emitted');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('status / size / horizon debris never becomes an owner chip', () => {
+  const body = `| id | title | status | owner |
+|----|-------|--------|-------|
+| A-1 | t | open | done |
+| A-2 | t | open | M |
+| A-3 | t | open | H2 |
+| A-4 | t | open | senior-dev |
+| A-5 | t | open | CTO |
+`;
+  const dir = withTasksMd(body);
+  try {
+    const owners = parseTasksMd(dir).map(t => t.owner);
+    assert.deepEqual(owners, ['', '', '', 'senior-dev', 'CTO'], 'done/M/H2 rejected; real handles kept');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('over-long title is capped, overflow moved to description', () => {
+  const long = 'word '.repeat(60).trim(); // ~300 chars
+  const dir = withTasksMd(`| id | title | status | owner |\n|--|--|--|--|\n| L-1 | ${long} | open | pm |\n`);
+  try {
+    const t = parseTasksMd(dir)[0];
+    assert.ok(t.title.length <= 162, `title capped (${t.title.length})`);
+    assert.ok(t.title.endsWith('…'), 'ellipsis appended');
+    assert.ok(t.description.length > 0, 'overflow preserved in description');
+    assert.equal(t.owner, 'pm', 'short lowercase handle kept');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('setTaskStatusInTasksMd flips a row status (gate approve without beads)', () => {
+  const body = `| id | title | status | owner |
+|----|-------|--------|-------|
+| GATE-x | gate:plan review | open | CTO |
+| T-2 | other | open | pm |
+`;
+  const dir = withTasksMd(body);
+  try {
+    const ok = setTaskStatusInTasksMd(dir, 'GATE-x', 'closed');
+    assert.equal(ok, true, 'row updated');
+    const by = Object.fromEntries(parseTasksMd(dir).map(t => [t.id, t]));
+    assert.equal(by['GATE-x'].status, 'done', 'closed → done on re-read');
+    assert.equal(by['T-2'].status, 'backlog', 'other rows untouched');
+    // unknown id → no-op false
+    assert.equal(setTaskStatusInTasksMd(dir, 'NOPE-9', 'blocked'), false);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('setTaskStatusInTasksMd preserves escaped pipes in other cells', () => {
+  const body = `| id | title | status | owner |
+|----|-------|--------|-------|
+| A-1 | GET /x?range=1d\\|1w \`[note]\` | open | senior-dev |
+`;
+  const dir = withTasksMd(body);
+  try {
+    setTaskStatusInTasksMd(dir, 'A-1', 'blocked');
+    const t = parseTasksMd(dir)[0];
+    assert.equal(t.status, 'blocked');
+    assert.ok(t.title.includes('1d|1w'), 'pipes survive the rewrite');
+    assert.equal(t.owner, 'senior-dev', 'owner survives');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('non-task tables are ignored (no false positives)', () => {
+  const dir = withTasksMd('# Notes\n\n| feature | value |\n|---------|-------|\n| latency | 50ms |\n| price | 5% |\n');
+  try {
+    assert.equal(parseTasksMd(dir).length, 0, 'a random table without an id/status header is not parsed as tasks');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// ── degradation reporting (T9) ─────────────────────────────────────────────
+// An empty task list means either "no tasks" or "we could not read them". The
+// board used to render both identically; the reader must now say which.
+
+test('a missing tasks.md is not a degradation — absence is a normal state', () => {
+  const dir = withTasksMd('# Tasks\n');
+  try {
+    rmSync(join(dir, '.great_cto', 'tasks.md'));
+    assert.deepEqual(parseTasksMd(dir), []);
+    assert.equal(getReadDegradation(dir), null, 'absent file must not raise an error state');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('an unreadable tasks.md reports degradation instead of an empty backlog',
+  { skip: process.getuid?.() === 0 && 'root ignores mode bits' }, () => {
+  const dir = withTasksMd('| id | title | status |\n|--|--|--|\n| A-1 | x | open |\n');
+  const fp = join(dir, '.great_cto', 'tasks.md');
+  try {
+    chmodSync(fp, 0o000);
+    const tasks = parseTasksMd(dir);
+    assert.deepEqual(tasks, [], 'no tasks can be produced');
+    const d = getReadDegradation(dir);
+    assert.ok(d, 'but the failure is recorded, not swallowed');
+    assert.match(d, /could not be read/i);
+  } finally {
+    chmodSync(fp, 0o644);
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('a healthy read clears any previous degradation', () => {
+  const dir = withTasksMd('| id | title | status |\n|--|--|--|\n| A-1 | x | open |\n');
+  try {
+    assert.equal(parseTasksMd(dir).length, 1);
+    assert.equal(getReadDegradation(dir), null);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// The table was parsed only `if (tasks.length === 0)`, so one checkbox line
+// anywhere in the file hid every table row behind it. A file that grew a
+// checkbox note above its gate table lost the gate from the board — and a gate
+// nobody can see is a gate nobody can approve.
+const MIXED = `# Tasks
+
+- [ ] NOTE-01: leftover checkbox task from an earlier run
+
+| id | title | status | owner |
+|----|-------|--------|-------|
+| GATE-ship | **gate:ship — release review** | open | CTO |
+| UI-7 | Empty state for the list | open | senior-dev |
+`;
+
+test('both dialects in one file: neither hides the other', () => {
+  const dir = withTasksMd(MIXED);
+  try {
+    const ids = parseTasksMd(dir).map(t => t.id);
+    assert.ok(ids.includes('NOTE-01'), 'the checkbox task is still parsed');
+    assert.ok(ids.includes('GATE-ship'), 'the gate is visible, so it can be approved');
+    assert.ok(ids.includes('UI-7'));
+    assert.equal(ids.length, 3);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('a task listed in both dialects appears once', () => {
+  const dir = withTasksMd(`# Tasks
+
+- [ ] UI-7: Empty state for the list
+
+| id | title | status | owner |
+|----|-------|--------|-------|
+| UI-7 | Empty state for the list | open | senior-dev |
+`);
+  try {
+    const tasks = parseTasksMd(dir);
+    assert.equal(tasks.filter(t => t.id === 'UI-7').length, 1, 'one task, not two');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// A title with an unescaped `|` splits into an extra cell, shifting every
+// column after it. Writing the status by column index then wrote "closed" over
+// a piece of the TITLE and left the real status cell reading `open` — the row
+// lost text and the gate stayed open while the board reported it approved.
+test('a row whose cells do not match the header is refused, not overwritten', () => {
+  const dir = withTasksMd(`| id | title | status | owner |
+|----|-------|--------|-------|
+| GATE-ship | gate:ship — deploy A | B decision | open | CTO |
+`);
+  try {
+    const before = fs.readFileSync(join(dir, '.great_cto', 'tasks.md'), 'utf8');
+    assert.equal(setTaskStatusInTasksMd(dir, 'GATE-ship', 'closed'), false,
+      'refusing is the honest answer — the caller can report a failure, silent corruption cannot be reported');
+    assert.equal(fs.readFileSync(join(dir, '.great_cto', 'tasks.md'), 'utf8'), before,
+      'the file is untouched');
+    assert.match(getReadDegradation(dir) || '', /cells/, 'and the reason is recorded');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('an escaped pipe in a title still writes correctly', () => {
+  const dir = withTasksMd(`| id | title | status | owner |
+|----|-------|--------|-------|
+| GATE-ship | gate:ship — deploy A \\| B decision | open | CTO |
+`);
+  try {
+    assert.equal(setTaskStatusInTasksMd(dir, 'GATE-ship', 'closed'), true);
+    const t = parseTasksMd(dir).find(x => x.id === 'GATE-ship');
+    assert.equal(t.raw_status, 'closed');
+    assert.match(t.title, /deploy A \| B decision/, 'the title keeps both halves');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// A title longer than the cap is split into title + description. Cutting by
+// character position landed inside a markdown link, leaving `see [the design…`
+// in the title and the URL stranded — the board renders that as broken markup,
+// and a reader cannot tell a truncated title from a malformed one.
+test('a truncated title never ends inside a markdown link', () => {
+  const filler = 'Fix the thing '.repeat(9);
+  for (const tail of [
+    'see [the design doc](https://example.com/very/long/path/here) for details',
+    '[a link right at the boundary](https://example.com/x) trailing words here',
+  ]) {
+    const dir = withTasksMd(
+      `| id | title | status | owner |\n|--|--|--|--|\n| TASK-1 | ${filler}${tail} | open | dev |\n`,
+    );
+    try {
+      const t = parseTasksMd(dir).find(x => x.id === 'TASK-1');
+      assert.ok(!/\[[^\]]*$/.test(t.title), `title ends inside a link: ${JSON.stringify(t.title.slice(-40))}`);
+      assert.ok(!/\]\([^)]*$/.test(t.title), `title ends inside a link target: ${JSON.stringify(t.title.slice(-40))}`);
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  }
+});
+
+// ── A working fallback is not a failure ─────────────────────────────────────
+//
+// Found by photographing the board against a fixture project that tracks tasks
+// in tasks.md and has never run `bd init`. The board read the file, listed all
+// eight tasks — and headlined "Some data could not be read — treat the counts
+// below as incomplete", because bd's absence was reported as a degradation.
+//
+// The counts were complete. tasks.md is a supported source, not a consolation
+// prize, so a project that uses it saw a permanent error banner over correct
+// data. Absent and broken are different states, and this file already says so
+// about tasks.md itself: "Missing is a normal state."
+//
+// An existing store that bd cannot open is still a defect and still reported.
+test('an uninitialised beads store is a normal state, not a read failure', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'tasksmd-nobd-'));
+  mkdirSync(join(dir, '.great_cto'), { recursive: true });
+  writeFileSync(join(dir, '.great_cto', 'tasks.md'), [
+    '| id | title | size | horizon | status | owner |',
+    '|----|-------|------|---------|--------|-------|',
+    '| a-1 | Checkout idempotency | M | H1 | in_progress | senior-dev |',
+    '| a-2 | Refund totals | S | H1 | open | senior-dev |',
+  ].join('\n') + '\n');
+
+  const tasks = parseTasksMd(dir);
+  assert.equal(tasks.length, 2, 'the fallback supplied the tasks');
+  assert.ok(!fs.existsSync(join(dir, '.beads')), 'and beads was never initialised here');
+
+  assert.equal(getReadDegradation(dir), null,
+    'a project that tracks tasks in tasks.md and never ran `bd init` is healthy — '
+    + 'reporting complete counts as incomplete is the same substitution, inverted');
+});

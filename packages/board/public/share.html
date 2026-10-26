@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>{{PROJECT}} · Engineering Report · {{DATE}}</title>
+<meta property="og:title" content="{{PROJECT}} · Engineering Report" />
+<meta property="og:description" content="AI agents shipped features, saved time and cost. See the breakdown." />
+<!-- great_cto-kge6: this page is published to an external host
+     (greatcto.systems/r/<hash>), not served from the local board — it can't
+     reference /assets/fonts locally-vendored files. Dropped the Google Fonts
+     CDN call entirely; the --sans/--serif/--mono stacks below already fall
+     back to system fonts (-apple-system, BlinkMacSystemFont, etc.) when
+     "Geist"/"Geist Mono" aren't available, so this renders cleanly with zero
+     external calls instead of leaking the viewer's IP to Google. -->
+<style>
+:root {
+  /* Dark emerald — matches landing greatcto.systems */
+  --bg-page:     #0a0e0c;
+  --bg-card:     #11161a;
+  --bg-muted:    #161c1f;
+  --bg-strong:   #1e272c;
+  --bg-elevated: #1a2025;
+  --border:      rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --text:  #ecf2ee;
+  --text2: #8a9a92;
+  --text3: #4f5d57;
+  --accent: #00d97e;
+  --accent-soft: rgba(0, 217, 126, 0.10);
+  --accent-strong: rgba(0, 217, 126, 0.18);
+  --status-review:   #00d97e;
+  --status-progress: #f59e0b;
+  --status-blocked:  #ff5466;
+  --serif: "Geist", "Space Grotesk", "Inter", -apple-system, sans-serif;
+  --sans:  "Geist", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:  "Geist Mono", "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  width: 100%; min-height: 100%;
+  font-family: var(--sans); color: var(--text);
+  font-size: 14px; line-height: 1.5;
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; }
+
+/* Page wrap — compact */
+.report-page {
+  position: relative;
+  width: 100%; min-height: 100vh;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 32px 20px;
+  overflow: hidden;
+}
+.report-bg {
+  position: absolute; inset: 0; z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0, 217, 126, 0.10), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 100% 100%, rgba(0, 217, 126, 0.05), transparent 70%),
+    linear-gradient(180deg, #050807 0%, var(--bg-page) 100%);
+}
+.report-bg::after {
+  content: ""; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 50% at 50% 30%, #000 30%, transparent 80%);
+}
+
+.report-card {
+  position: relative; z-index: 1;
+  width: 100%; max-width: 680px;
+  background: rgba(17, 22, 26, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(15, 17, 21, 0.15), 0 1px 3px rgba(15, 17, 21, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 28px 32px;
+}
+
+.report-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.report-brand {
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--serif); font-size: 18px; font-weight: 600;
+  color: var(--text); letter-spacing: -0.01em;
+}
+.report-brand .brand-mark {
+  width: 22px; height: 22px;
+  border-radius: 5px;
+  background: var(--bg-page);
+  border: 1px solid var(--border-strong);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.report-brand .brand-mark svg { width: 18px; height: 18px; }
+.report-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 10px; font-family: var(--mono);
+  color: var(--status-review);
+  background: rgba(22, 163, 74, 0.10);
+  padding: 4px 9px; border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+.report-status .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.report-title { display: flex; gap: 14px; margin-bottom: 24px; }
+.report-title .stripe {
+  width: 3px; background: var(--accent);
+  border-radius: 2px; flex-shrink: 0;
+}
+.report-title h1 {
+  font-family: var(--serif); font-weight: 600;
+  font-size: 28px; line-height: 1.15;
+  letter-spacing: -0.02em; margin: 0;
+  color: var(--text);
+}
+.report-title h1 em { font-style: normal; color: var(--accent); font-weight: 500; }
+.report-title .meta {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text3); margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+.section-label {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--text3); margin: 18px 0 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label.warn { color: #fcd34d; }
+.section-label.warn svg { color: #fcd34d; }
+
+.headline-narrative {
+  font-family: var(--serif); font-weight: 500;
+  font-size: 18px; line-height: 1.5;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin: 18px 0 22px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(0,217,126,0.05), transparent 80%);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+
+.report-stats-hero {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 8px;
+}
+.report-stat {
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px 14px;
+  position: relative; overflow: hidden;
+}
+.report-stat::before {
+  content: ""; position: absolute;
+  top: 0; left: 0; right: 0; height: 2px;
+  background: var(--accent);
+}
+.report-stat.green::before  { background: var(--status-review); }
+.report-stat.amber::before  { background: var(--status-progress); }
+.report-stat.red::before    { background: var(--status-blocked); }
+.report-stat.purple::before { background: #7c3aed; }
+.report-stat .num {
+  font-family: var(--serif); font-weight: 500;
+  font-size: 32px; line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.report-stat .num small {
+  font-size: 14px; color: var(--text2);
+  margin-left: 2px; font-weight: 400;
+}
+.report-stat .lbl {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text2); margin-top: 10px;
+}
+.report-stat .sub {
+  margin-top: 4px; font-size: 11px; color: var(--text2);
+}
+
+.report-stats-sec {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 18px;
+}
+.report-stats-sec .report-stat .num { font-size: 22px; font-family: var(--serif); font-weight: 500; }
+
+/* Compare card — AI vs humans */
+.compare-card {
+  background: linear-gradient(135deg, rgba(0,217,126,0.08), rgba(167,139,250,0.04));
+  border: 1px solid var(--accent-strong);
+  border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 18px;
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 14px;
+  align-items: center;
+}
+.compare-side { display: flex; flex-direction: column; gap: 2px; }
+.compare-side .lbl {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text2);
+}
+.compare-side .v {
+  font-family: var(--serif); font-weight: 500;
+  font-size: 26px; letter-spacing: -0.02em;
+  color: var(--text);
+}
+.compare-side .t { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.compare-side.right { text-align: right; align-items: flex-end; }
+.compare-vs {
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text3); letter-spacing: 0.06em;
+}
+.compare-vs strong {
+  display: block; font-family: var(--serif);
+  font-size: 16px; color: var(--accent); font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.shipped-row {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 10px; align-items: baseline;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.shipped-row:first-of-type { border-top: none; }
+
+/* Risk surface */
+.risk-list { margin-bottom: 10px; }
+.risk-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 10px 14px;
+  background: rgba(252, 211, 77, 0.04);
+  border: 1px solid rgba(252, 211, 77, 0.18);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.risk-row.blocked { background: rgba(255, 84, 102, 0.04); border-color: rgba(255, 84, 102, 0.18); }
+.risk-row.p0      { background: rgba(255, 84, 102, 0.06); border-color: rgba(255, 84, 102, 0.22); }
+.risk-tag {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-align: center;
+  padding: 3px 6px; border-radius: 4px;
+  background: rgba(252, 211, 77, 0.14); color: #fcd34d;
+}
+.risk-row.blocked .risk-tag,
+.risk-row.p0 .risk-tag { background: rgba(255, 84, 102, 0.18); color: #fca5a5; }
+.risk-ttl { color: var(--text); font-weight: 500; line-height: 1.35; }
+.risk-meta { font-family: var(--mono); font-size: 10px; color: var(--text3); }
+
+/* Coming up */
+.coming-list { margin-bottom: 6px; }
+.coming-row {
+  display: grid;
+  grid-template-columns: 16px 60px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.coming-row:first-of-type { border-top: none; }
+.coming-arrow { color: var(--accent); font-weight: 500; }
+.coming-ttl { color: var(--text); }
+.coming-agent {
+  font-family: var(--mono); font-size: 10.5px;
+  color: var(--text2);
+  background: rgba(0, 217, 126, 0.06);
+  padding: 2px 7px; border-radius: 4px;
+}
+
+/* Priority badges */
+.badge {
+  font-family: var(--mono); font-size: 9.5px;
+  letter-spacing: 0.04em; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px;
+  text-align: center;
+}
+.pri-p0 { background: rgba(255, 84, 102, 0.14); color: #fca5a5; }
+.pri-p1 { background: rgba(255, 170, 60, 0.14); color: #fcd34d; }
+.pri-p2 { background: rgba(240, 210, 78, 0.14); color: #fde68a; }
+.pri-p3 { background: rgba(255, 255, 255, 0.05); color: #9ca3af; }
+
+/* Shipped categories */
+.ship-cat { margin-bottom: 8px; }
+.ship-cat-h {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 0 6px;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.1em;
+  border-top: 1px solid var(--border);
+}
+.ship-cat:first-of-type .ship-cat-h { border-top: none; padding-top: 4px; }
+.ship-cat-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.ship-cat-dot.security { background: #fca5a5; }
+.ship-cat-dot.infra    { background: #93c5fd; }
+.ship-cat-dot.feature  { background: var(--accent); }
+.ship-cat-dot.docs     { background: #c4b5fd; }
+.ship-cat-name { color: var(--text2); }
+.ship-cat-count { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-left: auto; }
+
+/* Agent breakdown */
+.agent-list { margin-bottom: 8px; }
+.agent-header-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 72px 82px 52px;
+  gap: 10px; align-items: center;
+  padding: 4px 0 6px;
+  font-size: 10px; font-family: var(--mono);
+  letter-spacing: 0.08em; color: var(--text3);
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+}
+.agent-header-row .agent-llm-h,
+.agent-header-row .agent-human-h,
+.agent-header-row .agent-tasks-h { text-align: right; }
+.agent-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 80px;
+  gap: 12px; align-items: center;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.agent-row.rich {
+  grid-template-columns: 110px 1fr 72px 82px 52px;
+  gap: 10px;
+}
+.agent-row .agent-name { font-family: var(--mono); color: var(--text); }
+.agent-row .agent-rail {
+  height: 4px; background: rgba(255,255,255,0.05);
+  border-radius: 2px; overflow: hidden;
+}
+.agent-row .agent-fill {
+  height: 100%; background: var(--accent);
+}
+.agent-row .agent-count {
+  font-family: var(--mono); font-size: 10.5px;
+  color: var(--text-2); text-align: right;
+}
+.agent-row.rich .agent-time {
+  display: flex; align-items: center; gap: 8px;
+}
+.agent-row.rich .agent-rail { flex: 1; }
+.agent-time-v { font-family: var(--mono); font-size: 11px; color: var(--text2); white-space: nowrap; }
+.agent-llm, .agent-human, .agent-tasks {
+  font-family: var(--mono); font-size: 11px;
+  text-align: right; color: var(--text2);
+}
+.agent-llm { color: #a78bfa; }
+.agent-human { color: #fb923c; }
+.agent-total-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 72px 82px 52px;
+  gap: 10px; align-items: center;
+  padding: 6px 0 4px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+  font-size: 12px; font-weight: 600;
+}
+.agent-total-row .agent-name { font-family: var(--mono); color: var(--text); }
+.agent-total-row .agent-time { display: flex; }
+.agent-total-row .agent-llm,
+.agent-total-row .agent-human,
+.agent-total-row .agent-tasks { font-family: var(--mono); font-size: 11px; text-align: right; font-weight: 600; }
+.agent-total-row .agent-llm { color: #a78bfa; }
+.agent-total-row .agent-human { color: #fb923c; }
+
+/* Trust footer */
+.trust-foot {
+  margin-top: 22px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: var(--mono); font-size: 10.5px;
+  line-height: 1.6;
+}
+.trust-row {
+  display: grid; grid-template-columns: 80px 1fr;
+  gap: 12px; align-items: baseline;
+  padding: 4px 0;
+  color: var(--text-2);
+}
+.trust-row + .trust-row { border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+.trust-k { color: var(--text-3); letter-spacing: 0.04em; text-transform: uppercase; font-size: 9.5px; }
+.trust-v code {
+  background: rgba(255,255,255,0.04);
+  padding: 1px 5px; border-radius: 3px;
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+.trust-v a { color: var(--accent); text-decoration: none; }
+.trust-v a:hover { text-decoration: underline; }
+
+/* Compare card — symmetrical time + cost */
+.compare-card .compare-vs { text-align: center; }
+.compare-card .compare-vs .vs-line {
+  font-family: var(--mono); font-size: 9.5px;
+  color: var(--text-3); letter-spacing: 0.06em;
+}
+.compare-card .compare-vs strong {
+  display: block; margin: 2px 0;
+  font-family: var(--serif); font-size: 16px;
+  font-weight: 600; color: var(--accent);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.compare-card .compare-vs .vs-time {
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text2);
+}
+.shipped-check {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--status-review); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 9px; margin-top: 2px;
+}
+.shipped-row .ttl { color: var(--text); }
+.shipped-row .ttl .sub {
+  color: var(--text3); display: block;
+  font-size: 11px; margin-top: 1px;
+}
+.shipped-row .when {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+}
+
+.report-foot {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.06em;
+  color: var(--text3);
+}
+.report-foot a { color: var(--accent); text-decoration: none; }
+
+/* Paused */
+.paused-card {
+  text-align: center;
+  padding: 64px 44px;
+}
+.paused-icon {
+  width: 64px; height: 64px;
+  margin: 0 auto 24px;
+  border-radius: 50%;
+  background: var(--bg-muted);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2);
+}
+.paused-card h1 {
+  font-family: var(--serif); font-weight: 600;
+  font-size: 26px; letter-spacing: -0.01em;
+  margin: 0 0 10px;
+}
+.paused-card p {
+  color: var(--text2); margin: 0 auto 28px;
+  max-width: 40ch;
+}
+.btn-back {
+  background: var(--bg-elevated); color: var(--accent);
+  border: 1px solid var(--border-strong);
+  padding: 12px 24px; border-radius: 999px;
+  font-weight: 500; font-size: 14px;
+  text-decoration: none; display: inline-block;
+}
+.btn-back:hover { background: var(--bg-muted); }
+
+/* ═══════ NEW VISUAL COMPONENTS ═══════════════════════════════════════════ */
+
+/* 1) HERO BIG — large headline number with sparkline */
+.hero-big {
+  background: linear-gradient(135deg, rgba(0,217,126,0.06), rgba(0,0,0,0));
+  border: 1px solid var(--accent-strong);
+  border-radius: 14px;
+  padding: 24px 24px 18px;
+  margin-bottom: 18px;
+  position: relative; overflow: hidden;
+}
+.hero-big::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 20% 0%, rgba(0,217,126,0.10), transparent 60%);
+  pointer-events: none;
+}
+.hero-big .hero-row {
+  display: flex; align-items: flex-end; gap: 24px;
+  position: relative; z-index: 1;
+  flex-wrap: wrap;
+}
+.hero-big .hero-left { flex: 0 0 auto; }
+.hero-big .hero-num {
+  font-family: var(--serif); font-weight: 600;
+  font-size: 92px; line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--text);
+  background: linear-gradient(180deg, #ecf2ee 0%, #8a9a92 100%);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-big .hero-lbl {
+  font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text2); margin-top: 6px;
+}
+.hero-big .hero-sub {
+  font-size: 13px; color: var(--text2); margin-top: 8px;
+}
+.hero-big .hero-sub .delta-up { color: var(--status-review); font-weight: 600; }
+.hero-big .hero-spark {
+  flex: 1 1 200px; min-width: 200px;
+  height: 56px; opacity: 0.9;
+}
+
+/* 2) COST BAR CHART — visual horizontal bars */
+.cost-bars {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+}
+.cost-bars .cost-headline {
+  text-align: center; margin-bottom: 14px;
+}
+.cost-bars .cost-headline .big {
+  font-family: var(--serif); font-weight: 600;
+  font-size: 36px; letter-spacing: -0.02em;
+  color: var(--accent);
+  line-height: 1;
+}
+.cost-bars .cost-headline .lbl {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text2); margin-top: 6px;
+}
+.cost-bar-row {
+  display: grid;
+  grid-template-columns: 78px 1fr 80px;
+  gap: 12px; align-items: center;
+  padding: 8px 0;
+}
+.cost-bar-row .cb-name {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text2);
+}
+.cost-bar-row .cb-rail {
+  height: 22px; background: rgba(255,255,255,0.04);
+  border-radius: 4px; overflow: hidden; position: relative;
+}
+.cost-bar-row .cb-fill {
+  height: 100%; border-radius: 4px;
+  transition: width .6s cubic-bezier(.2,.7,.3,1);
+}
+.cost-bar-row.human .cb-fill {
+  background: linear-gradient(90deg, #ff5466, #ff8c66);
+}
+.cost-bar-row.ai .cb-fill {
+  background: linear-gradient(90deg, #00d97e, #34d399);
+}
+.cost-bar-row .cb-val {
+  font-family: var(--mono); font-size: 13px;
+  color: var(--text); text-align: right;
+  font-weight: 500;
+}
+
+/* 3) ACTIVITY HEATMAP — GitHub-style 30-day grid */
+.activity-heatmap {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+}
+.activity-heatmap .ah-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 10px;
+}
+.activity-heatmap .ah-title {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text2);
+}
+.activity-heatmap .ah-legend {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 9px;
+  color: var(--text3); letter-spacing: 0.06em;
+}
+.activity-heatmap .ah-legend-cells {
+  display: flex; gap: 2px;
+}
+.ah-cell {
+  width: 10px; height: 10px; border-radius: 2px;
+  background: rgba(255,255,255,0.04);
+}
+.ah-cell.l1 { background: rgba(0,217,126,0.18); }
+.ah-cell.l2 { background: rgba(0,217,126,0.36); }
+.ah-cell.l3 { background: rgba(0,217,126,0.58); }
+.ah-cell.l4 { background: rgba(0,217,126,0.92); }
+.ah-grid {
+  display: grid; grid-template-columns: repeat(30, 1fr);
+  gap: 3px;
+}
+.ah-grid .ah-cell {
+  width: 100%; aspect-ratio: 1 / 1; max-width: 16px;
+}
+
+/* 4) AGENT BUBBLES — bubble chart instead of table */
+.agent-bubbles-wrap {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 16px 8px;
+  margin-bottom: 18px;
+}
+.agent-bubbles-wrap .ab-title {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--text2); margin-bottom: 10px;
+  display: flex; justify-content: space-between;
+}
+.agent-bubbles-wrap .ab-svg { width: 100%; height: auto; display: block; }
+.agent-bubbles-wrap .ab-bubble text { font-family: var(--mono); }
+.agent-bubbles-wrap .ab-bubble-name { fill: #fff; font-weight: 500; }
+.agent-bubbles-wrap .ab-bubble-meta { fill: rgba(255,255,255,0.7); }
+.agent-bubbles-wrap .ab-foot {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--text3); padding: 8px 4px 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const metrics = {{METRICS_JSON}};
+const tasks   = {{TASKS_JSON}};
+const project = '{{PROJECT}}';
+const date    = '{{DATE}}';
+const paused  = {{PAUSED}};
+
+function esc(s) {
+  // BH-26: also escape " and ' — see index.html:esc.
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Background uses pure CSS (radial-gradients + grid), no SVG needed.
+const LANDSCAPE_SVG = '';
+
+if (paused) {
+  document.getElementById('root').innerHTML = `
+    <div class="report-page">
+      <div class="report-bg">${LANDSCAPE_SVG}</div>
+      <div class="report-card paused-card">
+        <div class="paused-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6z M14 4h4v16h-4z"/></svg>
+        </div>
+        <h1>Report paused</h1>
+        <p>The owner has temporarily disabled this link. Reach out to them if you need updated metrics.</p>
+        <a class="btn-back" href="https://greatcto.systems">← Back to greatcto.systems</a>
+        <div class="report-foot" style="margin-top:40px;">
+          CREATED BY <a href="https://greatcto.systems">GREATCTO</a> · GREATCTO.SYSTEMS
+        </div>
+      </div>
+    </div>`;
+} else {
+  const m = metrics || {};
+  const t_ = m.tasks || {};
+  // Share report uses LIFETIME counts — this is a marketing artifact, not an
+  // internal dashboard. Board UI has its own period selector (1D/7D/30D/...).
+  const done = t_.done ?? 0;
+  const inProgress = t_.in_progress ?? 0;
+  const backlog = t_.backlog ?? 0;
+  const allTasks = tasks || [];
+  const doneTasks = allTasks.filter(t => t.status === 'done' || t.status === 'closed');
+  const openTasks = allTasks.filter(t => t.status !== 'done' && t.status !== 'closed' && t.status !== 'gate');
+
+  function fmtTime(min) {
+    if (!min || min <= 0) return '—';
+    // BH-A5: sub-minute tasks rounded to "0m" — show seconds instead.
+    if (min < 1) return Math.max(1, Math.round(min * 60)) + 's';
+    if (min < 60) return Math.round(min) + 'm';
+    const h = min / 60;
+    if (h < 24) return h.toFixed(h < 10 ? 1 : 0) + 'h';
+    return (h / 8).toFixed(1) + 'd';
+  }
+
+  // AI active time = sum of per-agent estimates from server (uses
+  // estimated_minutes or 30min default per task). Server already excludes
+  // wall-clock noise — see getMetrics() in server.mjs.
+  const totalAiMin = (m.agents_cost || []).reduce((s, a) => s + (a.time_min || 0), 0);
+
+  const llmUsd = m.cost?.llm_usd ?? 0;
+  const humanUsd = m.cost?.human_usd ?? 0;
+  const savingsX = m.cost?.savings_x ?? 0;
+  // Human estimate: avg 4h per task (industry baseline for standard feature)
+  const humanH = done * 4;
+  const aiH = totalAiMin / 60;
+  // BH-A5: when AI time < 5 min total, the human/ai ratio explodes into
+  // 28,800× nonsense (sub-second tasks). Clamp + suppress to keep the page
+  // credible. Threshold = 5 min total AI work, or > 1000× ratio.
+  const rawSpeedup = aiH > 0 && humanH > 0 ? humanH / aiH : 0;
+  // "faster" only makes sense when AI is faster than the human estimate (ratio >= 1.5).
+  // Sub-1 ratios mean AI was slower — never label that as "faster".
+  const timeSpeedup = (totalAiMin >= 5 && rawSpeedup >= 1.5 && rawSpeedup < 1000)
+    ? rawSpeedup.toFixed(rawSpeedup < 10 ? 1 : 0) : null;
+
+  // Categorize done tasks (heuristic from title prefix / labels / keywords)
+  function categorize(t) {
+    const ttl = (t.title || '').toLowerCase();
+    const labels = (t.labels || []).map(l => l.toLowerCase());
+    if (labels.includes('security') || /\b(sec|cve|auth|webhook signature|gdpr|csrf|injection)\b/.test(ttl)) return 'security';
+    if (labels.includes('infra')    || /\b(infra|deploy|postgres|redis|s3|docker|k8s|telemetry|ci|backup|pool|replica|rate limit)\b/.test(ttl)) return 'infra';
+    if (labels.includes('docs')     || /\b(docs?|readme|changelog)\b/.test(ttl)) return 'docs';
+    return 'feature';
+  }
+  const categories = { security: [], infra: [], feature: [], docs: [] };
+  doneTasks.forEach(t => categories[categorize(t)].push(t));
+
+  // Risk surface — open P0 + blocked + stale
+  const p0Open = openTasks.filter(t => t.priority === 0);
+  const blocked = openTasks.filter(t => t.status === 'blocked');
+  const stale = openTasks.filter(t => {
+    if (t.status !== 'in_progress' || !t.updated_at) return false;
+    const ageH = (Date.now() - new Date(t.updated_at).getTime()) / 3600_000;
+    return ageH > 48;
+  });
+  const riskItems = [...p0Open, ...blocked, ...stale.filter(t => !p0Open.includes(t) && !blocked.includes(t))].slice(0, 4);
+
+  // Coming up — top 3 backlog by priority
+  const coming = openTasks
+    .filter(t => t.status === 'backlog' || t.status === 'open')
+    .sort((a, b) => (a.priority ?? 3) - (b.priority ?? 3))
+    .slice(0, 3);
+
+  // Agent breakdown — from agents_cost (includes time + cost) or fall back to verdicts counts
+  const agentsCost = (m.agents_cost || []).filter(a => a.tasks_total > 0);
+  const agents = m.agents || {};
+  const totalAgentRuns = Object.values(agents).reduce((a, b) => a + b, 0);
+  const agentList = Object.entries(agents).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+  // Totals for compare card (use agents_cost data if available, else fallback to existing cost)
+  const totalLlmFromAgents = agentsCost.reduce((s, a) => s + a.llm_usd, 0);
+  const totalHumanFromAgents = agentsCost.reduce((s, a) => s + a.human_usd, 0);
+  const totalTimeMin = agentsCost.reduce((s, a) => s + a.time_min, 0);
+  // AI cost: prefer real LLM token cost (from verdicts/plans), fall back to estimate
+  const realLlmUsd = m.cost?.real_llm_usd ?? 0;
+  const effectiveLlmUsd = realLlmUsd > 0
+    ? realLlmUsd
+    : (llmUsd > 0 ? llmUsd : totalLlmFromAgents);
+  // Human cost: industry baseline $150/hr × 4h per task = $600 per feature
+  const HUMAN_PER_TASK_USD = 4 * 150;  // 4 hours × $150/hr
+  const effectiveHumanUsd = done > 0
+    ? done * HUMAN_PER_TASK_USD
+    : (humanUsd > 0 ? humanUsd : totalHumanFromAgents);
+  // Savings ratio is trustworthy when:
+  // (a) AI cost = real LLM tokens (not derived from the same task-min base as human), OR
+  // (b) Cost source explicitly comes from plans/verdicts (independent measurement)
+  const savingsTrustworthy = realLlmUsd > 0 || (m.cost?.source && m.cost.source !== 'tasks');
+  const effectiveSavings  = savingsTrustworthy && effectiveLlmUsd > 0 && effectiveHumanUsd > 0
+    ? Math.round(effectiveHumanUsd / effectiveLlmUsd).toLocaleString('en-US') + '×' : null;
+  const effectiveAiH = totalAiMin > 0 ? totalAiMin / 60 : totalTimeMin / 60;
+
+  // Hero narrative — focus on cost difference, not time
+  const headline = (() => {
+    if (!done) return '';
+    const parts = [`${done} feature${done === 1 ? '' : 's'} shipped`];
+    // AI spend (prefer real LLM token cost from verdicts)
+    const realLlm = m.cost?.real_llm_usd ?? 0;
+    const aiCostDisplay = realLlm > 0
+      ? `$${realLlm < 10 ? realLlm.toFixed(2) : realLlm.toFixed(0)}`
+      : (llmUsd > 0 ? `$${llmUsd < 10 ? llmUsd.toFixed(2) : llmUsd.toFixed(0)}` : null);
+    if (aiCostDisplay) parts.push(`for ${aiCostDisplay} in LLM tokens`);
+    let line = parts.join(' ');
+    // Human equivalent: standard 4h per feature × $150/hr
+    const humanCost = done * 4 * 150;
+    if (aiCostDisplay && humanCost > 0) {
+      line += `. Human team estimate: $${humanCost.toLocaleString('en-US')}.`;
+    }
+    return line;
+  })();
+
+  const hero = [
+    {
+      v: done || '—',
+      sub: done ? 'done' : '',
+      lbl: 'Tasks shipped',
+      extra: `+${m.velocity?.this_week ?? 0} this week`,
+      cls: 'green',
+    },
+    {
+      v: totalAiMin ? fmtTime(totalAiMin) : '—',
+      sub: '',
+      lbl: 'AI time',
+      extra: done && totalAiMin > 0 ? `${fmtTime(totalAiMin / Math.max(1, done))} avg / task` : '—',
+      cls: 'amber',
+      hide: !totalAiMin,
+    },
+    {
+      v: llmUsd > 0 ? '$' + llmUsd.toFixed(0) : '—',
+      sub: '',
+      lbl: 'LLM cost',
+      extra: m.cost?.count ? `${m.cost.count} plans` : 'no plans',
+      cls: 'purple',
+      hide: !llmUsd,
+    },
+  ].filter(s => !s.hide);
+
+  const sec = [
+    { v: m.qa?.pass_rate != null ? m.qa.pass_rate + '%' : '—', lbl: 'QA pass rate', extra: `${m.qa?.passed ?? 0} pass · ${m.qa?.failed ?? 0} fail`, cls: 'green' },
+    { v: m.security?.approved ?? 0, lbl: 'Security approved', extra: m.security?.blocked ? `${m.security.blocked} blocked` : 'no blocks' },
+    { v: inProgress, lbl: 'In progress', extra: `${backlog} in backlog` },
+  ];
+
+  // Helpers for rendering rows
+  const PRI = ['Urgent', 'High', 'Medium', 'Low'];
+  function priChip(p) {
+    const cls = `pri-p${p ?? 3}`;
+    return `<span class="badge ${cls}">${PRI[p ?? 3]}</span>`;
+  }
+  function whenStr(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+  function ageStr(iso) {
+    if (!iso) return '';
+    const h = (Date.now() - new Date(iso).getTime()) / 3600_000;
+    if (h < 1) return `${Math.round(h * 60)}m ago`;
+    if (h < 48) return `${Math.round(h)}h ago`;
+    return `${Math.round(h / 24)}d ago`;
+  }
+
+  const generatedAt = new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+
+  // ─── Visual helpers ──────────────────────────────────────────────────────
+  // Bucket done tasks by day (last 30 days) using closed_at
+  function bucketByDay(tasks, days) {
+    const buckets = new Array(days).fill(0);
+    const now = Date.now();
+    const dayMs = 86400_000;
+    tasks.forEach(t => {
+      const iso = t.closed_at || t.updated_at;
+      if (!iso) return;
+      const age = Math.floor((now - new Date(iso).getTime()) / dayMs);
+      if (age >= 0 && age < days) buckets[days - 1 - age] += 1;
+    });
+    return buckets;
+  }
+
+  // SVG sparkline from numeric series
+  function sparklineSvg(values, w, h, color) {
+    if (!values.length) return '';
+    const max = Math.max(1, ...values);
+    const stepX = w / Math.max(1, values.length - 1);
+    const pts = values.map((v, i) => {
+      const x = i * stepX;
+      const y = h - (v / max) * (h - 4) - 2;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const areaPts = `0,${h} ${pts} ${w},${h}`;
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">
+      <defs>
+        <linearGradient id="sparkGrad" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%"  stop-color="${color}" stop-opacity="0.45"/>
+          <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <polygon points="${areaPts}" fill="url(#sparkGrad)"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  // Activity heatmap: 30-day strip, intensity by count
+  function heatmapCells(buckets) {
+    const max = Math.max(1, ...buckets);
+    return buckets.map(c => {
+      if (c === 0) return '<div class="ah-cell"></div>';
+      const ratio = c / max;
+      let level = 1;
+      if (ratio > 0.75) level = 4;
+      else if (ratio > 0.5) level = 3;
+      else if (ratio > 0.25) level = 2;
+      return `<div class="ah-cell l${level}" title="${c} task${c===1?'':'s'}"></div>`;
+    }).join('');
+  }
+
+  // Agent bubble chart — pack circles in a row, larger = more time
+  function agentBubblesSvg(agents) {
+    if (!agents.length) return '';
+    const W = 600, H = 200;
+    const sorted = [...agents].sort((a,b) => b.time_min - a.time_min);
+    const maxTime = Math.max(1, sorted[0].time_min);
+    // Color palette by agent category
+    function colorFor(name) {
+      const n = (name || '').toLowerCase();
+      if (n.includes('security') || n.includes('compliance')) return '#ff5466';
+      if (n.includes('qa') || n.includes('test'))             return '#f59e0b';
+      if (n.includes('architect') || n.includes('pm'))        return '#7c3aed';
+      if (n.includes('design'))                                return '#06b6d4';
+      if (n.includes('reviewer'))                              return '#a78bfa';
+      return '#00d97e';
+    }
+    // Radii proportional to sqrt(time) — area, not linear
+    const minR = 22, maxR = 60;
+    const radii = sorted.map(a => {
+      const ratio = Math.sqrt(a.time_min / maxTime);
+      return minR + (maxR - minR) * ratio;
+    });
+    // Simple horizontal packing
+    const padding = 8;
+    const totalW = radii.reduce((s, r) => s + 2 * r, 0) + padding * (radii.length - 1);
+    const scale = totalW > W ? W / totalW : 1;
+    let cx = 0;
+    const positions = radii.map(r => {
+      const scaledR = r * scale;
+      cx += scaledR;
+      const pos = { cx, r: scaledR };
+      cx += scaledR + padding * scale;
+      return pos;
+    });
+    // Center horizontally
+    const usedW = cx - padding * scale;
+    const offsetX = (W - usedW) / 2;
+    return `<svg class="ab-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${sorted.map((a, i) => {
+        const p = positions[i];
+        const color = colorFor(a.agent);
+        const cx = p.cx + offsetX;
+        const cy = H / 2;
+        const t = a.time_min >= 60
+          ? (a.time_min/60).toFixed(a.time_min < 600 ? 1 : 0) + 'h'
+          : a.time_min + 'm';
+        const fontN = Math.max(9, Math.min(13, p.r / 4));
+        const fontM = Math.max(8, Math.min(11, p.r / 5));
+        // Truncate name to fit
+        const name = a.agent.length > 14 ? a.agent.slice(0, 12) + '…' : a.agent;
+        return `<g class="ab-bubble">
+          <circle cx="${cx}" cy="${cy}" r="${p.r}" fill="${color}" fill-opacity="0.18" stroke="${color}" stroke-opacity="0.55" stroke-width="1.5"/>
+          <text class="ab-bubble-name" x="${cx}" y="${cy - 2}" text-anchor="middle" font-size="${fontN}">${esc(name)}</text>
+          <text class="ab-bubble-meta" x="${cx}" y="${cy + fontN + 2}" text-anchor="middle" font-size="${fontM}">${t}</text>
+        </g>`;
+      }).join('')}
+    </svg>`;
+  }
+
+  // Compute datasets
+  const dailyDone = bucketByDay(doneTasks, 30);
+  const last7Done = dailyDone.slice(-7).reduce((s,v)=>s+v, 0);
+  const heatmapHtml = heatmapCells(dailyDone);
+  const sparkHtml = sparklineSvg(dailyDone, 280, 56, '#00d97e');
+  const bubblesHtml = agentBubblesSvg(agentsCost);
+
+  // Cost bar chart proportions
+  const costMax = Math.max(effectiveHumanUsd, effectiveLlmUsd, 1);
+  const humanPct = (effectiveHumanUsd / costMax) * 100;
+  const aiPct = Math.max(1.5, (effectiveLlmUsd / costMax) * 100); // min 1.5% so the bar is visible
+
+  document.getElementById('root').innerHTML = `
+    <div class="report-page">
+      <div class="report-bg"></div>
+      <div class="report-card">
+        <div class="report-head">
+          <div class="report-brand">
+            <span class="brand-mark">
+              <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                <g stroke="#00d97e" stroke-width="9" stroke-linecap="round">
+                  <line x1="32" y1="14" x2="32" y2="50"/>
+                  <line x1="16.4" y1="23" x2="47.6" y2="41"/>
+                  <line x1="16.4" y1="41" x2="47.6" y2="23"/>
+                </g>
+              </svg>
+            </span>
+            <span>greatcto</span>
+          </div>
+          <span class="report-status">
+            <span class="dot"></span> LIVE
+          </span>
+        </div>
+
+        <div class="report-title">
+          <div class="stripe"></div>
+          <div>
+            <h1>${esc(project)}</h1>
+            <div class="meta">${esc(date.toUpperCase())} · ENGINEERING REPORT</div>
+          </div>
+        </div>
+
+        ${headline ? `<div class="headline-narrative">${esc(headline)}</div>` : ''}
+
+        <!-- HERO BIG — large number + sparkline -->
+        <div class="hero-big">
+          <div class="hero-row">
+            <div class="hero-left">
+              <div class="hero-num">${done || '—'}</div>
+              <div class="hero-lbl">Features shipped</div>
+              <div class="hero-sub">
+                ${last7Done > 0
+                  ? `<span class="delta-up">↑ +${last7Done}</span> in the last 7 days`
+                  : `<span style="color:var(--text3)">no shipments in the last 7 days</span>`}
+              </div>
+            </div>
+            <div class="hero-spark">${sparkHtml}</div>
+          </div>
+        </div>
+
+        <!-- COST BAR CHART — visual horizontal bars -->
+        ${(effectiveLlmUsd > 0 || effectiveHumanUsd > 0) ? `
+          <div class="cost-bars">
+            <div class="cost-headline">
+              ${(() => {
+                // Compute a reliable cost ratio (always positive when both sides are > 0)
+                const costRatio = (effectiveHumanUsd > 0 && effectiveLlmUsd > 0)
+                  ? effectiveHumanUsd / effectiveLlmUsd : 0;
+                const costRatioStr = costRatio >= 2
+                  ? Math.round(costRatio).toLocaleString('en-US') + '×'
+                  : null;
+                if (effectiveSavings) {
+                  return `<div class="big">${effectiveSavings} cheaper</div>
+                          <div class="lbl">AI vs human team</div>`;
+                }
+                if (costRatioStr) {
+                  return `<div class="big">${costRatioStr} cheaper</div>
+                          <div class="lbl">AI vs human cost</div>`;
+                }
+                if (timeSpeedup) {
+                  return `<div class="big">${timeSpeedup}× faster</div>
+                          <div class="lbl">AI vs human time</div>`;
+                }
+                return `<div class="big">AI replaces team</div>
+                        <div class="lbl">cost &amp; time breakdown</div>`;
+              })()}
+            </div>
+            <div class="cost-bar-row human">
+              <div class="cb-name">Humans</div>
+              <div class="cb-rail"><div class="cb-fill" style="width:${humanPct.toFixed(1)}%"></div></div>
+              <div class="cb-val">$${Number((effectiveHumanUsd > 0 ? effectiveHumanUsd : humanH * 150).toFixed(0)).toLocaleString('en-US')}</div>
+            </div>
+            <div class="cost-bar-row ai">
+              <div class="cb-name">AI</div>
+              <div class="cb-rail"><div class="cb-fill" style="width:${aiPct.toFixed(1)}%"></div></div>
+              <div class="cb-val">$${effectiveLlmUsd.toFixed(2)}</div>
+            </div>
+          </div>` : ''}
+
+        <!-- ACTIVITY HEATMAP — last 30 days -->
+        <div class="activity-heatmap">
+          <div class="ah-head">
+            <span class="ah-title">Daily activity · 30 days</span>
+            <span class="ah-legend">
+              less
+              <span class="ah-legend-cells">
+                <span class="ah-cell"></span>
+                <span class="ah-cell l1"></span>
+                <span class="ah-cell l2"></span>
+                <span class="ah-cell l3"></span>
+                <span class="ah-cell l4"></span>
+              </span>
+              more
+            </span>
+          </div>
+          <div class="ah-grid">${heatmapHtml}</div>
+        </div>
+
+        <div class="report-stats-sec">
+          ${sec.map(s => `
+            <div class="report-stat ${s.cls || ''}">
+              <div class="num">${s.v}</div>
+              <div class="lbl">${s.lbl}</div>
+              ${s.extra ? `<div class="sub">${s.extra}</div>` : ''}
+            </div>`).join('')}
+        </div>
+
+        ${riskItems.length ? `
+          <div class="section-label warn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            What's at risk · ${riskItems.length} item${riskItems.length === 1 ? '' : 's'}
+          </div>
+          <div class="risk-list">
+            ${riskItems.map(t => {
+              const status = blocked.includes(t) ? 'blocked' : (stale.includes(t) ? 'stale' : 'p0');
+              const tag = status === 'blocked' ? 'BLOCKED' : (status === 'stale' ? 'STALE' : 'P0 OPEN');
+              return `
+                <div class="risk-row ${status}">
+                  <span class="risk-tag">${tag}</span>
+                  <span class="risk-ttl">${esc(t.title)}</span>
+                  <span class="risk-meta">${ageStr(t.updated_at || t.created_at)}</span>
+                </div>`;
+            }).join('')}
+          </div>` : ''}
+
+        ${coming.length ? `
+          <div class="section-label">Coming up · next ${coming.length} in pipeline</div>
+          <div class="coming-list">
+            ${coming.map(t => `
+              <div class="coming-row">
+                <span class="coming-arrow">▸</span>
+                ${priChip(t.priority)}
+                <span class="coming-ttl">${esc(t.title)}</span>
+                ${t.agent ? `<span class="coming-agent">${esc(t.agent)}</span>` : ''}
+              </div>`).join('')}
+          </div>` : ''}
+
+        ${doneTasks.length ? `
+          <div class="section-label">Recently shipped · ${doneTasks.length} item${doneTasks.length === 1 ? '' : 's'}</div>
+          ${['security', 'infra', 'feature', 'docs'].filter(c => categories[c].length).map(cat => `
+            <div class="ship-cat">
+              <div class="ship-cat-h">
+                <span class="ship-cat-dot ${cat}"></span>
+                <span class="ship-cat-name">${cat.toUpperCase()}</span>
+                <span class="ship-cat-count">${categories[cat].length}</span>
+              </div>
+              ${categories[cat].slice(0, 6).map(t => {
+                const reason = t.close_reason ? esc(t.close_reason.substring(0, 70)) + (t.close_reason.length > 70 ? '…' : '') : '';
+                return `
+                  <div class="shipped-row">
+                    <span class="shipped-check">✓</span>
+                    <span class="ttl">
+                      ${esc(t.title)}
+                      ${reason ? `<span class="sub">${reason}</span>` : ''}
+                    </span>
+                    <span class="when">${whenStr(t.closed_at)}</span>
+                  </div>`;
+              }).join('')}
+            </div>`).join('')}` : ''}
+
+        ${agentsCost.length ? `
+          <div class="agent-bubbles-wrap">
+            <div class="ab-title">
+              <span>Agent breakdown · time spent</span>
+              <span>${agentsCost.length} agent${agentsCost.length === 1 ? '' : 's'}</span>
+            </div>
+            ${bubblesHtml}
+            <div class="ab-foot">
+              <span>Total: ${totalTimeMin >= 60 ? (totalTimeMin/60).toFixed(1)+'h' : totalTimeMin+'m'}</span>
+              <span>LLM $${agentsCost.reduce((s,a)=>s+a.llm_usd,0).toFixed(2)} · Human $${agentsCost.reduce((s,a)=>s+a.human_usd,0).toFixed(0)}</span>
+              <span>${agentsCost.reduce((s,a)=>s+a.tasks_done,0)}/${agentsCost.reduce((s,a)=>s+a.tasks_total,0)} tasks</span>
+            </div>
+          </div>` : ''}
+
+        <div class="trust-foot">
+          <div class="trust-row">
+            <span class="trust-k">Generated</span>
+            <span class="trust-v">${esc(generatedAt)} · live data</span>
+          </div>
+          <div class="trust-row">
+            <span class="trust-k">Project</span>
+            <span class="trust-v">${esc(project)} · greatcto agents</span>
+          </div>
+          <div class="trust-row">
+            <span class="trust-k">Methodology</span>
+            <span class="trust-v">tasks + costs from <code>bd list</code> &amp; <code>docs/plans/PLAN-*.md</code> mtime &middot; <a href="https://github.com/avelikiy/great_cto" target="_blank">view source</a></span>
+          </div>
+          <div class="trust-row">
+            <span class="trust-k">Privacy</span>
+            <span class="trust-v">no source code, credentials, or PII exposed · owner can pause anytime</span>
+          </div>
+        </div>
+
+        <div class="report-foot">
+          CREATED BY <a href="https://greatcto.systems" target="_blank">GREATCTO</a>
+          &nbsp;·&nbsp; AI engineering infrastructure for dev teams
+          &nbsp;·&nbsp; <a href="https://github.com/avelikiy/great_cto" target="_blank">GITHUB</a>
+        </div>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>

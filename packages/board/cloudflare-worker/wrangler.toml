@@ -1,0 +1,26 @@
+name = "great-cto-notify"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+account_id = "8b4c82576661609fadcac6ae8a5b2708"
+
+# Routes — this worker handles ONLY /notify*.
+# Existing `great-cto-share` worker keeps owning /r/* (separate, R2-backed).
+routes = [
+  { pattern = "greatcto.systems/notify", zone_name = "greatcto.systems" },
+  { pattern = "greatcto.systems/notify/*", zone_name = "greatcto.systems" },
+]
+
+# KV namespace — stores verified emails + verification codes.
+# Created by: wrangler kv namespace create STATE
+[[kv_namespaces]]
+binding = "STATE"
+id = "87d114d92bfc4bd6b04bab367de5e2b6"
+
+# Plain (non-secret) variable — sender shown in From: header.
+# Domain greatcto.systems verified in Resend → use the brand sender.
+[vars]
+RESEND_FROM = "GreatCTO <notifications@updates.greatcto.systems>"
+
+# Secret — must be set via dashboard or:
+#   wrangler secret put RESEND_API_KEY
+# (do NOT commit the key)

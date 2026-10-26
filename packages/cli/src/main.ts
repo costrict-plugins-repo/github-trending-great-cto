@@ -1,0 +1,1774 @@
+// CLI entry: parse args, run the init flow.
+//
+// Flow:
+//   1. banner
+//   2. detect stack in cwd
+//   3. pick archetype + compliance
+//   4. confirm with user (unless -y)
+//   5. install plugin (git clone)
+//   6. enable in ~/.claude/settings.json
+//   6b. install companion plugins (superpowers + beads)
+//   7. bootstrap .great_cto/PROJECT.md
+//   8. print next steps
+
+import { resolve } from "node:path";
+import { banner, bold, cyan, dim, error, gray, green, log, step, success, warn, yellow, confirm } from "./ui.js";
+import { detect } from "./detect.js";
+import { pickArchetype, suggestCompliance } from "./archetypes.js";
+import { install, findInstalledVersions } from "./installer.js";
+import { enableGreatCto } from "./settings.js";
+import { installAllCompanions } from "./companion.js";
+import { bootstrap } from "./bootstrap.js";
+import { compileFlow } from "./flow.js";
+import { shouldUseLlmFallback, suggestArchetypeFromLlm } from "./llm-fallback.js";
+import { sendUsagePing, sendInstallPing, telemetrySubcommand, isTelemetryEnabled, computeAnonId } from "./telemetry.js";
+import { checkForUpdate } from "./update-check.js";
+import { findBoardServerPath } from "./board-path.js";
+import { daemonSpec, decideEnsureAction, isBoardResponse, type Platform } from "./board-daemon.js";
+import { readFileSync, writeFileSync, copyFileSync, chmodSync, mkdirSync, readdirSync, unlinkSync, existsSync as fsExistsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
+import { homedir } from "node:os";
+
+/** The CLI version, or undefined when it cannot be read.
+ *
+ * `undefined` rather than the string "unknown": board-path treats a missing
+ * version as "behave as before", and passing the literal "unknown" would make
+ * `byVer` parse NaNs and answer nonsense. A value we could not determine must
+ * arrive as an absence, not as a word that looks like one. */
+function cliVersionOrUndefined(): string | undefined {
+  const v = getCliVersion();
+  return /^\d+\.\d+\.\d+/.test(v) ? v : undefined;
+}
+
+function getCliVersion(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    // dist/main.js → ../package.json
+    const pkgPath = join(here, "..", "package.json");
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as { version?: string };
+    return pkg.version || "unknown";
+  } catch {
+    return "unknown";
+  }
+}
+
+interface CliArgs {
+  command: "init" | "help" | "version" | "board" | "console" | "register" | "ci" | "mcp" | "adapt" | "serve" | "webhook" | "report" | "upgrade" | "uninstall" | "statusline" | "telemetry" | "task" | "worker" | "codex-host" | "run" | "status" | "resume" | "chat-only-hint" | "unknown";
+  taskArgs?: string[];
+  unknownToken?: string;
+  dir: string;
+  positional: string[];
+  yes: boolean;
+  dryRun: boolean;
+  force: boolean;
+  archetype: string | null;
+  version: string | null;
+  boardPort: number;
+  boardNoOpen: boolean;
+  consoleBind: string | null;  // --bind: bind address for `console` (tunnel/hosting); default loopback
+  demo: boolean;               // --demo: inject synthetic cases so the operator console comes alive
+  useLlm: boolean;        // --use-llm: force LLM even on high confidence
+  noLlm: boolean;         // --no-llm: skip LLM even on low confidence
+  host: "claude-code" | "codex" | null;  // --host codex: install for Codex instead of Claude Code
+  hostInput?: string; // retain invalid prefix values for daily-adapter validation
+  upgradeSelf: boolean;   // `upgrade --self` / `upgrade self`: upgrade the CLI itself, not companion plugins
+  purgeData: boolean;     // `uninstall --purge-data`: move ~/.great_cto aside too
+  projects: boolean;      // `uninstall --projects`: also remove the pre-push hooks init wrote into projects
+}
+
+function parseArgs(argv: string[]): CliArgs {
+  const args: CliArgs = {
+    command: "init",
+    boardPort: 3141,
+    boardNoOpen: false,
+    consoleBind: null,
+    demo: false,
+    dir: process.cwd(),
+    yes: false,
+    dryRun: false,
+    force: false,
+    archetype: null,
+    version: null,
+    useLlm: false,
+    noLlm: false,
+    host: null,
+    upgradeSelf: false,
+    purgeData: false,
+    projects: false,
+    positional: [],
+  };
+
+  const rest: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === "-h" || a === "--help") args.command = "help";
+    else if (a === "-v" || a === "--version") args.command = "version";
+    else if (a === "-y" || a === "--yes") args.yes = true;
+    else if (a === "--dry-run") args.dryRun = true;
+    else if (a === "--force") args.force = true;
+    else if (a === "--archetype") args.archetype = argv[++i] ?? null;
+    else if (a === "--version-tag") args.version = argv[++i] ?? null;
+    else if (a === "--port") args.boardPort = parseInt(argv[++i] ?? "3141", 10);
+    else if (a.startsWith("--port=")) args.boardPort = parseInt(a.slice("--port=".length), 10);
+    else if (a === "--no-open") args.boardNoOpen = true;
+    else if (a === "--use-llm") args.useLlm = true;
+    else if (a === "--no-llm") args.noLlm = true;
+    else if (a === "--host") { const v = argv[++i] ?? ""; args.hostInput = v; args.host = (v === "codex" || v === "claude-code") ? v : null; }
+    else if (a.startsWith("--host=")) { const v = a.slice("--host=".length); args.hostInput = v; args.host = (v === "codex" || v === "claude-code") ? v : null; }
+    else if (a === "--bind") args.consoleBind = argv[++i] ?? null;
+    else if (a.startsWith("--bind=")) args.consoleBind = a.slice("--bind=".length) || null;
+    else if (a === "--demo") args.demo = true;
+    else if (a === "board") args.command = "board";
+    else if (a === "console") args.command = "console";
+    else if (a === "telemetry") args.command = "telemetry";
+    else if (a === "register") args.command = "register";
+    else if (a === "ci") args.command = "ci";
+    else if (a === "mcp") args.command = "mcp";
+    else if (a === "adapt") args.command = "adapt";
+    else if (a === "serve") args.command = "serve";
+    else if (a === "webhook") args.command = "webhook";
+    else if (a === "report") args.command = "report";
+    else if (a === "upgrade") args.command = "upgrade";
+    else if (a === "uninstall") args.command = "uninstall";
+    else if (a === "statusline") { args.command = "statusline"; args.taskArgs = argv.slice(i + 1); break; }
+    else if (a === "--purge-data") args.purgeData = true;
+    else if (a === "--projects") args.projects = true;
+    else if (a === "--self") args.upgradeSelf = true;
+    else if (a === "task") { args.command = "task"; args.taskArgs = argv.slice(i + 1); break; }
+    else if (a === "worker") { args.command = "worker"; args.taskArgs = argv.slice(i + 1); break; }
+    else if (a === "codex-host") { args.command = "codex-host"; args.taskArgs = argv.slice(i + 1); break; }
+    else if (a === "run" || a === "status" || a === "resume") { args.command = a; args.taskArgs = argv.slice(i + 1); break; }
+    // Slash-commands surfaced as CLI subcommands so users get a clear hint
+    // instead of a confusing usage error. These work only in the chat plugin.
+    else if (
+      a === "start" || a === "audit" || a === "inbox" || a === "digest" ||
+      a === "review" || a === "doctor" || a === "burn" || a === "save" ||
+      a === "learn" || a === "agent" ||
+      a === "rfc" || a === "release" || a === "ownership" ||
+      a === "sec" || a === "poc" || a === "crystallize" ||
+      a === "migrate"
+    ) {
+      args.command = "chat-only-hint";
+      // Stash which command they tried so we can quote it back
+      (args as unknown as { _slashTried: string })._slashTried = a;
+    }
+    else if (a.startsWith("--dir=")) args.dir = a.slice("--dir=".length);
+    else if (a === "--dir") args.dir = argv[++i] ?? args.dir;
+    else if (a === "init" || a === "install" || a === "help" || a === "version") {
+      // `install` is an alias for `init`. Both run the same flow.
+      args.command = (a === "install" ? "init" : a) as CliArgs["command"];
+      if (a === "install") {
+        (args as unknown as { _fromInstall: boolean })._fromInstall = true;
+      }
+    } else if (!a.startsWith("-") && args.command === "init" && i === 0) {
+      // First positional that isn't a recognised subcommand → unknown
+      args.command = "unknown";
+      args.unknownToken = a;
+    } else if (a.startsWith("--") && args.command === "init") {
+      // Unknown long flag in init position → unknown
+      args.command = "unknown";
+      args.unknownToken = a;
+    } else rest.push(a);
+  }
+
+  args.dir = resolve(args.dir);
+  args.positional = rest;
+  return args;
+}
+
+async function runRegister(args: CliArgs): Promise<number> {
+  const { join } = await import("node:path");
+  const { existsSync, readFileSync, writeFileSync, mkdirSync, statSync } = await import("node:fs");
+  const { homedir } = await import("node:os");
+
+  const cwd = args.dir;
+  const projectMd = join(cwd, ".great_cto", "PROJECT.md");
+  if (!existsSync(projectMd)) {
+    error(`No .great_cto/PROJECT.md found in ${cwd}`);
+    log("Run /audit or /start first inside a Claude Code session to bootstrap the project.");
+    return 1;
+  }
+
+  const text = readFileSync(projectMd, "utf8");
+  const get = (k: string) => (text.match(new RegExp(`^${k}:\\s*(.+)$`, "m")) || [])[1]?.trim() || "";
+  const meta = {
+    slug: get("project") || cwd.split("/").pop() || "project",
+    archetype: get("archetype") || "web-service",
+    description: get("description") || "",
+    path: cwd,
+    added_at: new Date().toISOString(),
+  };
+
+  const dir = join(homedir(), ".great_cto");
+  mkdirSync(dir, { recursive: true });
+  const f = join(dir, "projects.json");
+  let reg: { projects: Array<typeof meta> } = { projects: [] };
+  if (existsSync(f)) {
+    // An unparseable registry used to be replaced by one holding only this project —
+    // every other project vanished from the board. Refuse instead.
+    try { reg = JSON.parse(readFileSync(f, "utf8")); } catch (e) {
+      error(`${f} is not valid JSON — not touching it: ${(e as Error).message}`);
+      return 1;
+    }
+    if (!reg || !Array.isArray(reg.projects)) {
+      error(`${f} has no projects[] list — not touching it`);
+      return 1;
+    }
+  }
+  if (reg.projects.find(p => p.path === meta.path)) {
+    log(`✓ Already registered: ${meta.slug} (${cwd})`);
+    return 0;
+  }
+  reg.projects.push(meta);
+  writeFileSync(f, JSON.stringify(reg, null, 2));
+  log(`✓ Registered: ${meta.slug} (${meta.archetype})`);
+  log(`  → will appear in great-cto board project switcher`);
+  return 0;
+}
+
+// ── Board server lifecycle helpers ───────────────────────────────────────────
+
+/** Absolute path to the board PID file (persists across CLI invocations). */
+function boardPidFilePath(surface?: "console"): string {
+  // The two surfaces are separate processes with separate lifecycles — a console
+  // start must never kill the builder board (and vice versa).
+  return join(homedir(), ".great_cto", surface === "console" ? "console.pid" : "board.pid");
+}
+
+/**
+ * Kill the board server recorded in the PID file.
+ * Returns true if a live process was terminated.
+ */
+async function killExistingBoard(surface?: "console"): Promise<boolean> {
+  const pidFile = boardPidFilePath(surface);
+  if (!fsExistsSync(pidFile)) return false;
+  const raw = readFileSync(pidFile, "utf8").trim();
+  const pid = parseInt(raw, 10);
+  if (!pid || isNaN(pid)) {
+    try { unlinkSync(pidFile); } catch { /* ignore */ }
+    return false;
+  }
+  try {
+    process.kill(pid, "SIGTERM");
+    await new Promise<void>(r => setTimeout(r, 400));
+    try { process.kill(pid, "SIGKILL"); } catch { /* already dead — fine */ }
+    try { unlinkSync(pidFile); } catch { /* ignore */ }
+    return true;
+  } catch {
+    // process was already gone
+    try { unlinkSync(pidFile); } catch { /* ignore */ }
+    return false;
+  }
+}
+
+/**
+ * If the board server is running (PID file present + process alive), kill it
+ * and relaunch with the latest installed version in the background.
+ * Called by runInit() after a new plugin version is installed.
+ */
+async function restartBoardAfterUpgrade(port: number): Promise<void> {
+  const { spawn } = await import("node:child_process");
+  const pidFile = boardPidFilePath();
+  if (!fsExistsSync(pidFile)) return; // board wasn't running — nothing to do
+
+  const raw = readFileSync(pidFile, "utf8").trim();
+  const oldPid = parseInt(raw, 10);
+  if (!oldPid || isNaN(oldPid)) return;
+
+  // Check if the process is actually alive (signal 0 = existence check)
+  try { process.kill(oldPid, 0); } catch { return; }
+
+  log(`  ${dim(`↺  board server (pid ${oldPid}) running with old version — restarting…`)}`);
+
+  await killExistingBoard();
+
+  const serverPath = findBoardServerPath(undefined, undefined, cliVersionOrUndefined());
+  if (!serverPath) {
+    warn("board server not found after upgrade — start it manually with: great-cto board");
+    return;
+  }
+
+  // Launch detached so it outlives this init process; --no-open because the
+  // browser tab is already open pointing at the same port.
+  const child = spawn(process.execPath, [serverPath, "--no-open"], {
+    env: { ...process.env, BOARD_PORT: String(port) },
+    stdio: "ignore",
+    detached: true,
+  });
+  child.unref();
+
+  try {
+    mkdirSync(join(homedir(), ".great_cto"), { recursive: true });
+    writeFileSync(pidFile, String(child.pid));
+  } catch { /* ignore */ }
+
+  log(`  ${green("✓")} board restarted → http://localhost:${port}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function runBoard(args: CliArgs, surface?: "console"): Promise<number> {
+  const { spawn } = await import("node:child_process");
+
+  // Stop any existing server OF THIS SURFACE (board and console run side by side)
+  const killed = await killExistingBoard(surface);
+  if (killed) {
+    log(`  ${dim(surface === "console" ? "stopped previous console server" : "stopped previous board server")}`);
+  }
+
+  const serverPath = findBoardServerPath(undefined, undefined, cliVersionOrUndefined());
+  if (!serverPath) {
+    error("Board server not found. Reinstall the CLI (npm i -g great-cto@latest) or install the great_cto plugin (npx great-cto install).");
+    return 1;
+  }
+
+  const nodeArgs = [serverPath];
+  if (args.boardNoOpen) nodeArgs.push("--no-open");
+  if (surface) nodeArgs.push("--surface", surface);
+
+  const env: NodeJS.ProcessEnv = { ...process.env, BOARD_PORT: String(args.boardPort) };
+  if (surface === "console" && args.consoleBind) env.GREAT_CTO_HOST = args.consoleBind;
+  if (args.demo) env.GREAT_CTO_DEMO_FEED = "1";
+
+  const child = spawn(process.execPath, nodeArgs, {
+    env,
+    stdio: "inherit",
+    detached: false,
+  });
+
+  // Write PID so future invocations (including init upgrades) can find us
+  try {
+    mkdirSync(join(homedir(), ".great_cto"), { recursive: true });
+    writeFileSync(boardPidFilePath(surface), String(child.pid));
+  } catch { /* best-effort */ }
+
+  child.on("exit", code => {
+    try { unlinkSync(boardPidFilePath(surface)); } catch { /* ignore */ }
+    process.exit(code ?? 0);
+  });
+
+  return 0;
+}
+
+// ── Always-on board: `ensure` gate + OS-supervisor install (ADR-007) ─────────
+
+/** Absolute path to the CLI entry (index.mjs), one level up from dist/main.js. */
+function cliEntryPath(): string {
+  const here = dirname(fileURLToPath(import.meta.url)); // …/dist
+  return join(here, "..", "index.mjs");
+}
+
+/** Read the board PID file → number, or null if missing / garbage. */
+function readBoardPid(surface?: "console"): number | null {
+  const pidFile = boardPidFilePath(surface);
+  if (!fsExistsSync(pidFile)) return null;
+  const pid = parseInt(readFileSync(pidFile, "utf8").trim(), 10);
+  return pid && !isNaN(pid) ? pid : null;
+}
+
+/** signal-0 existence check. */
+function isPidAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true; } catch { return false; }
+}
+
+/**
+ * Is OUR board answering on this port?
+ *
+ * Any-response-is-healthy was the bug: whatever happened to hold 3141 — a dev
+ * server, a proxy, an unrelated app — made `ensure` print "board already
+ * running" and never start the board. `/api/version` returns the board's own
+ * identity, so a stranger on the port now reads as "not running".
+ */
+async function probeBoardPort(port: number): Promise<boolean> {
+  const http = await import("node:http");
+  return new Promise<boolean>(resolve => {
+    const req = http.request(
+      { host: "127.0.0.1", port, path: "/api/version", method: "GET", timeout: 1200 },
+      res => {
+        const status = res.statusCode ?? 0;
+        let body = "";
+        res.setEncoding("utf8");
+        // A stranger could stream forever; the identity fits in well under 4 KB.
+        res.on("data", (c: string) => { body += c; if (body.length > 4096) req.destroy(); });
+        res.on("end", () => resolve(isBoardResponse(status, body)));
+        res.on("error", () => resolve(false));
+      },
+    );
+    req.on("error", () => resolve(false));
+    req.on("timeout", () => { req.destroy(); resolve(false); });
+    req.end();
+  });
+}
+
+/** Detached relaunch of the board (survives this CLI process). Returns the new pid. */
+async function spawnDetachedBoard(port: number): Promise<number | undefined> {
+  const { spawn } = await import("node:child_process");
+  const serverPath = findBoardServerPath(undefined, undefined, cliVersionOrUndefined());
+  if (!serverPath) {
+    error("Board server not found. Reinstall the CLI (npm i -g great-cto@latest).");
+    return undefined;
+  }
+  const child = spawn(process.execPath, [serverPath, "--no-open"], {
+    env: { ...process.env, BOARD_PORT: String(port) },
+    stdio: "ignore",
+    detached: true,
+  });
+  child.unref();
+  try {
+    mkdirSync(join(homedir(), ".great_cto"), { recursive: true });
+    if (child.pid) writeFileSync(boardPidFilePath(), String(child.pid));
+  } catch { /* best-effort */ }
+  return child.pid;
+}
+
+/**
+ * How long a board may take to start answering before something is wrong.
+ *
+ * Measured, not chosen: this board serves /api/version at ~2.4s, falls silent for
+ * ~37s while discovering projects, and recovers. 60s leaves headroom on a slower
+ * machine with more projects. It is a ceiling on patience, not a target — a board
+ * that answers in two seconds costs two seconds.
+ */
+const WARM_WINDOW_MS = 60_000;
+
+/**
+ * Poll until the board answers, or give up.
+ *
+ * `spawn` returning a pid means the OS created a process, not that a board is
+ * serving. A child that dies on EADDRINUSE or a bad build has a pid for a few
+ * milliseconds, and the previous code announced "board started" on the strength
+ * of it — then wrote that pid to the file the next run would trust.
+ */
+async function waitForBoard(port: number, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await probeBoardPort(port)) return true;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  return false;
+}
+
+/**
+ * `great-cto board ensure` — idempotent health gate. Starts the board only if it
+ * isn't already answering; never kills a healthy instance. Safe to call from a
+ * supervisor, cron line, or shell hook.
+ */
+async function runBoardEnsure(args: CliArgs): Promise<number> {
+  const port = args.boardPort;
+  const pid = readBoardPid();
+  const alive = pid !== null && isPidAlive(pid);
+  // Probe the port ALWAYS, not only when a pid file happens to exist. The port is
+  // what a user opens; a missing pid file means this CLI did not start the board,
+  // not that no board is running. Gating the probe on `alive` is what let ensure
+  // spawn a second server onto an occupied port, over and over.
+  // One failed probe is not a hung board.
+  //
+  // Measured on this machine: the board binds the port, answers /api/version at
+  // ~2.4s, then goes SILENT for roughly 37 seconds while it discovers projects,
+  // and only then serves normally. A single probe inside that window says "not
+  // answering" about a board that is merely starting — and the old code then
+  // restarted it, which starts the window again. That is a restart loop, and it
+  // is exactly what a supervisor calling this every minute would have produced.
+  //
+  // So a live pid gets the benefit of the doubt: several probes across the warm
+  // window before anything is declared hung. A board with no live pid needs no
+  // patience — one probe answers whether something is already serving.
+  const healthy = alive
+    ? await waitForBoard(port, WARM_WINDOW_MS)
+    : await probeBoardPort(port);
+  const action = decideEnsureAction({ pid, alive, healthy });
+
+  if (action === "noop") {
+    log(`  ${green("✓")} board already running → http://localhost:${port} (pid ${pid})`);
+    return 0;
+  }
+  if (action === "adopt") {
+    // Deliberately does NOT record a pid: this process is not ours to vouch for,
+    // and a pid file naming something we did not start is how the last one came
+    // to name a corpse.
+    log(`  ${green("✓")} board already answering → http://localhost:${port}`);
+    log(`  ${dim("started outside this CLI — left alone")}`);
+    return 0;
+  }
+  if (action === "restart") {
+    log(`  ${dim(`board pid ${pid} alive but not answering on ${port} — restarting…`)}`);
+    await killExistingBoard();
+  }
+  const newPid = await spawnDetachedBoard(port);
+  if (!newPid) return 1;
+
+  // Spawning is not starting. The previous version announced success the moment
+  // it had a pid, so a child that died immediately — EADDRINUSE, a syntax error,
+  // a missing build — was reported as a started board and its pid was written
+  // down. Wait for the port to actually answer before claiming anything.
+  // Same window: a fresh board is not late, it is warming.
+  const cameUp = await waitForBoard(port, WARM_WINDOW_MS);
+  if (!cameUp) {
+    try { unlinkSync(boardPidFilePath()); } catch { /* nothing to clean up */ }
+    error(`board did not come up on ${port} within 8s — pid ${newPid} exited or is not serving.`);
+    log(dim(`  Something else may hold the port: lsof -nP -iTCP:${port} -sTCP:LISTEN`));
+    return 1;
+  }
+  log(`  ${green("✓")} board ${action === "restart" ? "restarted" : "started"} → http://localhost:${port} (pid ${newPid})`);
+  return 0;
+}
+
+/**
+ * `great-cto board install-daemon` — write + activate a per-user OS service that
+ * keeps the board running across crashes and reboots. `--dry-run` prints only.
+ */
+async function runBoardInstallDaemon(args: CliArgs): Promise<number> {
+  const { spawnSync } = await import("node:child_process");
+  const spec = daemonSpec(process.platform as Platform, {
+    nodePath: process.execPath,
+    cliPath: cliEntryPath(),
+    port: args.boardPort,
+    home: homedir(),
+  });
+
+  if (!spec.supported) {
+    error(`No supervisor integration for platform '${process.platform}'.`);
+    log("Run `great-cto board ensure` from your own scheduler instead.");
+    return 1;
+  }
+
+  const body = spec.render();
+  if (args.dryRun) {
+    log(bold(`Would install ${spec.kind} unit${spec.unitPath ? ` at ${spec.unitPath}` : ""}:\n`));
+    log(body);
+    log(dim(`Then run: ${spec.installCmds.map(c => c.join(" ")).join(" && ")}`));
+    return 0;
+  }
+
+  // Write the unit file (launchd/systemd). win32 has no separate file — the task IS the config.
+  if (spec.unitPath) {
+    try {
+      mkdirSync(dirname(spec.unitPath), { recursive: true });
+      writeFileSync(spec.unitPath, body);
+      log(`  ${green("✓")} wrote ${spec.kind} unit → ${spec.unitPath}`);
+    } catch (e) {
+      error(`Could not write unit file: ${(e as Error).message}`);
+      return 1;
+    }
+  }
+
+  for (const cmd of spec.installCmds) {
+    const r = spawnSync(cmd[0]!, cmd.slice(1), { stdio: "ignore" });
+    // launchctl unload of a not-yet-loaded agent returns non-zero — that's expected on first install.
+    if (r.status !== 0 && !(cmd[0] === "launchctl" && cmd.includes("unload"))) {
+      warn(`command exited ${r.status}: ${cmd.join(" ")}`);
+    }
+  }
+
+  log(`  ${green("✓")} board daemon installed — it will start at login and restart on crash.`);
+  log(dim(`  now:      great-cto board ensure   (brings it up immediately)`));
+  log(dim(`  remove:   great-cto board uninstall-daemon`));
+  return 0;
+}
+
+/** `great-cto board uninstall-daemon` — deactivate the service and remove its unit file. */
+async function runBoardUninstallDaemon(args: CliArgs): Promise<number> {
+  const { spawnSync } = await import("node:child_process");
+  const spec = daemonSpec(process.platform as Platform, {
+    nodePath: process.execPath,
+    cliPath: cliEntryPath(),
+    port: args.boardPort,
+    home: homedir(),
+  });
+  if (!spec.supported) {
+    error(`No supervisor integration for platform '${process.platform}'.`);
+    return 1;
+  }
+  for (const cmd of spec.uninstallCmds) {
+    spawnSync(cmd[0]!, cmd.slice(1), { stdio: "ignore" });
+  }
+  if (spec.unitPath && fsExistsSync(spec.unitPath)) {
+    try { unlinkSync(spec.unitPath); } catch { /* ignore */ }
+  }
+  log(`  ${green("✓")} board daemon removed. (A running board keeps running — stop it with a new \`board\` or reboot.)`);
+  return 0;
+}
+
+/**
+ * `great-cto uninstall` — plan by default, act on --yes. See uninstall.ts for what
+ * counts as an artefact, as user data and as host-owned; this function adds the two
+ * steps that need the platform: stopping the board and unloading its service.
+ */
+async function runUninstall(args: CliArgs): Promise<number> {
+  const { planUninstall, applyUninstall } = await import("./uninstall.js");
+  const { spawnSync } = await import("node:child_process");
+  const home = homedir();
+  const spec = daemonSpec(process.platform as Platform, { nodePath: process.execPath, cliPath: cliEntryPath(), port: args.boardPort, home });
+  let psText = "";
+  try { psText = execFileSync("ps", ["eww", "-A", "-o", "command="], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], maxBuffer: 64 * 1024 * 1024 }); } catch { /* no ps: nothing is known live */ }
+  // The nightly loop's agent is written by scripts/nightly-loop.sh (a maintainer tool), not by an install — but it is ours.
+  const nightly = process.platform === "darwin" ? join(home, "Library", "LaunchAgents", "systems.greatcto.nightly-loop.plist") : "";
+  const plan = planUninstall({ home, psText, daemonUnitPaths: [spec.unitPath, nightly].filter(Boolean), includeProjects: args.projects });
+  const short = (p: string) => p.replace(home, "~");
+  const group = (title: string, items: string[]) => {
+    if (!items.length) return;
+    log(`  ${bold(title)} ${dim(`(${items.length})`)}`);
+    for (const i of items.slice(0, 8)) log(`    ${short(i)}`);
+    if (items.length > 8) log(dim(`    … and ${items.length - 8} more`));
+  };
+
+  log(`${bold("great-cto uninstall")} ${args.yes ? "" : dim("— plan only; nothing is changed without --yes")}`);
+  log("");
+  log(green("Removes") + dim(" — what an install wrote"));
+  group("plugin versions", plan.pluginVersions);
+  group("agents (marked great_cto-managed)", plan.agents);
+  group("commands (marked great_cto-managed)", plan.commands);
+  if (plan.settingsKeys.length) log(`  ${bold("~/.claude/settings.json")} enabledPlugins: ${plan.settingsKeys.join(", ")} ${dim("(backed up first)")}`);
+  if (plan.installedKeys.length) log(`  ${bold("installed_plugins.json")}: ${plan.installedKeys.join(", ")} ${dim("(backed up first)")}`);
+  group("background services", plan.daemonUnits);
+  log(`  ${bold("board")} ${dim("— the running board process, if any, is stopped")}`);
+  const welcomed = plan.caches.filter((c) => /\/\.welcomed-/.test(c));
+  group("caches in ~/.great_cto (clones, registries, runtime files)", [
+    ...(welcomed.length ? [`~/.great_cto/.welcomed-* (${welcomed.length} markers)`] : []),
+    ...plan.caches.filter((c) => !welcomed.includes(c)),
+  ]);
+  group("pre-push hooks init wrote into projects", plan.projectHooks);
+  const nothing = !plan.pluginVersions.length && !plan.agents.length && !plan.commands.length && !plan.settingsKeys.length
+    && !plan.installedKeys.length && !plan.daemonUnits.length && !plan.caches.length && !plan.projectHooks.length;
+  if (nothing) log(dim("  nothing installed by great_cto was found"));
+
+  log("");
+  log(yellow("Keeps") + dim(" — yours, or used by something else"));
+  if (plan.keptVersions.length) for (const k of plan.keptVersions) log(`  ${short(k.dir)} ${dim(`— ${k.why}`)}`);
+  if (plan.userData.length) {
+    const named = ["lessons.md", "decisions.md", "verdicts", "global-patterns", "cost-history.log", "secrets.env"]
+      .filter((n) => plan.userData.some((d) => d.endsWith(`/${n}`)));
+    log(`  ~/.great_cto ${dim(`— ${plan.userData.length} entries of your data${named.length ? `: ${named.join(", ")}` : ""}`)}`);
+    log(dim(`    --purge-data moves it to ~/.great_cto.removed-<date> (reversible; nothing is deleted)`));
+  }
+  if (plan.projects.length) log(`  ${plan.projects.length} project(s)' .great_cto/ ${dim("— project records; delete per project if you want")}`);
+  if (!args.projects && plan.projects.length) log(dim(`    --projects also removes the pre-push hooks great_cto installed in them`));
+  if (plan.companions.length) log(`  ${plan.companions.join(", ")} ${dim("— companion plugins other tools may use; disable with `claude plugin disable <name>`")}`);
+
+  log("");
+  log(cyan("Yours to run") + dim(" — owned by the host, not edited from here"));
+  if (plan.settingsKeys.includes("great_cto@great-cto") || plan.marketplaces.length) log(`  claude plugin uninstall great_cto@great-cto`);
+  for (const m of plan.marketplaces) log(`  claude plugin marketplace remove ${m}`);
+  try { execFileSync("codex", ["--version"], { stdio: "ignore" }); log(`  codex plugin remove great-cto@great-cto   ${dim("# if you installed it for Codex")}`); } catch { /* no codex */ }
+  log(`  npm uninstall -g great-cto   ${dim("# last: this command is running from it")}`);
+
+  if (!args.yes) {
+    log("");
+    log(`Nothing changed. Run ${bold("great-cto uninstall --yes")} to remove the list above.`);
+    return 0;
+  }
+
+  await killExistingBoard();
+  await killExistingBoard("console");
+  for (const cmd of spec.uninstallCmds) spawnSync(cmd[0]!, cmd.slice(1), { stdio: "ignore" });
+  if (nightly && plan.daemonUnits.includes(nightly)) spawnSync("launchctl", ["unload", "-w", nightly], { stdio: "ignore" });
+  const r = applyUninstall(plan, { purgeData: args.purgeData });
+  log("");
+  success(`removed ${r.removed.length} item(s)`);
+  for (const b of r.backups) log(dim(`  backup: ${short(b)}`));
+  if (r.movedData) log(`  ~/.great_cto moved to ${short(r.movedData)} ${dim("— delete it yourself once you are sure")}`);
+  for (const f of r.failed) warn(`could not remove ${short(f)}`);
+  if (plan.keptVersions.length) warn(`${plan.keptVersions.length} plugin version(s) kept — a running session uses them; run uninstall again after closing it`);
+  return r.failed.length ? 1 : 0;
+}
+
+function printHelp(advanced = false): void {
+  if (!advanced) {
+    log(`great-cto — describe the task, get a checked result
+
+Get started:
+  great-cto init
+
+Everyday use:
+  great-cto run "describe the task"
+  great-cto status
+  great-cto resume
+
+Default host: interactive Claude Code with the plugin loaded.
+For controlled Codex add --host codex; run also needs --allow src,tests,docs.
+Use --dir PATH to choose a project, --dry-run to preview, or run --help for options.
+Resume preserves pending decisions; it never approves them.
+
+Details:
+  great-cto board           Open the local dashboard
+  great-cto help --advanced All installation, runtime and operator commands`);
+    return;
+  }
+  log(`${bold("great-cto")} — one-command install for the great_cto Claude Code plugin
+
+${bold("Usage:")}
+  npx great-cto run "describe the task" [--host claude-code|codex] [--dir PATH]
+  npx great-cto status [RUN_UUID] [--host codex] [--json]
+  npx great-cto resume [RUN_UUID] [--host codex]
+  npx great-cto install [options]    Same as init
+  npx great-cto [init] [options]     Detect + bootstrap
+  npx great-cto board [--port 3141] [--no-open]
+  npx great-cto console [--port 8788] [--bind 0.0.0.0] [--no-open]
+  npx great-cto register [--dir PATH]
+  npx great-cto ci [path] [--no-archetype] [--no-budget]
+  npx great-cto mcp [--sse --port N]
+  npx great-cto adapt [--dry-run]
+  npx great-cto task work decisions|approve|verify|complete|metrics|preview|publish ...
+  npx great-cto codex-host doctor|list|start|resume|status ...
+  npx great-cto serve [--port 3142]
+  npx great-cto upgrade [superpowers|beads]  Re-clone companions to latest tag + re-apply overlays
+  npx great-cto upgrade --self                Upgrade the great-cto CLI itself, in place
+  npx great-cto statusline install            Record Claude's plan use (5h / weekly %) for the board; keeps your status line
+  npx great-cto statusline uninstall          Put your previous status line back
+  npx great-cto uninstall [--yes]             Show what great_cto installed; --yes removes it (your data stays)
+  npx great-cto help
+  npx great-cto version
+
+${bold("Board:")}
+  great-cto board              Open Kanban + CTO Dashboard at localhost:3141
+  great-cto board --port 4000  Use a different port
+  great-cto board --no-open    Start server without opening browser
+  great-cto board ensure       Start only if not already running (idempotent; for cron/hooks)
+  great-cto board install-daemon    Keep the board always on (launchd/systemd/schtasks)
+  great-cto board install-daemon --dry-run   Print the service unit without installing
+  great-cto board uninstall-daemon  Remove the always-on service
+
+${bold("Operator console (the second surface — invite-only, hostable):")}
+  great-cto console                 Serve ONLY the operator console (no dev board)
+  great-cto console --port 8788     Different port
+  great-cto console --bind 0.0.0.0  Reachable beyond this machine (tunnel/hosting);
+                                    operators sign in via invite links. Only names you
+                                    list are answered: GREAT_CTO_ALLOWED_HOSTS=console.example.com
+
+${bold("Telemetry (anonymous, opt-IN — OFF by default):")}
+  great-cto telemetry status   Show state + endpoint + your anon_id
+  great-cto telemetry on        Enable anonymous usage events (command, node, os — no PII)
+  great-cto telemetry off       Disable  ${dim("(also: DO_NOT_TRACK=1)")}
+  great-cto telemetry whoami    Print your anon_id (8 hex chars, not reversible)
+  ${dim("Privacy policy: docs/PRIVACY.md")}
+
+${bold("Register:")}
+  great-cto register           Add this repo to ~/.great_cto/projects.json
+                               (auto-discovered after /audit or /start, but
+                                run this if the project doesn't appear in board)
+
+${bold("Upgrade:")}
+  great-cto upgrade              Upgrade superpowers + beads to latest, re-apply critic overlays
+  great-cto upgrade superpowers  Upgrade superpowers only
+  great-cto upgrade beads        Upgrade beads only
+  great-cto upgrade --self       Upgrade the great-cto CLI itself (also: upgrade self)
+  great-cto upgrade codex        Refresh great_cto in Codex (also part of plain upgrade)
+  great-cto uninstall            Plan: what would be removed, what is kept (changes nothing)
+  great-cto uninstall --yes      Remove plugin, agents, commands, board service, caches
+      --purge-data               Also move ~/.great_cto aside (reversible, never deleted)
+      --projects                 Also remove the pre-push hooks init wrote into your projects
+  ${dim("(Safe to run any time — idempotent if already on latest)")}
+
+${bold("CI gate:")}
+  great-cto ci                         Single-command CI gate (archetype + budget check)
+  great-cto ci --no-archetype          Skip the archetype-drift check
+  great-cto ci --no-budget             Skip the monthly-budget sanity check
+  ${dim("(exits 1 on archetype drift; budget is warn-only)")}
+
+${bold("MCP server (cross-platform):")}
+  great-cto mcp                        Stdio MCP server — works in Claude Code /
+                                       Claude Desktop / any MCP host
+  great-cto mcp --sse --port 8765      SSE mode for remote / multi-client (TODO v2.5)
+  ${dim("Tools exposed: detect_archetype, estimate_cost, query_decisions,")}
+  ${dim("               project_status, cost_summary, pipeline_stages, recent_verdicts")}
+
+${bold("Claude Code adapter:")}
+  great-cto adapt                      Generate AGENTS.md + CLAUDE.md
+  great-cto adapt --dry-run            Preview what would be written
+  ${dim("Idempotent — re-run after editing .great_cto/PROJECT.md")}
+
+${bold("Controlled Codex host:")}
+  npx --yes great-cto codex-host doctor          Check Codex auth, state store, Docker and GitHub CLI
+  npx --yes great-cto codex-host list --dir .    Show sanitized runs for this project
+  npx --yes great-cto codex-host start --dir . --prompt "..." --allow src,tests,docs
+  ${dim("The controller owns writes, verification, gates and release approvals.")}
+
+${bold("Webhook server (preview):")}
+  great-cto serve --port 3142          Webhook receiver (logs to ~/.great_cto/webhook-events.log)
+  ${dim("Endpoints: POST /webhook/github, POST /webhook/generic, GET /events, GET /healthz")}
+
+${bold("Options:")}
+  -y, --yes              Skip confirmation prompts (non-interactive)
+      --dry-run          Show what would be done without doing it
+      --force            Reinstall even if already present
+      --archetype NAME   Override detected archetype
+                         (${cyan("web-service|mobile-app|ai-system|agent-product|commerce|fintech|")}
+                          ${cyan("healthcare|web3|data-platform|infra|library|cli-tool|")}
+                          ${cyan("iot-embedded|regulated|devtools|browser-extension|game")})
+      --version-tag VER  Pin to specific great_cto version (default: latest)
+      --dir PATH         Run against a different directory (default: cwd)
+      --use-llm          Force LLM (Anthropic Haiku) archetype suggestion
+                         even when heuristic confidence is high
+      --no-llm           Skip LLM suggestion (run heuristic only)
+                         Or set ${cyan("GREATCTO_NO_LLM=1")}
+  -h, --help             Show this help
+  -v, --version          Show great-cto CLI version
+
+${bold("What it does:")}
+  1. Scans your project for stack signals (package.json, Cargo.toml, go.mod, etc.)
+  2. Picks the matching great_cto archetype (web-service, commerce, ai-system, devtools, browser-extension, game, ...)
+  3. Clones the plugin into ~/.claude/plugins/cache/local/great_cto/<version>/
+  4. Enables the plugin in ~/.claude/settings.json
+  5. Creates .great_cto/PROJECT.md pre-filled with archetype + detected stack
+
+${bold("Next steps after install:")}
+  Restart Claude Code. Then run ${cyan("/inbox")} to see what needs attention,
+  or ${cyan("/audit")} for a full analysis of an existing codebase.
+
+${bold("Links:")}
+  github.com/avelikiy/great_cto
+`);
+}
+
+async function runInitCodex(args: CliArgs): Promise<number> {
+  const { codexInstallPlan } = await import("./codex.js");
+  const { execFileSync, spawnSync } = await import("node:child_process");
+
+  log(bold("great-cto · Codex host install"));
+  log("");
+
+  // Is the host actually there? The previous version of this function wrote
+  // hook scripts and a config fragment without checking, into
+  // `~/.codex/skills/great_cto/` — a directory a working Codex install does not
+  // have. It reported success either way.
+  let codexOnPath = false;
+  try { execFileSync("codex", ["--version"], { stdio: "ignore", timeout: 15000 }); codexOnPath = true; }
+  catch { codexOnPath = false; }
+
+  const plan = codexInstallPlan({ repoDir: args.dir, codexOnPath });
+
+  if (!plan.ok) {
+    error(plan.why);
+    return 1;
+  }
+
+  log(`This registers ${cyan(args.dir)} as a Codex plugin marketplace and installs from it.`);
+  log("");
+  log(bold("Carries over:"));
+  for (const s2 of plan.supported) log(`  ${green("✓")} ${s2}`);
+  log("");
+  // Printed on every run, not buried in docs. An install that lists only what it
+  // gives promises a pipeline this host cannot run.
+  log(bold("Does NOT carry over on Codex:"));
+  for (const s2 of plan.notSupported) log(`  ${yellow("—")} ${s2}`);
+  log("");
+
+  if (args.dryRun) {
+    log(yellow("dry-run: these commands would run."));
+    for (const c of plan.commands) log(`  ${dim(c)}`);
+    return 0;
+  }
+
+  for (const c of plan.commands) {
+    log(dim(`  $ ${c}`));
+    const parts = c.split(" ");
+    const r = spawnSync(parts[0], parts.slice(1), { stdio: "inherit", timeout: 120000 });
+    if (r.status !== 0) {
+      error(`command failed: ${c}`);
+      return 1;
+    }
+  }
+
+  log("");
+  log(`${green("✓")} installed. Verify with: ${cyan("codex plugin list")}`);
+  return 0;
+}
+
+async function runInit(args: CliArgs): Promise<number> {
+  // Route to Codex-specific install if --host codex
+  if (args.host === "codex") return runInitCodex(args);
+
+  banner();
+
+  // ── 1. detect ────────────────────────────────────────────
+  // Guard: refuse to init in $HOME or other "obviously not a project" locations.
+  // Most projects have at least one of: package.json / pyproject.toml /
+  // Cargo.toml / go.mod / .git / src/. Without any signal we'd default to
+  // greenfield with low confidence, which leaves users confused.
+  const HOME = process.env.HOME || process.env.USERPROFILE || "";
+  if (args.dir === HOME) {
+    error(`refusing to initialize great_cto in $HOME (${HOME}).`);
+    log("");
+    log(`great_cto is meant to run inside a project repository, not your home directory.`);
+    log(`If you're testing the install, ${cyan("cd")} into a real repo first:`);
+    log("");
+    log(`    ${cyan("cd /path/to/your/project")}`);
+    log(`    ${cyan("npx great-cto init")}`);
+    log("");
+    log(`Or create an empty test project:`);
+    log("");
+    log(`    ${cyan("mkdir /tmp/test-greatcto && cd /tmp/test-greatcto && git init")}`);
+    log(`    ${cyan("npx great-cto init")}`);
+    return 2;
+  }
+
+  step(1, 5, `scanning ${args.dir}`);
+  const detection = detect(args.dir);
+  if (detection.hasExistingGreatCto) {
+    warn(".great_cto/ already exists in this directory.");
+    log("");
+    log(`To preserve existing config: nothing to do, you're already initialized.`);
+    log(`To start fresh: back up ${cyan(".great_cto/")} first, then re-run with ${cyan("--force")}:`);
+    log("");
+    log(`    ${cyan("npx great-cto init --force")}`);
+    log("");
+    log(`To override the detected archetype without re-init:`);
+    log("");
+    log(`    ${cyan("npx great-cto init --force --archetype agent-product")}`);
+    log("");
+    if (!args.yes && !args.force) {
+      const ok = await confirm("Continue anyway? (existing PROJECT.md will be kept as-is)", false);
+      if (!ok) {
+        log(yellow("Aborted. (Not an error — your existing config is intact.)"));
+        return 0;  // exit 0 — user-initiated abort is not a failure
+      }
+    }
+  }
+
+  log(`  ${dim("stack:")} ${detection.stack.length > 0 ? detection.stack.join(", ") : dim("(no strong signals)")}`);
+  log(`  ${dim("languages:")} ${detection.languages.join(", ") || dim("(none)")}`);
+  if (detection.packageManager) log(`  ${dim("package manager:")} ${detection.packageManager}`);
+  log(`  ${dim("tests:")} ${detection.hasTests ? green("yes") : yellow("no")}  ${dim("CI:")} ${detection.hasCI ? green("yes") : yellow("no")}`);
+
+  // ── 2. pick archetype ────────────────────────────────────
+  step(2, 5, "picking archetype");
+  let archetype: string;
+  let rationale: string;
+  let alternatives: string[];
+  let confidence: string;
+
+  if (args.archetype) {
+    archetype = args.archetype;
+    rationale = "overridden via --archetype";
+    alternatives = [];
+    confidence = "user-specified";
+  } else {
+    const pick = pickArchetype(detection);
+    archetype = pick.primary;
+    rationale = pick.rationale;
+    alternatives = pick.alternatives;
+    confidence = pick.confidence;
+  }
+
+  // ── 2b. LLM fallback for low-confidence detections (Wave 4) ──────
+  if (!args.archetype) {
+    const llmDecision = shouldUseLlmFallback({
+      heuristicConfidence: confidence as "high" | "medium" | "low",
+      forceUse: args.useLlm,
+      forceSkip: args.noLlm,
+    });
+    if (llmDecision.use) {
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (apiKey) {
+        log(`  ${dim("→ low confidence — asking Anthropic Haiku for second opinion...")}`);
+        const llm = await suggestArchetypeFromLlm({
+          dir: args.dir,
+          detection,
+          heuristicArchetype: archetype as never,
+          apiKey,
+        });
+        if (llm) {
+          if (llm.conflictsWithHeuristic) {
+            log("");
+            log(`  ${bold("AI suggests:")} ${cyan(llm.archetype)} ${dim(`(${llm.confidence})`)}`);
+            log(`  ${dim("AI rationale:")} ${llm.rationale}`);
+            log(`  ${bold("Heuristic says:")} ${cyan(archetype)} ${dim(`(${confidence})`)}`);
+            if (!args.yes) {
+              const accept = await confirm(
+                `Use AI suggestion ${cyan(llm.archetype)} instead of ${cyan(archetype)}?`,
+                true,
+              );
+              if (accept) {
+                archetype = llm.archetype;
+                rationale = `(AI) ${llm.rationale}`;
+                confidence = llm.confidence;
+                if (!alternatives.includes(archetype as never)) {
+                  alternatives = [archetype, ...alternatives.filter((a) => a !== archetype)].slice(0, 3);
+                }
+              }
+            } else {
+              // --yes: silently take AI suggestion only if it bumps confidence
+              if (llm.confidence !== "low") {
+                archetype = llm.archetype;
+                rationale = `(AI) ${llm.rationale}`;
+                confidence = llm.confidence;
+              }
+            }
+          } else if (llm.confidence !== "low") {
+            // AI agrees → bump confidence, refine rationale
+            confidence = llm.confidence;
+            rationale = `${rationale} (AI confirmed: ${llm.rationale})`;
+          }
+        } else {
+          log(`  ${dim("(LLM call failed, keeping heuristic)")}`);
+        }
+      }
+    }
+  }
+
+  const compliance = suggestCompliance(detection, archetype as never);
+
+  // Compile flow — used for user-facing summary AND written to FLOW.md by bootstrap()
+  const compiledFlow = compileFlow(
+    archetype as never,
+    (detection.projectSize ?? "medium") as never,
+    detection,
+    compliance,
+    confidence,
+  );
+
+  // ── User-facing "Compiled flow" summary ──────────────────────────────────
+  log("");
+  log(`${bold("Compiled flow:")} ${cyan(compiledFlow.title)}`);
+  log(`  ${dim("Agents:")}     ${compiledFlow.agents.join(" · ")}`);
+  log(`  ${dim("Gates:")}      ${compiledFlow.gates.join(" · ")}`);
+  if (compiledFlow.compliance.length > 0) {
+    log(`  ${dim("Compliance:")} ${compiledFlow.compliance.join(", ")}`);
+  }
+  log(`  ${dim("Cost:")}       ~$${compiledFlow.costRange.low}–$${compiledFlow.costRange.high} per feature cycle`);
+  log("");
+
+  // Low-confidence notice — show only when actionable
+  if (!args.yes && !args.archetype && (confidence === "low" || (confidence === "medium" && alternatives.length >= 2))) {
+    log(`  ${yellow("⚠")} ${dim(`Detected as ${cyan(archetype)} (${confidence} confidence).`)}`);
+    if (alternatives.length > 0) {
+      log(`  ${dim("Alternatives: " + alternatives.join(", "))}`);
+    }
+    log(`  ${dim("Override: npx great-cto init --archetype <name>")}`);
+    log("");
+  }
+
+  // Confirmation
+  if (!args.yes) {
+    log("");
+    const ok = await confirm(bold("Install great_cto plugin and bootstrap this project?"), true);
+    if (!ok) {
+      log("Aborted.");
+      return 1;
+    }
+  }
+
+  if (args.dryRun) {
+    log("");
+    log(yellow("dry-run: no changes made."));
+    log(`  would install plugin into ~/.claude/plugins/cache/local/great_cto/<version>/`);
+    log(`  would enable great_cto@local in ~/.claude/settings.json`);
+    log(`  would create .great_cto/PROJECT.md with archetype=${archetype}`);
+    return 0;
+  }
+
+  // ── 3. install plugin ────────────────────────────────────
+  step(3, 5, "installing plugin");
+  const existing = findInstalledVersions();
+  if (existing.length > 0 && !args.version && !args.force) {
+    log(`  ${dim("already-installed versions:")} ${existing.join(", ")}`);
+  }
+  const installResult = install({
+    version: args.version ?? undefined,
+    force: args.force,
+  });
+  if (installResult.alreadyInstalled) {
+    log(`  ${dim("version")} ${installResult.version} ${dim("already installed at")} ${installResult.pluginDir}`);
+    log(`  ${dim("(use --force to reinstall)")}`);
+  } else {
+    // New version installed — restart board server if it was running so it
+    // picks up the updated server.mjs immediately (no manual restart needed).
+    await restartBoardAfterUpgrade(args.boardPort);
+  }
+
+  // ── 4. enable in settings ────────────────────────────────
+  step(4, 5, "enabling plugin in ~/.claude/settings.json");
+  const enableResult = enableGreatCto();
+  if (enableResult.alreadyEnabled) {
+    log(`  ${dim("already enabled in")} ${enableResult.settingsPath}`);
+  }
+
+  // ── 4b. one-shot legacy cleanup ──────────────────────────
+  // Versions < 1.0.104 copied commands to ~/.claude/commands/ without a
+  // `great_cto-managed` marker; the SessionStart hook in 1.0.104+ can't
+  // safely delete them. If this looks like an upgrade from an older version,
+  // remove any unmarked copies of commands we used to ship so the new loop
+  // can drop its marker-tagged versions.
+  if (existing.length > 0) {
+    try {
+      const { existsSync, readFileSync, unlinkSync } = await import("node:fs");
+      const { homedir } = await import("node:os");
+      const { join } = await import("node:path");
+      const legacy = [
+        "triage", "gates", "dora", "investigate", "threat-model", "sbom",
+        "security-incident", "update", "status", "capture", "revisit",
+        "board-report", "burn", "cost", "poc", "promote", "sec",
+      ];
+      const cmdDir = join(homedir(), ".claude", "commands");
+      let cleaned = 0;
+      for (const name of legacy) {
+        const f = join(cmdDir, `${name}.md`);
+        if (!existsSync(f)) continue;
+        const head = readFileSync(f, "utf-8").slice(0, 4096);
+        // Only delete files that look like OUR old commands (contain great_cto
+        // references) AND lack the 1.0.104+ marker. Hand-written user files
+        // won't match the great_cto reference test.
+        const looksOurs = /great_cto|\.great_cto|Great CTO/.test(head);
+        const hasMarker = /great_cto-managed/.test(head);
+        if (looksOurs && !hasMarker) {
+          unlinkSync(f);
+          cleaned++;
+        }
+      }
+      if (cleaned > 0) {
+        log(`  ${dim(`cleaned ${cleaned} legacy command file(s) from ~/.claude/commands (pre-1.0.104 unmarked)`)}`);
+      }
+    } catch { /* best-effort — don't block install */ }
+  }
+
+  // ── 4b-companion. install superpowers + beads ────────────
+  // These are required companion plugins. Auto-install so users don't need
+  // a separate manual step after reading "Requires:" in the README.
+  // Idempotent — silently skips if already present.
+  {
+    log("");
+    step(4, 5, "installing companion plugins (superpowers + beads)");
+    const companions = installAllCompanions();
+    for (const r of companions) {
+      if (r.status === "installed") {
+        log(`  ${dim(`${r.name} ${r.version} installed`)}`);
+      } else if (r.status === "already_present") {
+        log(`  ${dim(`${r.name} ${r.version} already installed`)}`);
+      } else {
+        warn(`  ${r.name} skipped — ${r.reason ?? "unknown reason"}`);
+        warn(`  install manually: claude plugin install github.com/obra/${r.name === "superpowers" ? "superpowers" : ""} or github.com/steveyegge/beads`);
+      }
+    }
+    // Apply bundled critic overlays (idempotent — skips already-applied changes)
+    try {
+      const { applyOverlays } = await import("./overlay.js");
+      applyOverlays();
+    } catch { /* best-effort — overlay failure must not block init */ }
+  }
+
+  // ── 4c. bootstrap skills catalog (v1.0.140+) ─────────────
+  // Clone external skill repos + run skill-discover.sh so agents have
+  // the catalog locally from session 1, not after first SessionStart hook.
+  try {
+    const { existsSync, mkdirSync } = await import("node:fs");
+    const { homedir } = await import("node:os");
+    const { join } = await import("node:path");
+    const { spawnSync } = await import("node:child_process");
+    const greatCtoDir = join(homedir(), ".great_cto");
+    mkdirSync(greatCtoDir, { recursive: true });
+
+    // Create secrets.env template if missing — used by llm-router MCP server.
+    // Never overwrite an existing file (user may have real keys in there).
+    const { writeFileSync: wf } = await import("node:fs");
+    const secretsPath = join(greatCtoDir, "secrets.env");
+    if (!existsSync(secretsPath)) {
+      wf(secretsPath,
+        "# great_cto secrets — never commit this file\n" +
+        "# LLM router (optional, ~25% cost reduction on non-critical tasks):\n" +
+        "# Get a key at https://openrouter.ai/keys\n" +
+        "#OPENROUTER_API_KEY=sk-or-v1-...\n" +
+        "\n" +
+        "# Override default routing model (default: moonshotai/kimi-k2):\n" +
+        "#GREAT_CTO_ROUTER_MODEL=moonshotai/kimi-k2\n",
+        "utf-8"
+      );
+      log(`  ${dim("created ~/.great_cto/secrets.env (add OPENROUTER_API_KEY for LLM router)")}`);
+    }
+
+    const skillSources = [
+      { name: "anthropic-skills", url: "https://github.com/anthropics/skills.git" },
+      { name: "personal-skills", url: "https://github.com/avelikiy/ai-agent-skills.git" },
+    ];
+
+    for (const src of skillSources) {
+      const path = join(greatCtoDir, src.name);
+      if (!existsSync(path)) {
+        log(`  ${dim(`cloning ${src.name}...`)}`);
+        const r = spawnSync("git", ["clone", "--depth=1", src.url, path], {
+          stdio: "pipe",
+          timeout: 30_000,
+        });
+        if (r.status !== 0) {
+          log(`  ${dim(`(skipped ${src.name}: clone failed; SessionStart hook will retry)`)}`);
+        }
+      }
+    }
+
+    // Run skill-discover.sh to build initial registry.
+    // v1.0.146: version-sort properly (semver) and force refresh if registry
+    // plugin_version != installed plugin_version (stale cache from prior version).
+    const pluginCacheBase = join(homedir(), ".claude", "plugins", "cache", "local", "great_cto");
+    const { readdirSync, readFileSync, unlinkSync } = await import("node:fs");
+    if (existsSync(pluginCacheBase)) {
+      const semverCmp = (a: string, b: string) => {
+        const pa = a.split(".").map(n => parseInt(n, 10) || 0);
+        const pb = b.split(".").map(n => parseInt(n, 10) || 0);
+        for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+          const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+          if (d !== 0) return d;
+        }
+        return 0;
+      };
+      const versions = readdirSync(pluginCacheBase).sort(semverCmp).reverse();
+      if (versions.length > 0) {
+        const latest = versions[0]!;
+        const discover = join(pluginCacheBase, latest, "scripts", "skill-discover.sh");
+        if (existsSync(discover)) {
+          // Force refresh: unlink existing registry if it pins to a different version
+          const registryPath = join(greatCtoDir, "skills-registry.json");
+          if (existsSync(registryPath)) {
+            try {
+              const reg = JSON.parse(readFileSync(registryPath, "utf-8")) as { plugin_version?: string };
+              if (reg.plugin_version && reg.plugin_version !== latest) {
+                unlinkSync(registryPath);
+                log(`  ${dim(`registry version mismatch (${reg.plugin_version} → ${latest}) — refreshing`)}`);
+              }
+            } catch { /* malformed — let discover overwrite */ }
+          }
+          spawnSync("bash", [discover], {
+            stdio: "ignore",
+            timeout: 15_000,
+            env: { ...process.env, PLUGIN_DIR: join(pluginCacheBase, latest) },
+          });
+          log(`  ${dim("skills registry built at ~/.great_cto/skills-registry.json")}`);
+        }
+      }
+    }
+  } catch {
+    /* best-effort — don't block install if skills bootstrap fails */
+  }
+
+  // ── 5. bootstrap ─────────────────────────────────────────
+  step(5, 5, "bootstrapping .great_cto/PROJECT.md");
+  const bs = bootstrap(args.dir, detection, archetype as never, compliance, {
+    confidence,
+    alternatives,
+    rationale,
+  });
+  if (!bs.created) {
+    log(`  ${dim("PROJECT.md already exists at")} ${bs.projectMdPath} ${dim("— kept as-is")}`);
+  }
+
+  // ── 6. install pre-push git hook ─────────────────────────
+  installPrePushHook(args.dir);
+
+  // ── 7. opt-IN telemetry prompt (default OFF) ─────────────
+  await promoteTelemetryOptIn({ archetype: String(archetype), cliVersion: getCliVersion(), yes: args.yes });
+  // If already enabled (prior opt-in or env var), count this (re)install toward MAU.
+  if (isTelemetryEnabled()) {
+    await sendInstallPing({ cliVersion: getCliVersion(), archetype: String(archetype), consent: true })
+      .catch(() => { /* never block init on telemetry */ });
+  }
+
+  // ── done ─────────────────────────────────────────────────
+  log("");
+  log(green(bold("✓ great_cto is ready.")));
+  log("");
+
+  log(bold("Next steps:"));
+  log(`  1. ${dim("Restart Claude Code to pick up the plugin.")}`);
+  log(`  2. ${dim("Edit")} ${cyan(".great_cto/PROJECT.md")} ${dim("to refine goals and compliance.")}`);
+  log(`  3. ${dim("In Claude Code, run:")} ${cyan("/inbox")} ${dim("— see what needs attention.")}`);
+  log(`  4. ${dim("For existing repos:")} ${cyan("/audit")} ${dim("— gap analysis + prioritized task backlog.")}`);
+  log(`  5. ${dim("For new features:")} ${cyan('/start "describe what you\'re building"')}`);
+  log("");
+  log(dim("Docs: https://github.com/avelikiy/great_cto"));
+  log("");
+  return 0;
+}
+
+// ── Telemetry opt-IN prompt ────────────────────────────────────────────────
+// Shown after a successful init when interactive. Skipped if: --yes, non-TTY,
+// DO_NOT_TRACK=1, CI, or the user already decided (either way — no nagging).
+async function promoteTelemetryOptIn(opts: { archetype: string; cliVersion: string; yes: boolean }): Promise<void> {
+  if (opts.yes) return;
+  if (!process.stdin.isTTY) return;
+  if (process.env.DO_NOT_TRACK === "1" || process.env.DO_NOT_TRACK === "true") return;
+  if (process.env.CI || process.env.GITHUB_ACTIONS) return;
+
+  const cfgFile = join(homedir(), ".great_cto", "telemetry.json");
+  if (fsExistsSync(cfgFile)) {
+    try {
+      const cfg = JSON.parse(readFileSync(cfgFile, "utf8")) as { enabled?: boolean };
+      if (cfg.enabled === true || cfg.enabled === false) return;  // already decided
+    } catch { /* malformed — ask again */ }
+  }
+
+  log(dim("─".repeat(60)));
+  log(bold("Help improve great_cto with anonymous usage data?"));
+  log("");
+  log(dim("Default: OFF. One event per command — exactly this, nothing more:"));
+  log("");
+  log(gray(`  { "command": "init", "archetype": "${opts.archetype}", "version": "${opts.cliVersion}",`));
+  log(gray(`    "node": "${process.version.replace(/^v/, "")}", "os": "${process.platform}",`));
+  log(gray(`    "exit_code": 0, "duration_ms": 1234, "anon_id": "${computeAnonId()}" }`));
+  log("");
+  log(dim("No code, no repo names, no file paths, no IP, no PII. ") + dim("anon_id is sha256(user@host), not reversible."));
+  log(dim("Toggle anytime: " + cyan("npx great-cto telemetry off") + " · honors " + cyan("DO_NOT_TRACK=1")));
+  log(dim("Privacy: " + cyan("github.com/avelikiy/great_cto/blob/main/docs/PRIVACY.md")));
+  log("");
+
+  const yes = await confirm(bold("Enable anonymous telemetry?"), false);
+  log("");
+  try {
+    mkdirSync(join(homedir(), ".great_cto"), { recursive: true });
+    writeFileSync(cfgFile, JSON.stringify({ enabled: yes, decided_at: new Date().toISOString() }, null, 2) + "\n");
+  } catch { /* best-effort */ }
+
+  if (yes) {
+    log(green("✓ Telemetry enabled. Thank you."));
+    log(dim(`  Your anon_id: ${cyan("npx great-cto telemetry whoami")}  ·  off anytime: ${cyan("npx great-cto telemetry off")}`));
+    log("");
+  } else {
+    log(dim("No telemetry. (You can opt in later with " + cyan("npx great-cto telemetry on") + ".)"));
+    log("");
+  }
+}
+
+/**
+ * Copy scripts/hooks/pre-push.sh from the installed plugin into the project's
+ * .git/hooks/pre-push so that future pushes are scanned for private project
+ * name leaks. Best-effort — never throws.
+ */
+/**
+ * The directory git will actually read hooks from.
+ *
+ * `core.hooksPath` wins over `.git/hooks` when set, and a linked worktree reads
+ * from the main checkout's git dir. Returns null when this is not a repository.
+ */
+function effectiveGitHooksDir(projectDir: string): string | null {
+  const git = (args: string[]): string => {
+    try {
+      return execFileSync("git", args, {
+        cwd: projectDir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    } catch { return ""; }
+  };
+  const top = git(["rev-parse", "--show-toplevel"]);
+  if (!top) return null;
+  const configured = git(["config", "--get", "core.hooksPath"]);
+  if (configured) return resolve(top, configured);
+  const common = git(["rev-parse", "--git-common-dir"]);
+  return join(common ? resolve(top, common) : join(top, ".git"), "hooks");
+}
+
+function installPrePushHook(projectDir: string): void {
+  try {
+    // Ask git where it reads hooks from, rather than assuming `.git/hooks`.
+    //
+    // This installer wrote the file it was asked to write and reported success
+    // for months while `core.hooksPath` pointed at a directory the repository
+    // had moved out of. Git honours that setting even when it does not exist, so
+    // no hook ran, and the success message was the only evidence anyone had.
+    const gitHooksDir = effectiveGitHooksDir(projectDir);
+    if (!gitHooksDir) return; // not a git repo — skip silently
+    if (!fsExistsSync(gitHooksDir)) {
+      warn(
+        `git is configured to read hooks from ${gitHooksDir}, which does not exist — ` +
+        `no hook can run until that is fixed (git config --unset core.hooksPath)`,
+      );
+      return;
+    }
+
+    const dest = join(gitHooksDir, "pre-push");
+    if (fsExistsSync(dest)) {
+      log(`  ${dim("pre-push hook already present — skipped")}`);
+      return;
+    }
+
+    // Locate source: dist/main.js → ../../scripts/hooks/pre-push.sh
+    const here = dirname(fileURLToPath(import.meta.url));
+    const src = join(here, "..", "..", "scripts", "hooks", "pre-push.sh");
+    if (!fsExistsSync(src)) {
+      warn("pre-push hook source not found — skipping hook installation");
+      return;
+    }
+
+    copyFileSync(src, dest);
+    chmodSync(dest, 0o755);
+    success("installed pre-push hook (blocks private project name leaks)");
+  } catch {
+    // Best-effort: hook failure must never block init
+  }
+}
+
+
+async function runSelfUpgrade(): Promise<number> {
+  const { performSelfUpgrade, resolveRunningBinaryPath } = await import("./self-upgrade.js");
+  const currentVersion = getCliVersion();
+  const binaryPath = resolveRunningBinaryPath();
+
+  log(`${bold("great-cto upgrade --self")} — current version ${cyan(currentVersion)}`);
+  log(dim(`  running binary: ${binaryPath}`));
+  log("");
+
+  const result = performSelfUpgrade({ currentVersion, binaryPath });
+
+  if (result.manager === "npx") {
+    log(result.message);
+    return 0;
+  }
+
+  if (result.exitCode !== 0) {
+    error(result.message);
+    return result.exitCode;
+  }
+
+  success(result.message);
+
+  // The CLI is upgraded; the plugin Claude Code actually loads may not be.
+  // `npm i -g` never touches the plugin cache, so without this the user is told
+  // the upgrade succeeded and keeps running the previous release's hooks and
+  // agent prompts with nothing anywhere saying so.
+  try {
+    const { pluginCacheLagWarning } = await import("./self-upgrade.js");
+    const { readdirSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const cacheRoot = join(homedir(), ".claude", "plugins", "cache", "local", "great_cto");
+    const dirs = readdirSync(cacheRoot);
+    const warning = pluginCacheLagWarning(result.newVersion ?? "", dirs);
+    if (warning) { log(""); log(dim(warning)); }
+  } catch { /* no plugin cache is not a lag — the plugin is simply not installed */ }
+
+  return 0;
+}
+
+async function runUpgrade(rawArgv: string[], args: CliArgs): Promise<number> {
+  // `upgrade --self` / `upgrade self` — upgrade the CLI itself, not companion plugins.
+  const upgradeIdx = rawArgv.indexOf("upgrade");
+  const firstArgAfterUpgrade = upgradeIdx >= 0 ? rawArgv[upgradeIdx + 1] : undefined;
+  if (args.upgradeSelf || firstArgAfterUpgrade === "self") {
+    return runSelfUpgrade();
+  }
+
+  const { upgradePlugin, upgradeAll } = await import("./upgrade.js");
+  const { COMPANION_PLUGINS } = await import("./companion.js");
+
+  // Optional positional: great-cto upgrade [plugin-name]
+  const pluginArg = firstArgAfterUpgrade;
+  const targetPlugin = pluginArg && !pluginArg.startsWith("--") ? pluginArg : undefined;
+
+  // `great-cto upgrade codex` refreshes only the Codex install.
+  if (targetPlugin === "codex") return reportCodexUpgrade();
+
+  let results;
+  if (targetPlugin) {
+    const plugin = COMPANION_PLUGINS.find((p) => p.name === targetPlugin);
+    if (!plugin) {
+      error(`unknown plugin '${targetPlugin}'. Valid: ${COMPANION_PLUGINS.map((p) => p.name).join(", ")}`);
+      return 2;
+    }
+    results = [await upgradePlugin(plugin)];
+  } else {
+    results = await upgradeAll();
+  }
+
+  for (const r of results) {
+    if (r.status === "upgraded") {
+      success(`${r.name} ${r.fromVersion} → ${r.toVersion}`);
+    } else if (r.status === "already_latest") {
+      log(`  ${dim(`${r.name} ${r.toVersion} already at latest (overlays re-applied)`)}`);
+    } else {
+      warn(`${r.name} skipped — ${r.reason ?? "unknown reason"}`);
+    }
+  }
+  // Codex keeps its own snapshot of great_cto and never refreshes it; without this
+  // step every Codex guard shipped after the first install stays out of reach.
+  if (!targetPlugin) await reportCodexUpgrade();
+
+  return 0;
+}
+
+async function reportCodexUpgrade(): Promise<number> {
+  const { upgradeCodexPlugin } = await import("./codex.js");
+  const r = upgradeCodexPlugin();
+  if (r.status === "upgraded") {
+    success(`codex: great_cto ${r.fromVersion ?? "—"} → ${r.toVersion} — new or changed hooks need one review: run \`codex\` in a terminal, choose Trust all and continue`);
+  } else if (r.status === "already_latest") {
+    log(`  ${dim(`codex: great_cto ${r.toVersion} already at latest`)}`);
+  } else if (r.status === "failed") {
+    warn(`codex: upgrade failed — ${r.reason}`);
+    return 1;
+  } else if (r.reason && r.reason !== "great_cto is not installed for Codex") {
+    warn(`codex: ${r.reason}`);
+  }
+  return 0;
+}
+
+async function main(): Promise<void> {
+  const rawArgv = process.argv.slice(2);
+  const args = parseArgs(rawArgv);
+
+  // Anonymous, opt-IN usage telemetry (default OFF — see docs/PRIVACY.md). `finish`
+  // is the single exit funnel: it fires one fire-and-forget event (command + node + os
+  // + exit_code + duration, no PII) only when the user has opted in, then exits.
+  const __tStart = Date.now();
+  // Promise<never>, not Promise<void>: this always exits, and typing it as such
+  // is what lets `await finish(2)` narrow a nullable the way `process.exit(2)`
+  // did. Without it, routing an exit through the update check would silently
+  // widen types at every call site.
+  const finish = async (code: number): Promise<never> => {
+    try {
+      await sendUsagePing({
+        cliVersion: getCliVersion(),
+        subcommand: args.command,
+        exitCode: code,
+        durationMs: Date.now() - __tStart,
+      });
+    } catch { /* telemetry never affects the exit */ }
+    // Update hint / prompt — printed after the command's own output, never
+    // blocks on network (reads a local cache; spawns a detached refresh if
+    // stale). May await a single Y/n keystroke for up to 15s, but ONLY when
+    // a newer version is already cached, stderr+stdin are TTYs, and this
+    // version hasn't been prompted before (see shouldPrompt() in
+    // update-check.ts). Excluded automatically for mcp/worker/task via
+    // PROTOCOL_SENSITIVE_COMMANDS inside checkForUpdate — worker/task don't
+    // even route through finish().
+    try {
+      await checkForUpdate({ currentVersion: getCliVersion(), command: args.command });
+    } catch { /* update hint never affects the exit */ }
+    process.exit(code);
+  };
+
+  // `great-cto telemetry <on|off|status|whoami>` — inspect / toggle, never sends.
+  if (args.command === "telemetry") {
+    const { exitCode, output } = telemetrySubcommand(args.positional[0]);
+    process.stdout.write(output);
+    await finish(exitCode);
+  }
+
+  if (args.command === "help") {
+    printHelp(rawArgv.includes('--advanced'));
+    await finish(0);
+  }
+  if (args.command === "unknown") {
+    const tok = (args as CliArgs).unknownToken ?? "<arg>";
+    error(`great-cto: unknown command or flag '${tok}'`);
+    log("");
+    log(`Run ${cyan("great-cto --help")} for usage.`);
+    await finish(2);
+  }
+  if (args.command === "board") {
+    try {
+      const verb = args.positional[0];
+      let code: number;
+      if (verb === "ensure") code = await runBoardEnsure(args);
+      else if (verb === "install-daemon") code = await runBoardInstallDaemon(args);
+      else if (verb === "uninstall-daemon") code = await runBoardUninstallDaemon(args);
+      else if (verb) {
+        error(`great-cto board: unknown subcommand '${verb}'`);
+        log(`Try: ${cyan("board")} · ${cyan("board ensure")} · ${cyan("board install-daemon")} · ${cyan("board uninstall-daemon")}`);
+        code = 2;
+      } else code = await runBoard(args);
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(1);
+    }
+  }
+  if (args.command === "console") {
+    try {
+      const code = await runBoard(args, "console");
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(1);
+    }
+  }
+  if (args.command === "register") {
+    try {
+      const code = await runRegister(args);
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(1);
+    }
+  }
+  if (args.command === "ci") {
+    try {
+      const { runCi, parseCiArgs } = await import("./ci.js");
+      const code = await runCi(parseCiArgs(rawArgv));
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(2);
+    }
+  }
+  if (args.command === "mcp") {
+    try {
+      const { runMcp } = await import("./mcp.js");
+      const sse = rawArgv.includes("--sse");
+      const portArg = rawArgv.indexOf("--port");
+      const port = portArg >= 0 ? parseInt(rawArgv[portArg + 1] ?? "8765", 10) : 8765;
+      const code = await runMcp({ mode: sse ? "sse" : "stdio", port, version: getCliVersion() });
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(2);
+    }
+  }
+  if (args.command === "adapt") {
+    try {
+      const { runAdapt } = await import("./adapt.js");
+      const code = await runAdapt({
+        platform: "claude",
+        dryRun: rawArgv.includes("--dry-run"),
+        cwd: args.dir,
+      });
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(2);
+    }
+  }
+  if (args.command === "task" && args.taskArgs?.[0] === "work") {
+    const { runWorkTask } = await import("./work-task.js");
+    await finish(runWorkTask(args.taskArgs.slice(1)));
+  }
+  if (args.command === "task") {
+    const { runTask } = await import("./worker.js");
+    await finish(await runTask(args.taskArgs ?? []));
+  }
+  if (args.command === "worker") {
+    const { runWorker } = await import("./worker.js");
+    await finish(await runWorker(args.taskArgs ?? []));
+  }
+  if (args.command === "codex-host") {
+    const { runCodexHost } = await import('./codex-host.js');
+    await finish(runCodexHost(args.taskArgs ?? []));
+  }
+  if (args.command === "run" || args.command === "status" || args.command === "resume") {
+    const { runDaily } = await import('./run.js');
+    const dailyArgs = [...(args.hostInput !== undefined ? ['--host', args.hostInput] : []), ...(args.taskArgs ?? [])];
+    const code = runDaily(args.command, dailyArgs, { cwd: args.dir });
+    if (args.command === 'status') {
+      await new Promise<void>((resolve, reject) => {
+        process.stdout.write('', error => error ? reject(error) : resolve());
+      });
+    }
+    await finish(code);
+  }
+  if (args.command === "serve") {
+    try {
+      const { runServe } = await import("./serve.js");
+      const explicitPort = rawArgv.some((a) => a === "--port" || a.startsWith("--port="));
+      const code = await runServe({
+        // serve defaults to 3142 (board uses 3141). Honor an explicit --port
+        // of any value, including 3141 — only fall back to 3142 when unset.
+        port: explicitPort ? args.boardPort : 3142,
+        noLog: rawArgv.includes("--no-log"),
+        insecure: rawArgv.includes("--insecure"),
+      });
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(2);
+    }
+  }
+  if (args.command === "webhook") {
+    try {
+      const { runWebhookCli, parseWebhookArgs } = await import("./webhook-cli.js");
+      const parsed = parseWebhookArgs(rawArgv);
+      if (!parsed) {
+        error("usage: great-cto webhook list | add-incoming <name> --secret <s> | add-outgoing <name> --url <u> --format <f> --triggers <t1,t2> | remove <name> | test <name>");
+        return finish(2);
+      }
+      const code = await runWebhookCli(parsed);
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(2);
+    }
+  }
+  if (args.command === "uninstall") {
+    try {
+      await finish(await runUninstall(args));
+    } catch (e) {
+      error((e as Error).message);
+      await finish(2);
+    }
+  }
+  if (args.command === "statusline") {
+    const { runStatuslineCommand } = await import("./statusline.js");
+    await finish(runStatuslineCommand(args.taskArgs ?? []));
+  }
+  if (args.command === "upgrade") {
+    try {
+      const code = await runUpgrade(rawArgv, args);
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(2);
+    }
+  }
+  if (args.command === "chat-only-hint") {
+    const tried = (args as unknown as { _slashTried?: string })._slashTried || "<command>";
+    // 3.40 folded these into modes of another command — quote the command that
+    // does the job now, not one the plugin no longer ships.
+    const folded: Record<string, string> = { burn: "digest slo", learn: "crystallize learn", migrate: "doctor --fix" };
+    const slash = folded[tried] ?? tried;
+    error(`'${tried}' is a chat slash command, not a CLI subcommand.`);
+    log("");
+    log(`To run it, open Claude Code, Cursor, or any AI assistant that has`);
+    log(`great_cto installed and type:`);
+    log("");
+    log(`    ${cyan("/" + slash)} ${dim("[args]")}`);
+    log("");
+    log(`The CLI surface (this command) only exposes:`);
+    log(`  ${cyan("init")} · ${cyan("ci")} · ${cyan("mcp")} · ${cyan("adapt")} ·`);
+    log(`  ${cyan("serve")} · ${cyan("webhook")} · ${cyan("report")} · ${cyan("board")} · ${cyan("register")} · ${cyan("upgrade")}`);
+    log("");
+    log(`Run ${cyan("npx great-cto --help")} for the full CLI reference.`);
+    await finish(2);
+  }
+  if (args.command === "report") {
+    try {
+      const { runReport, parseReportArgs } = await import("./report.js");
+      const parsed = parseReportArgs(rawArgv, args.dir);
+      if (!parsed) {
+        return finish(2);
+      }
+      const code = await runReport(parsed);
+      await finish(code);
+    } catch (e) {
+      error((e as Error).message);
+      await finish(2);
+    }
+  }
+  if (args.command === "version") {
+    // Version resolved in index.mjs or from package.json at runtime
+    try {
+      const { readFileSync } = await import("node:fs");
+      const { dirname, join } = await import("node:path");
+      const { fileURLToPath } = await import("node:url");
+      const here = dirname(fileURLToPath(import.meta.url));
+      // dist or src; package.json is two levels up
+      for (const base of [here, join(here, ".."), join(here, "..", "..")]) {
+        const p = join(base, "package.json");
+        try {
+          const pkg = JSON.parse(readFileSync(p, "utf-8")) as { name?: string; version?: string };
+          if (pkg.name === "great-cto" && pkg.version) {
+            log(pkg.version);
+            await finish(0);
+          }
+        } catch { /* keep searching */ }
+      }
+      log("0.0.0");
+    } catch {
+      log("0.0.0");
+    }
+    await finish(0);
+  }
+
+  try {
+    const code = await runInit(args);
+    await finish(code);
+  } catch (e) {
+    error((e as Error).message);
+    process.exit(1);
+  }
+}
+
+await main();

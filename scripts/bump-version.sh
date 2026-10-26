@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+# Bump plugin version and sync all derived references.
+#
+# Usage:
+#   scripts/bump-version.sh 1.0.84
+#
+# Updates:
+#   - .claude-plugin/plugin.json "version"
+#   - packages/cli/package.json "version" (kept in lockstep with the plugin)
+#   - packages/cli/jsr.json (if present)
+#   - README.md version badge
+#   - README.md "v1.0.xx — actively maintained" line
+#   - CHANGELOG.md — prepends a stub entry "## vX.Y.Z — YYYY-MM-DD\nTBD"
+#                   (you fill it in before committing; idempotent if already present)
+
+set -euo pipefail
+
+NEW="${1:-}"
+if [ -z "$NEW" ]; then
+  echo "usage: $0 <new-version>" >&2
+  exit 2
+fi
+
+if ! echo "$NEW" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+  echo "FAIL: version must be semver (x.y.z): $NEW" >&2
+  exit 1
+fi
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+PLUGIN_JSON="$ROOT/.claude-plugin/plugin.json"
+CLI_JSON="$ROOT/packages/cli/package.json"
+JSR_JSON="$ROOT/packages/cli/jsr.json"
+README="$ROOT/README.md"
+CHANGELOG="$ROOT/CHANGELOG.md"
+
+OLD=$(grep -m1 '"version"' "$PLUGIN_JSON" | sed 's/.*"\([0-9][0-9.]*\)".*/\1/')
+
+if [ "$OLD" = "$NEW" ]; then
+  echo "already at $NEW — nothing to do"
+  exit 0
+fi
+
+# plugin.json
+python3 - "$PLUGIN_JSON" "$NEW" <<'PY'
+import json, sys
+path, new = sys.argv[1], sys.argv[2]
+with open(path) as f: data = json.load(f)
+data["version"] = new
+with open(path, "w") as f: json.dump(data, f, indent=2); f.write("\n")
+PY
+
+# packages/cli/package.json — kept in lockstep with plugin
+python3 - "$CLI_JSON" "$NEW" <<'PY'
+import json, sys
+path, new = sys.argv[1], sys.argv[2]
+with open(path) as f: data = json.load(f)
+data["version"] = new
+with open(path, "w") as f: json.dump(data, f, indent=2); f.write("\n")
+PY
+
+# .codex-plugin/plugin.json — the Codex manifest, in lockstep with the Claude one.
+# It shipped at 3.23.0 and this script had never heard of it, so the first release
+# after it landed would have published a plugin advertising the previous version,
+# with no commit to blame. A missing file is fatal, not skipped: "the manifest is
+# not there" and "the manifest is up to date" must never look the same.
+# .codex-plugin/mcp.json — the MCP server Codex starts, pinned to THIS version.
+# It said `great-cto@latest`, which is not a version at all: a user on plugin
+# 3.26.0 would run the MCP server from whatever npm published since, and during
+# any release window the two halves of one product disagree. Found by asking
+# Codex to audit its own support here; it called the split-brain correctly.
+CODEX_MCP="$ROOT/.codex-plugin/mcp.json"
+if [ ! -f "$CODEX_MCP" ]; then
+  echo "FAIL: $CODEX_MCP is missing — it is a shipped manifest, not an optional one" >&2
+  exit 1
+fi
+python3 - "$CODEX_MCP" "$NEW" <<'CODEXMCP'
+import json, re, sys
+path, new = sys.argv[1], sys.argv[2]
+with open(path) as f: data = json.load(f)
+for cfg in (data.get("mcpServers") or {}).values():
+    cfg["args"] = [re.sub(r"great-cto@[^\s\"]+", f"great-cto@{new}", a) for a in cfg.get("args", [])]
+with open(path, "w") as f: json.dump(data, f, indent=2); f.write("\n")
+CODEXMCP
+echo "  ✓ $CODEX_MCP"
+
+CODEX_JSON="$ROOT/.codex-plugin/plugin.json"
+if [ ! -f "$CODEX_JSON" ]; then
+  echo "FAIL: $CODEX_JSON is missing — it is a shipped manifest, not an optional one" >&2
+  exit 1
+fi
+python3 - "$CODEX_JSON" "$NEW" <<'CODEXPY'
+import json, sys
+path, new = sys.argv[1], sys.argv[2]
+with open(path) as f: data = json.load(f)
+data["version"] = new
+with open(path, "w") as f: json.dump(data, f, indent=2); f.write("\n")
+CODEXPY
+echo "  ✓ $CODEX_JSON"
+
+# .claude-plugin/marketplace.json — the marketplace entry carries its own version.
+# It shipped at 3.27.3 on 2026-09-07 and this script never touched it, so two
+# releases later `claude plugin validate` warned that the entry said 3.27.3 while
+# plugin.json said 3.29.1. Edited as text so the file's own formatting survives.
+MARKETPLACE="$ROOT/.claude-plugin/marketplace.json"
+if [ -f "$MARKETPLACE" ]; then
+  python3 - "$MARKETPLACE" "$NEW" <<'MKT'
+import re, sys
+path, new = sys.argv[1], sys.argv[2]
+with open(path) as f: text = f.read()
+text, n = re.subn(r'("name":\s*"great_cto"[\s\S]*?"version":\s*")[^"]+(")', lambda m: m.group(1) + new + m.group(2), text, count=1)
+if n != 1: sys.exit("FAIL: marketplace.json has no great_cto entry with a version")
+with open(path, "w") as f: f.write(text)
+MKT
+  echo "  ✓ $MARKETPLACE"
+fi
+
+# packages/cli/package-lock.json — top-level version fields follow package.json
+CLI_LOCK="$ROOT/packages/cli/package-lock.json"
+if [ -f "$CLI_LOCK" ]; then
+  python3 - "$CLI_LOCK" "$NEW" <<'PY'
+import json, sys
+path, new = sys.argv[1], sys.argv[2]
+with open(path) as f: data = json.load(f)
+data["version"] = new
+if "" in data.get("packages", {}):
+    data["packages"][""]["version"] = new
+with open(path, "w") as f: json.dump(data, f, indent=2); f.write("\n")
+PY
+  echo "  ✓ $CLI_LOCK"
+fi
+
+# packages/cli/jsr.json (if present — kept in lockstep)
+JSR_TOUCHED=""
+if [ -f "$JSR_JSON" ]; then
+  python3 - "$JSR_JSON" "$NEW" <<'PY'
+import json, sys
+path, new = sys.argv[1], sys.argv[2]
+with open(path) as f: data = json.load(f)
+data["version"] = new
+with open(path, "w") as f: json.dump(data, f, indent=2); f.write("\n")
+PY
+  JSR_TOUCHED="  ✓ $JSR_JSON"
+fi
+
+# README badge + actively-maintained line
+python3 - "$README" "$OLD" "$NEW" <<'PY'
+import re, sys
+path, old, new = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(path) as f: text = f.read()
+text = re.sub(r'version-\d+\.\d+\.\d+-blue', f'version-{new}-blue', text)
+text = re.sub(r'^v\d+\.\d+\.\d+ — actively maintained',
+              f'v{new} — actively maintained', text, flags=re.M)
+with open(path, "w") as f: f.write(text)
+PY
+
+# Version-pinned `npx --yes great-cto@X.Y.Z` entrypoints (#149). A plugin-only
+# install has no npm binary on PATH, so the Codex host skill and the public docs
+# call the exact shipped CLI version — and tests/lib/codex-host-entrypoint.test.mjs
+# fails the release gate when that pin lags the CLI. 3.29.1's gate failed on
+# exactly this: the bump moved package.json and left 26 pins at the old version.
+# CHANGELOG.md is not touched: a version named in history stays what it was.
+# Named one by one, and the same list release.sh stages: a docs/*/README.md glob
+# would reach READMEs that are not translations.
+PINNED=$(cd "$ROOT" && git grep -l "great-cto@$OLD" -- skills/codex-host/SKILL.md README.md docs/HOST-CODEX.md docs/de/README.md docs/es/README.md docs/fr/README.md docs/ja/README.md docs/ko/README.md docs/pt-BR/README.md docs/ru/README.md docs/zh-CN/README.md docs/zh-TW/README.md 2>/dev/null || true)
+PINS_TOUCHED=""
+if [ -n "$PINNED" ]; then
+  (cd "$ROOT" && python3 - "$OLD" "$NEW" $PINNED <<'PY'
+import sys
+old, new, files = sys.argv[1], sys.argv[2], sys.argv[3:]
+for f in files:
+    with open(f) as fh: text = fh.read()
+    with open(f, "w") as fh: fh.write(text.replace(f"great-cto@{old}", f"great-cto@{new}"))
+PY
+  )
+  PINS_TOUCHED="  ✓ npx great-cto@$NEW pins in: $(echo $PINNED | tr '\n' ' ')"
+fi
+
+# CHANGELOG.md stub — idempotent prepend
+# If "## v$NEW — " already exists, do nothing. Otherwise prepend a stub block
+# directly after the file header (after the first "---" divider).
+CHANGELOG_TOUCHED=""
+if [ -f "$CHANGELOG" ]; then
+  python3 - "$CHANGELOG" "$NEW" <<'PY'
+import re, sys, datetime, pathlib
+path, new = sys.argv[1], sys.argv[2]
+p = pathlib.Path(path)
+text = p.read_text()
+
+# already exists?
+if re.search(rf'^## v{re.escape(new)}\b', text, flags=re.M):
+    sys.exit(0)
+
+today = datetime.date.today().isoformat()
+stub = (
+    f"## v{new} — {today}\n\n"
+    f"### TBD — fill in before committing\n\n"
+    f"- _Add one bullet per shipped feature._\n"
+    f"- _Cite ADRs introduced (if any)._\n"
+    f"- _Mention test counts and opt-out flags._\n\n"
+    f"---\n\n"
+)
+
+# Insert after first horizontal rule (---) which marks the end of the header.
+m = re.search(r'^---\s*$', text, flags=re.M)
+if m:
+    insert_at = m.end() + 1   # after the newline that follows ---
+    new_text = text[:insert_at] + "\n" + stub + text[insert_at:]
+else:
+    # No header divider — just prepend after first heading
+    new_text = re.sub(r'(\n)', f'\\1\n{stub}', text, count=1)
+
+p.write_text(new_text)
+print("STUB_INSERTED")
+PY
+  if grep -q "^## v$NEW — " "$CHANGELOG" 2>/dev/null; then
+    CHANGELOG_TOUCHED="  ✓ $CHANGELOG (stub inserted — fill in before committing)"
+  fi
+fi
+
+echo "bumped: $OLD → $NEW"
+echo "  ✓ $PLUGIN_JSON"
+echo "  ✓ $CLI_JSON"
+[ -n "$JSR_TOUCHED" ] && echo "$JSR_TOUCHED"
+[ -n "$PINS_TOUCHED" ] && echo "$PINS_TOUCHED"
+echo "  ✓ $README (badge + actively-maintained)"
+[ -n "$CHANGELOG_TOUCHED" ] && echo "$CHANGELOG_TOUCHED"
+echo ""
+echo "next: fill in the CHANGELOG stub at the top of CHANGELOG.md, then either"
+echo "  manually:   git commit -am 'feat(v$NEW): ...' && git tag v$NEW && git push origin main --tags"
+echo "  one-shot:   scripts/release.sh $NEW --skip-bump      # uses already-bumped versions"

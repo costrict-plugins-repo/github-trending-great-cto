@@ -1,0 +1,293 @@
+// tests/bench-collect.test.mjs — unit tests for the benchmark row collector.
+// Pure-function coverage + one integration run against a tmp fixture product dir.
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { execFileSync } from 'node:child_process';
+import {
+  wallTimeFromLines, fmtDuration, sumCostHistory, parseCostLine, sumCostTags,
+  extractPreviewUrl, detectFailure, parseTestCounts,
+  accumulateUsage, priceUsage, transcriptDirFor, upsertRow, PRICING_PER_MTOK,
+  pipelineCompleted,
+} from '../scripts/bench-collect.mjs';
+
+// ─── wall time ──────────────────────────────────────────────────────────────
+
+test('wallTimeFromLines spans min→max across mixed line formats', () => {
+  const w = wallTimeFromLines([
+    '2026-07-10T10:00:00Z | architect | APPROVED | cost=$0.50',
+    '2026-07-10T09:30:00Z security-officer PASS run p0=0',        // space-separated
+    'garbage line without timestamp',
+    '2026-07-10T12:13:00Z | devops | DEPLOYED | url=x',
+  ]);
+  assert.equal(w.first, '2026-07-10T09:30:00Z');
+  assert.equal(w.last, '2026-07-10T12:13:00Z');
+  assert.equal(w.seconds, 9780);
+  assert.equal(w.human, '2h 43m');
+});
+
+test('wallTimeFromLines returns null with no timestamps', () => {
+  assert.equal(wallTimeFromLines(['no ts here', '']), null);
+});
+
+test('fmtDuration: seconds, minutes, hours', () => {
+  assert.equal(fmtDuration(45), '45s');
+  assert.equal(fmtDuration(300), '5m');
+  assert.equal(fmtDuration(5160), '1h 26m');
+});
+
+// ─── cost ───────────────────────────────────────────────────────────────────
+
+test('sumCostHistory sums third column, skips malformed lines', () => {
+  const r = sumCostHistory([
+    '2026-07-10T10:00:00Z architect 0.50',
+    '2026-07-10T11:00:00Z senior-dev 1.25',
+    'malformed',
+    '2026-07-10T12:00:00Z qa notanumber',
+  ].join('\n'));
+  assert.deepEqual(r, { sum: 1.75, rows: 2 });
+});
+
+test('sumCostTags sums cost=$ tags from verdict lines', () => {
+  const r = sumCostTags([
+    '2026-07-10T10:00:00Z | a | OK | cost=$0.10',
+    '2026-07-10T10:01:00Z | b | OK | no cost tag',
+    '2026-07-10T10:02:00Z | c | OK | cost=$2.4',
+  ]);
+  assert.deepEqual(r, { sum: 2.5, rows: 2 });
+});
+
+// ─── preview URL ────────────────────────────────────────────────────────────
+
+test('extractPreviewUrl prefers hash-segmented deployment URL over vanity alias', () => {
+  // wave-0 regression: runbook mentions the PLANNED alias 5×, the real deploy once
+  const url = extractPreviewUrl([
+    'deployed: https://ats-1gljywn1v-softone.vercel.app/',
+    'prod will be https://ats-prod.vercel.app and https://ats-prod.vercel.app/api',
+  ]);
+  assert.equal(url, 'https://ats-1gljywn1v-softone.vercel.app');
+});
+
+test('extractPreviewUrl falls back to plain preview URL, first mention wins', () => {
+  const url = extractPreviewUrl([
+    'see https://docs.aws.amazon.com/foo and https://ats-one.vercel.app/login',
+    'later: https://ats-two.vercel.app.',
+  ]);
+  assert.equal(url, 'https://ats-one.vercel.app/login');
+});
+
+test('extractPreviewUrl returns null when only non-preview URLs present', () => {
+  assert.equal(extractPreviewUrl(['https://github.com/x/y']), null);
+});
+
+// ─── failure detection ──────────────────────────────────────────────────────
+
+test('detectFailure classifies spec-objection / cost-cap / gate-block / harness-timeout', () => {
+  assert.equal(detectFailure(['ts | pm | SPEC-OBJECTION | scope creep']).class, 'spec-objection');
+  assert.equal(detectFailure(['cost-guard: cap exceeded, blocking']).class, 'cost-cap');
+  assert.equal(detectFailure(['ts | cso | BLOCKED | p0=2']).class, 'gate-block');
+  assert.equal(detectFailure(['Background tasks still running after 600s; terminating. Set CLAUDE…']).class, 'harness-timeout');
+  assert.equal(detectFailure(['ts | devops | DEPLOYED']), null);
+});
+
+test('pipelineCompleted spots the security sign-off in both verdict formats', () => {
+  assert.ok(pipelineCompleted(['2026-07-10T18:18:19Z | security-officer | APPROVED | findings=P0:0']));
+  assert.ok(pipelineCompleted(['2026-07-02T17:51:53Z security-officer PASS run p0=0']));
+  assert.ok(!pipelineCompleted(['ts | pm | PLAN_READY | tasks=13']));
+});
+
+// ─── transcript cost ────────────────────────────────────────────────────────
+
+test('accumulateUsage + priceUsage compute API-equivalent USD per model', () => {
+  const acc = {};
+  accumulateUsage(acc, JSON.stringify({ message: { model: 'claude-sonnet-5', usage: {
+    input_tokens: 1_000_000, output_tokens: 100_000, cache_read_input_tokens: 2_000_000, cache_creation_input_tokens: 0 } } }));
+  accumulateUsage(acc, JSON.stringify({ message: { model: 'claude-unknown-9', usage: { input_tokens: 5 } } }));
+  accumulateUsage(acc, 'not json');
+  accumulateUsage(acc, JSON.stringify({ noMessage: true }));
+
+  const r = priceUsage(acc);
+  // sonnet-5: 1M×$3 + 0.1M×$15 + 2M×$0.30 = 3 + 1.5 + 0.6 = $5.10
+  assert.equal(r.by_model['claude-sonnet-5'].usd, 5.1);
+  assert.equal(r.usd, 5.1);
+  assert.deepEqual(r.unpriced_models, ['claude-unknown-9']);
+});
+
+test('priceUsage strips date-suffixed model ids', () => {
+  const acc = {};
+  accumulateUsage(acc, JSON.stringify({ message: { model: 'claude-haiku-4-5-20251001', usage: { input_tokens: 1_000_000 } } }));
+  const r = priceUsage(acc);
+  assert.equal(r.usd, PRICING_PER_MTOK['claude-haiku-4-5'].in);
+  assert.deepEqual(r.unpriced_models, []);
+});
+
+test('transcriptDirFor flattens the product path', () => {
+  assert.ok(transcriptDirFor('/Users/x/bench/ats').endsWith('/.claude/projects/-Users-x-bench-ats'));
+});
+
+// ─── upsert ─────────────────────────────────────────────────────────────────
+
+test('upsertRow replaces same-slug row, keeps others, appends new', () => {
+  const existing = JSON.stringify({ slug: 'ats', v: 1 }) + '\n' + JSON.stringify({ slug: 'crm', v: 1 }) + '\n';
+  const out = upsertRow(existing, { slug: 'ats', v: 2 });
+  const rows = out.trim().split('\n').map(JSON.parse);
+  assert.equal(rows.length, 2);
+  assert.equal(rows.find(r => r.slug === 'ats').v, 2);
+  assert.equal(rows.find(r => r.slug === 'crm').v, 1);
+  assert.ok(out.endsWith('\n'));
+});
+
+// ─── test-output parsing ────────────────────────────────────────────────────
+
+test('parseTestCounts: node --test TAP, vitest/jest, unknown', () => {
+  assert.deepEqual(parseTestCounts('# tests 12\n# pass 12\n# fail 0\n'), { passed: 12, failed: 0 });
+  assert.deepEqual(parseTestCounts('Tests: 2 failed, 10 passed, 12 total'), { passed: 10, failed: 2 });
+  assert.equal(parseTestCounts('all good probably'), null);
+});
+
+// ─── integration: fixture product dir ───────────────────────────────────────
+
+test('integration: collects a full row from a fixture product dir', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'bench-fixture-'));
+  try {
+    mkdirSync(join(dir, '.great_cto', 'verdicts'), { recursive: true });
+    writeFileSync(join(dir, '.great_cto', 'verdicts', 'architect.log'),
+      '2026-07-10T10:00:00Z | architect | APPROVED | feature=ats | cost=$0.80\n');
+    writeFileSync(join(dir, '.great_cto', 'verdicts', 'devops.log'),
+      '2026-07-10T13:26:00Z | devops | DEPLOYED | url=https://bench-ats.vercel.app | cost=$0.20\n');
+    writeFileSync(join(dir, '.great_cto', 'cost-history.log'),
+      '2026-07-10T10:00:00Z architect 0.80\n2026-07-10T13:26:00Z devops 0.20\n');
+
+    const out = execFileSync('node',
+      ['scripts/bench-collect.mjs', dir, '--slug', 'ats', '--no-tests', '--no-probe'],
+      { encoding: 'utf8' });
+    const row = JSON.parse(out);
+
+    assert.equal(row.slug, 'ats');
+    assert.equal(row.wall.human, '3h 26m');
+    assert.equal(row.cost.logged_usd, 1);
+    assert.equal(row.cost.logged_source, 'cost-history');
+    assert.equal(row.cost.token_equiv_usd, null); // tmp fixture has no transcripts
+    assert.equal(row.deploy.url, 'https://bench-ats.vercel.app');
+    assert.equal(row.deploy.reachable, null);              // --no-probe
+    assert.equal(row.failure, null);
+    // The collector now scores through the EXECUTING oracle, so a fixture with
+    // no runnable suite correctly yields total:null — "not measured" rather than
+    // the filename-derived number the old scorer would have invented. What must
+    // hold is that the scorer ran and reported its parts.
+    assert.ok(row.score, 'scorer ran');
+    assert.equal(typeof row.score.floor, 'number', 'structural floor is always computable');
+    assert.ok(row.score.total === null || typeof row.score.total === 'number');
+    assert.ok(row.human_cost, 'human-cost is collected alongside the score');
+    assert.equal(row.tests.ran, false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('integration: non-product dir exits 1', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'bench-empty-'));
+  try {
+    assert.throws(
+      () => execFileSync('node', ['scripts/bench-collect.mjs', dir], { encoding: 'utf8' }),
+      /status 1|Command failed/,
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// ── A running total is not a series of purchases ────────────────────────────
+//
+// The SubagentStop hook appends the SESSION's cumulative cost after each
+// subagent, tagged `turns=` so the attribution is auditable — its own comment
+// says the file "already holds lines of ~$9,000 against a single qa-engineer
+// run — a session total that landed on one agent".
+//
+// sumCostHistory added those snapshots together. On this repository's own log
+// that produced $90,026 from a series whose largest single reading is $3,912:
+// a 23× over-count, reported as a measured figure.
+//
+// A cumulative reading is summed by its INCREMENTS. A reading lower than the one
+// before it is a new session, not a refund, so it starts a new run and counts in
+// full — the same rule a counter reset gets anywhere else.
+test('cumulative session rows are summed by increment, not added up', () => {
+  const r = sumCostHistory([
+    '2026-08-17T12:32:39Z qa-engineer 3385.111 turns=9013',
+    '2026-08-17T12:32:39Z qa-engineer 3392.0572 turns=9033',
+    '2026-08-17T12:32:39Z qa-engineer 3405.2423 turns=9069',
+  ].join('\n'));
+  assert.equal(r.sum, 3405.24,
+    'three readings of one running total are one cost, not their sum');
+});
+
+test('a reading that drops is a new session and counts in full', () => {
+  const r = sumCostHistory([
+    '2026-08-17T10:00:00Z qa-engineer 10 turns=100',
+    '2026-08-17T11:00:00Z qa-engineer 14 turns=140',
+    '2026-08-18T09:00:00Z qa-engineer 3 turns=20',
+  ].join('\n'));
+  assert.equal(r.sum, 17, '14 from the first session, then 3 from the second');
+});
+
+test('per-run rows and cumulative rows can share a file', () => {
+  // Rows without `turns=` are single runs — log-verdict.sh writes those — and
+  // they are still added. Mixing the two is the normal state of a real log.
+  const r = sumCostHistory([
+    '2026-08-17T10:00:00Z architect 0.80',
+    '2026-08-17T11:00:00Z qa-engineer 10 turns=100',
+    '2026-08-17T12:00:00Z qa-engineer 14 turns=140',
+    '2026-08-17T13:00:00Z devops 0.20',
+  ].join('\n'));
+  assert.equal(r.sum, 15, '0.80 + 0.20 single runs, plus 14 for the session');
+});
+
+test('two agents each keep their own running total', () => {
+  const r = sumCostHistory([
+    '2026-08-17T10:00:00Z qa-engineer 10 turns=100',
+    '2026-08-17T10:05:00Z senior-dev 4 turns=40',
+    '2026-08-17T11:00:00Z qa-engineer 14 turns=140',
+  ].join('\n'));
+  assert.equal(r.sum, 18, "senior-dev's 4 does not reset qa-engineer's total");
+});
+
+// ── Input and output, kept apart ────────────────────────────────────────────
+//
+// The transcript reader already returns input_tokens, output_tokens and both
+// cache fields. Only the summed dollars reached cost-history, so the log could
+// say what a run cost and never which half — and any decision about compressing
+// context (a proxy, a terser style, a smaller model) was a guess about which
+// direction the money went.
+//
+// Trailing fields, deliberately: nine readers parse this file with their own
+// regexes and awk `$3`, and all of them keep working.
+test('token counts ride along without breaking the third column', () => {
+  const line = '2026-09-01T05:00:00Z senior-dev 1.25 turns=12 in=340000 out=8200';
+  assert.equal(sumCostHistory(line + '\n').sum, 1.25,
+    'the dollar column is still the dollar column');
+
+  const parsed = parseCostLine(line);
+  assert.equal(parsed.agent, 'senior-dev');
+  assert.equal(parsed.usd, 1.25);
+  assert.equal(parsed.in, 340000);
+  assert.equal(parsed.out, 8200);
+  assert.equal(parsed.turns, 12);
+});
+
+test('a line without token counts reports them as unknown, not zero', () => {
+  // Every line written before this change has no in=/out=. Reading those as zero
+  // would put "0 input tokens" beside a real dollar figure and make the ratio a
+  // lie in the direction that matters.
+  const p = parseCostLine('2026-08-17T10:00:00Z architect 0.80');
+  assert.equal(p.usd, 0.8);
+  assert.equal(p.in, null);
+  assert.equal(p.out, null);
+});
+
+test('a malformed line is null, not a zero-cost run', () => {
+  assert.equal(parseCostLine('garbage'), null);
+  assert.equal(parseCostLine(''), null);
+});

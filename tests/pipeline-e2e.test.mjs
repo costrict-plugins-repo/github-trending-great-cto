@@ -1,0 +1,310 @@
+// E2E test #1 — Full pipeline (artifacts-driven simulation).
+//
+// Why not "real" pipeline: great_cto's pipeline is driven by the LLM host
+// (Claude Code, Cursor, Codex), not by great_cto itself. Without a real
+// LLM provider, we can't truly run /start → architect → pm → senior-dev
+// → ... in a test. But we CAN test what the board does GIVEN that an
+// LLM-driven pipeline has produced artifacts:
+//
+//   1. Seed verdict logs for each agent (as if they ran and reported)
+//   2. Seed bd tasks + gates (as if pm decomposed work + gates opened)
+//   3. Approve gates via API (real human-in-the-loop)
+//   4. Verify board reflects pipeline state at each stage
+//
+// This catches regressions in: pipeline stage detection, verdict→stage
+// mapping, gate state machine, cost aggregation across stages, and
+// /api/pipeline endpoint correctness — i.e. everything between the LLM
+// output and the user's screen.
+//
+// Run: node --test tests/pipeline-e2e.test.mjs
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, existsSync, rmSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
+import { spawn, spawnSync } from 'node:child_process';
+import { startBoard } from './helpers/board-start.mjs';
+import { reap } from './helpers/reap.mjs';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CLI_ENTRY = join(__dirname, '..', 'packages', 'cli', 'index.mjs');
+
+const bdProbe = spawnSync('bd', ['--version'], { encoding: 'utf8' });
+const BD_AVAILABLE = bdProbe.status === 0;
+
+// ── helpers ────────────────────────────────────────────────────────────────
+
+
+async function api(port, path, init) {
+  const r = await fetch(`http://127.0.0.1:${port}${path}`, init);
+  const txt = await r.text();
+  try { return { status: r.status, body: JSON.parse(txt) }; }
+  catch { return { status: r.status, body: txt }; }
+}
+
+function makeProject() {
+  const home = mkdtempSync(join(tmpdir(), 'gcto-pipe-home-'));
+  const project = mkdtempSync(join(tmpdir(), 'gcto-pipe-proj-'));
+  // Verdicts are per-project: write to <project>/.great_cto/verdicts/
+  mkdirSync(join(project, '.great_cto', 'verdicts'), { recursive: true });
+  mkdirSync(join(project, 'docs', 'arch'), { recursive: true });
+  mkdirSync(join(project, 'docs', 'plans'), { recursive: true });
+  mkdirSync(join(project, 'docs', 'threat-models'), { recursive: true });
+  writeFileSync(join(project, '.great_cto', 'PROJECT.md'),
+    'archetype: web-service\nprimary: web-service\ncompliance:\n  - gdpr\n');
+
+  const init = spawnSync('bd', ['init'], { cwd: project, encoding: 'utf8' });
+  if (init.status !== 0) throw new Error(`bd init failed: ${init.stderr || init.stdout}`);
+  return { home, project };
+}
+
+function bdCreate(project, title, opts = {}) {
+  const args = ['create', title, '--priority', opts.priority || 'P1'];
+  const r = spawnSync('bd', args, { cwd: project, encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`bd create failed: ${r.stderr}`);
+  const m = (r.stdout || '').match(/Created issue:\s*(\S+)/);
+  if (!m) throw new Error(`could not parse bd create: ${r.stdout}`);
+  const id = m[1];
+  // Read the result, as bdCreate above and bdClose below already do. A label
+  // or assignee that silently failed to apply leaves the fixture in a state the
+  // test did not ask for, and the assertion that then fails names the wrong cause.
+  if (opts.label) {
+    const r2 = spawnSync('bd', ['update', id, '--add-label', opts.label], { cwd: project, encoding: 'utf8' });
+    if (r2.status !== 0) throw new Error(`bd update ${id} --add-label failed: ${r2.stderr || r2.stdout}`);
+  }
+  if (opts.agent) {
+    const r3 = spawnSync('bd', ['update', id, '--assignee', opts.agent, '--add-label', opts.agent],
+      { cwd: project, encoding: 'utf8' });
+    if (r3.status !== 0) throw new Error(`bd update ${id} --assignee failed: ${r3.stderr || r3.stdout}`);
+  }
+  return id;
+}
+
+function bdClose(project, id) {
+  const r = spawnSync('bd', ['update', id, '--status', 'closed'],
+    { cwd: project, encoding: 'utf8' });
+  if (r.status !== 0) throw new Error(`bd close ${id} failed: ${r.stderr}`);
+}
+
+function seedVerdict(project, agent, ts, verdict, details, costUsd) {
+  // readVerdicts() in board/server.mjs parses by splitting on whitespace and
+  // taking parts[1] as the verdict — so the canonical format is:
+  //   <ISO-ts> <VERDICT> <details...> cost=$<USD>
+  // (Some production logs use pipe-separated "ts | agent | verdict | …" but
+  // that parses to verdict='|' under the current parser. We use the canonical
+  // space form so getPipeline() can correctly resolve status=done.)
+  // Verdicts are now per-project; write to <project>/.great_cto/verdicts/
+  const file = join(project, '.great_cto', 'verdicts', `${agent}.log`);
+  const line = `${ts} ${verdict} ${details} cost=$${costUsd.toFixed(2)}\n`;
+  appendFileSync(file, line);
+}
+
+
+// Kill AND wait. SIGKILL is delivered asynchronously, so between the signal and
+// the cleanup below the board could still finish a write into its temp HOME and
+// leave `rmSync` failing with ENOTEMPTY. See tests/helpers/reap.mjs.
+async function killBoardTree(board) {
+  await reap(board);
+}
+
+function cleanup(...dirs) {
+  for (const d of dirs) try { rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {}
+}
+
+// ── tests ──────────────────────────────────────────────────────────────────
+
+test('pipeline: full 9-stage simulation reports each stage as done', { skip: !BD_AVAILABLE && 'bd CLI not installed' }, async () => {
+  const { home, project } = makeProject();
+
+  // Seed artifacts for all 8 pipeline stages with realistic costs.
+  // ts must be RECENT — pipeline stage status uses a 30-min active window
+  // to distinguish "done recently" from "stale". Use NOW so all show as done.
+  const now = new Date();
+  const isoMinusMin = (m) => new Date(now.getTime() - m * 60 * 1000).toISOString();
+
+  const stages = [
+    { agent: 'product-owner',    ts: isoMinusMin(29), cost: 0.50, verdict: 'APPROVED' },
+    { agent: 'architect',        ts: isoMinusMin(28), cost: 0.42, verdict: 'APPROVED' },
+    { agent: 'pm',               ts: isoMinusMin(24), cost: 0.18, verdict: 'APPROVED' },
+    { agent: 'senior-dev',       ts: isoMinusMin(18), cost: 1.20, verdict: 'DONE'     },
+    { agent: 'code-reviewer',    ts: isoMinusMin(14), cost: 0.32, verdict: 'APPROVED' },
+    { agent: 'qa-engineer',      ts: isoMinusMin(10), cost: 0.45, verdict: 'PASS'     },
+    { agent: 'security-officer', ts: isoMinusMin(7),  cost: 0.28, verdict: 'APPROVED' },
+    { agent: 'devops',           ts: isoMinusMin(4),  cost: 0.15, verdict: 'DONE'     },
+    { agent: 'l3-support',       ts: isoMinusMin(1),  cost: 0.05, verdict: 'DONE'     },
+  ];
+  for (const s of stages) {
+    seedVerdict(project, s.agent, s.ts, s.verdict, `feature=stripe-webhook stage=${s.agent}`, s.cost);
+  }
+
+  // startBoard: one helper that tells a taken port, a crashed server and a
+  // slow one apart, and retries only the first. The local pair this replaces
+  // threw `board did not start on port <n>` for all three.
+  const { port, proc: board } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+
+  try {
+
+    // 1. /api/pipeline should report each agent stage as done, plus the human-gate node.
+    const pipeline = await api(port, '/api/pipeline');
+    assert.equal(pipeline.status, 200, `/api/pipeline returned ${pipeline.status}`);
+    assert.ok(Array.isArray(pipeline.body), `pipeline body should be array, got ${typeof pipeline.body}`);
+    // The pipeline surfaces the human gate AS A STAGE (just before the irreversible
+    // devops step), so the body is the 8 agent stages + 1 human-gate node.
+    const agentNodes = pipeline.body.filter(s => !s.is_human_gate);
+    const gateNodes = pipeline.body.filter(s => s.is_human_gate);
+    assert.equal(agentNodes.length, 9, `expected 9 agent stages, got ${agentNodes.length}`);
+    assert.equal(gateNodes.length, 1, `expected exactly 1 human-gate node, got ${gateNodes.length}`);
+    // The gate must sit immediately before devops on the rail.
+    const gateIdx = pipeline.body.findIndex(s => s.is_human_gate);
+    const devopsIdx = pipeline.body.findIndex(s => s.stage === 'devops');
+    assert.equal(gateIdx + 1, devopsIdx, `human-gate should sit immediately before devops (gate@${gateIdx}, devops@${devopsIdx})`);
+
+    const stagesByName = Object.fromEntries(pipeline.body.map(s => [s.stage, s]));
+    const expectedDone = ['product-owner', 'architect', 'pm', 'senior-dev', 'reviewers', 'qa-engineer', 'security-officer', 'devops', 'l3-support'];
+    for (const stage of expectedDone) {
+      const s = stagesByName[stage];
+      assert.ok(s, `missing pipeline stage: ${stage}`);
+      assert.equal(s.status, 'done',
+        `stage ${stage} should be 'done' (has verdict=${s.verdict}), got status=${s.status}`);
+    }
+
+    // 2. /api/cost should accumulate verdicts: total = sum of all cost=$X
+    const cost = await api(port, '/api/cost?days=1');
+    const expectedTotal = stages.reduce((a, s) => a + s.cost, 0); // 3.05
+    assert.ok(
+      Math.abs(cost.body.total_llm - expectedTotal) < 0.02,
+      `total_llm: expected ~$${expectedTotal.toFixed(2)}, got $${cost.body.total_llm}`
+    );
+
+    // 3. /api/cost ratio sanity (regression check for 7,638×)
+    if (cost.body.total_llm > 0 && cost.body.total_human > 0) {
+      const ratio = cost.body.total_human / cost.body.total_llm;
+      assert.ok(ratio <= 1000, `pipeline cost ratio ${ratio.toFixed(0)}× exceeds plausible ceiling`);
+    }
+  } finally {
+    await killBoardTree(board);
+    cleanup(home, project);
+  }
+});
+
+/**
+ * ADR-024 §1: a gate decision presents the token /api/inbox issued for that gate,
+ * and an expensive or unclassified approval also carries the typed gate name —
+ * exactly what the page sends. Read from the server being posted to.
+ */
+async function decisionAuth(port, id) {
+  const inbox = await api(port, '/api/inbox');
+  const g = (inbox.body?.pending_gates || []).find((x) => x.id === id);
+  if (!g?.token) throw new Error(`no approval token for ${id}: ${JSON.stringify(inbox.body?.approval_tokens)}`);
+  const rev = g.reversibility || {};
+  const guarded = rev.state === 'expensive' || rev.state === 'unclassified';
+  return { token: g.token, ...(guarded ? { confirm: rev.gate ? `gate:${rev.gate}` : id } : {}) };
+}
+
+test('pipeline: gate state transitions reflect in /api/inbox', { skip: !BD_AVAILABLE && 'bd CLI not installed' }, async () => {
+  const { home, project } = makeProject();
+
+  // Two gates open: plan + ship. Pipeline simulation:
+  //  - gate:plan opens (architect done) → 1 pending in inbox
+  //  - approve gate:plan → inbox shows 1 pending (ship still open)
+  //  - approve gate:ship → inbox shows 0 pending
+  const gatePlan = bdCreate(project, 'gate: plan approval for stripe-webhook', { label: 'gate' });
+  const gateShip = bdCreate(project, 'gate: ship v2.7.1', { label: 'gate' });
+
+  const { port, proc: board } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+
+  try {
+
+    // Stage 1: both gates open → 2 pending
+    let inbox = await api(port, '/api/inbox');
+    assert.equal(inbox.body.summary.gates, 2,
+      `2 gates open, /api/inbox.summary.gates should be 2, got ${inbox.body.summary.gates}`);
+
+    // Stage 2: approve gate:plan → 1 pending
+    const r1 = await api(port, `/api/gates/${gatePlan}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve', reason: 'plan looks good', ...(await decisionAuth(port, gatePlan)) }),
+    });
+    assert.equal(r1.status, 200, `approve gate:plan failed: ${JSON.stringify(r1.body)}`);
+
+    // bd cache lives ~500ms — wait briefly for invalidation
+    await new Promise(r => setTimeout(r, 700));
+    inbox = await api(port, '/api/inbox');
+    assert.equal(inbox.body.summary.gates, 1,
+      `1 gate remaining after plan-approve, got ${inbox.body.summary.gates}`);
+
+    // Stage 3: approve gate:ship → 0 pending
+    const r2 = await api(port, `/api/gates/${gateShip}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve', reason: 'shipping', ...(await decisionAuth(port, gateShip)) }),
+    });
+    assert.equal(r2.status, 200, `approve gate:ship failed: ${JSON.stringify(r2.body)}`);
+
+    await new Promise(r => setTimeout(r, 700));
+    inbox = await api(port, '/api/inbox');
+    assert.equal(inbox.body.summary.gates, 0,
+      `0 gates after both approved, got ${inbox.body.summary.gates}`);
+  } finally {
+    await killBoardTree(board);
+    cleanup(home, project);
+  }
+});
+
+test('pipeline: failed verdict marks stage as failed (not done)', { skip: !BD_AVAILABLE && 'bd CLI not installed' }, async () => {
+  const { home, project } = makeProject();
+  const now = new Date();
+  const isoMinusMin = (m) => new Date(now.getTime() - m * 60 * 1000).toISOString();
+
+  // architect APPROVED, but security-officer BLOCKED → pipeline stuck
+  seedVerdict(project, 'architect',         isoMinusMin(20), 'APPROVED', 'feature=test', 0.42);
+  seedVerdict(project, 'security-officer',  isoMinusMin(2),  'BLOCKED',  'feature=test criticals=1', 0.28);
+
+  const { port, proc: board } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+
+  try {
+    const pipeline = await api(port, '/api/pipeline');
+    const stages = Object.fromEntries(pipeline.body.map(s => [s.stage, s]));
+
+    assert.equal(stages['architect'].status, 'done',
+      `architect APPROVED should map to status=done, got ${stages['architect'].status}`);
+    assert.equal(stages['security-officer'].status, 'failed',
+      `security-officer BLOCKED should map to status=failed, got ${stages['security-officer'].status}`);
+  } finally {
+    await killBoardTree(board);
+    cleanup(home, project);
+  }
+});
+
+test('pipeline: cumulative cost across multiple feature runs', { skip: !BD_AVAILABLE && 'bd CLI not installed' }, async () => {
+  const { home, project } = makeProject();
+  const now = new Date();
+  const isoMinusMin = (m) => new Date(now.getTime() - m * 60 * 1000).toISOString();
+
+  // Three feature pipelines, each with 3 agents — total 9 verdicts
+  const features = ['stripe-webhook', 'oauth-refresh', 'billing-tax'];
+  let expected = 0;
+  for (let f = 0; f < features.length; f++) {
+    for (const agent of ['architect', 'senior-dev', 'qa-engineer']) {
+      const cost = 0.30 + (f * 0.05);
+      seedVerdict(project, agent, isoMinusMin(5 - f), 'APPROVED', `feature=${features[f]}`, cost);
+      expected += cost;
+    }
+  }
+
+  const { port, proc: board } = await startBoard({ cliEntry: CLI_ENTRY, project, home });
+
+  try {
+    const cost = await api(port, '/api/cost?days=1');
+    assert.ok(
+      Math.abs(cost.body.total_llm - expected) < 0.05,
+      `cumulative across 3 features: expected ~$${expected.toFixed(2)}, got $${cost.body.total_llm}`
+    );
+  } finally {
+    await killBoardTree(board);
+    cleanup(home, project);
+  }
+});

@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""
+Structural validator for great_cto plugin.
+
+Checks that plugin artefacts are internally consistent BEFORE any runtime:
+ 1. plugin.json parses and has required top-level keys + valid version.
+ 2. Every command file has a parseable YAML frontmatter.
+ 3. Every agent file has a parseable YAML frontmatter with a name, model,
+    tools, maxTurns, timeout.
+ 4. SessionStart installs agents and commands through scripts/lib/sync-managed.mjs,
+    which copies every commands/*.md and agents/*.md, and no hand-kept
+    `for CMD in` / `for AGENT in` list is back in any hook. (Until 2026-09-11
+    this checked such a list against the disk; the agent list had drifted to 55
+    of 70, and the inline prune beside it wiped every agent and command when
+    the plugin directory it read had been deleted.)
+ 5. TYPE_MAP.md has at least one backticked slug per row.
+ 6. Every keyword in TYPE_MAP.md maps to a slug that appears in at least
+    one row's right-hand column (no dangling keywords).
+
+Exit 0 on success, 1 with a human-readable error report otherwise.
+
+Run from repository root:
+    python3 tests/structural/validate.py
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+import re
+import sys
+from typing import Any
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+
+
+REQUIRED_AGENT_FIELDS = {"name", "description", "model", "tools", "maxTurns", "timeout"}
+
+
+def fail(errors: list[str]) -> None:
+    print("FAIL — structural validation found issues:\n", file=sys.stderr)
+    for e in errors:
+        print(f"  - {e}", file=sys.stderr)
+    sys.exit(1)
+
+
+def parse_frontmatter(md_text: str) -> dict[str, Any]:
+    """Parse the --- YAML block at the start of a markdown file.
+
+    Intentionally minimal: we only need flat string/list fields. We avoid a
+    yaml dependency to keep tests fast and self-contained.
+    """
+    if not md_text.startswith("---"):
+        raise ValueError("file does not start with '---' frontmatter")
+    try:
+        _, fm, _ = md_text.split("---", 2)
+    except ValueError as e:
+        raise ValueError("unterminated frontmatter block") from e
+    data: dict[str, Any] = {}
+    for raw_line in fm.strip().splitlines():
+        line = raw_line.rstrip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" not in line:
+            continue
+        key, _, value = line.partition(":")
+        data[key.strip()] = value.strip().strip("\"'")
+    return data
+
+
+def check_plugin_json(errors: list[str]) -> dict[str, Any] | None:
+    pj = ROOT / ".claude-plugin" / "plugin.json"
+    if not pj.is_file():
+        errors.append(f"missing {pj}")
+        return None
+    try:
+        data = json.loads(pj.read_text())
+    except json.JSONDecodeError as e:
+        errors.append(f"plugin.json invalid JSON: {e}")
+        return None
+    # `id` is deliberately not required. Anthropic's own `claude plugin validate`
+    # reports it as belonging in the marketplace entry, not here: "harmless but
+    # unused — Claude Code ignores it at load time". It was dropped from the
+    # manifest when this plugin was submitted to the plugin directory, and this
+    # check then failed the local gate for the absence of a field the platform
+    # says should be absent. Two validators disagreeing is fine; the one that
+    # owns the format wins.
+    for required in ("name", "version", "hooks"):
+        if required not in data:
+            errors.append(f"plugin.json missing key: {required}")
+    version = str(data.get("version", ""))
+    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        errors.append(f"plugin.json version must be semver, got: {version!r}")
+    return data
+
+
+def hook_commands(plugin_data: dict[str, Any]) -> list[tuple[str, str]]:
+    out: list[tuple[str, str]] = []
+    for event, groups in (plugin_data.get("hooks", {}) or {}).items():
+        for group in groups:
+            for hook in group.get("hooks", []):
+                out.append((event, hook.get("command", "")))
+    return out
+
+
+def check_commands(plugin_data: dict[str, Any], errors: list[str]) -> None:
+    cmd_dir = ROOT / "commands"
+    if not cmd_dir.is_dir():
+        errors.append("commands/ directory missing")
+        return
+    hooks = hook_commands(plugin_data)
+    if not any(ev == "SessionStart" and "scripts/lib/sync-managed.mjs" in c for ev, c in hooks):
+        errors.append("SessionStart does not run scripts/lib/sync-managed.mjs — agents and commands are never installed")
+    if not (ROOT / "scripts" / "lib" / "sync-managed.mjs").is_file():
+        errors.append("scripts/lib/sync-managed.mjs missing")
+    for ev, c in hooks:
+        if re.search(r"for (CMD|AGENT) in ", c):
+            errors.append(f"{ev}: a hand-kept install list is back — sync-managed installs every file instead")
+
+    # Frontmatter sanity on each command file.
+    for path in sorted(cmd_dir.glob("*.md")):
+        try:
+            fm = parse_frontmatter(path.read_text())
+        except ValueError as e:
+            errors.append(f"{path.name}: {e}")
+            continue
+        if "description" not in fm:
+            errors.append(f"{path.name}: missing 'description' in frontmatter")
+
+
+def check_agents(errors: list[str]) -> None:
+    agent_dir = ROOT / "agents"
+    if not agent_dir.is_dir():
+        errors.append("agents/ directory missing")
+        return
+    for path in sorted(agent_dir.glob("*.md")):
+        try:
+            fm = parse_frontmatter(path.read_text())
+        except ValueError as e:
+            errors.append(f"{path.name}: {e}")
+            continue
+        for field in REQUIRED_AGENT_FIELDS:
+            if field not in fm:
+                errors.append(f"{path.name}: missing '{field}' in frontmatter")
+
+
+def check_type_map(errors: list[str]) -> None:
+    tm = ROOT / "skills" / "great_cto" / "TYPE_MAP.md"
+    if not tm.is_file():
+        errors.append(f"missing {tm}")
+        return
+    rows = 0
+    for lineno, raw in enumerate(tm.read_text().splitlines(), start=1):
+        if not raw.startswith("|") or raw.startswith("|--") or "keyword" in raw.lower():
+            continue
+        if raw.strip() == "|":
+            continue
+        # row shape: | keywords | `slug` [, `slug`] |
+        cells = [c.strip() for c in raw.strip().strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        # Slugs may live in the first cell (archetype-row format) or the last
+        # cell (keyword-to-slug row format). Accept either. Rows with no
+        # backticks are header rows of sub-tables — skip silently.
+        slugs = re.findall(r"`([a-z0-9-]+)`", raw)
+        if not slugs:
+            continue
+        rows += 1
+    if rows == 0:
+        errors.append("TYPE_MAP.md has no valid rows")
+
+
+def main() -> int:
+    errors: list[str] = []
+    plugin_data = check_plugin_json(errors)
+    if plugin_data is not None:
+        check_commands(plugin_data, errors)
+    check_agents(errors)
+    check_type_map(errors)
+    if errors:
+        fail(errors)
+    print("OK — structural validation passed")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

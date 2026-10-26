@@ -1,0 +1,2501 @@
+import fs from 'fs';
+import path from 'path';
+import { execFileSync, execFile } from 'child_process';
+import { fileURLToPath } from 'node:url';
+import os from 'os';
+import {
+  getVapidKeys,
+  addSubscription,
+  removeSubscription,
+} from '../push-adapter.mjs';
+import { GREAT_CTO_DIR, VAPID_KEYS_FILE, PUSH_SUBS_FILE, BUILD_VERSION } from './config.mjs';
+import { eventSurface, readFileSafe, originAllowed } from './util.mjs';
+import { sseClients, notifHistory } from './state.mjs';
+import { autoRegisterProject, listProjects, resolveProjectCwd, resolveProjectInfo, getChangeTier, readProjectsRegistry, getRegistryDegradation } from './projects.mjs';
+import { readVerdictsWithHealth } from './verdicts.mjs';
+import { agentUsage, usageSnapshot } from '../../../scripts/lib/agent-usage.mjs';
+import { isProjectState } from '../../../scripts/lib/great-cto-scope.mjs';
+import { usageReports } from './usage-report.mjs';
+import { outcomes as computeOutcomes } from '../../../scripts/lib/outcomes.mjs';
+import { reviewerStatus } from '../../../scripts/lib/required-reviewers.mjs';
+import { readSessionStatus } from '../../../scripts/lib/session-status.mjs';
+import { readScores, summarizeScores } from '../../../scripts/lib/scores.mjs';
+import { status as routerKeyStatus, writeKey as writeRouterKey, verifyKey as verifyRouterKey } from '../../../scripts/lib/router-key.mjs';
+
+// The last live check of the judge key, by fingerprint. In memory: a restart
+// re-checks, which costs one free request.
+let routerKeyCheck = null;
+import { broadcastTasks } from './sse.mjs';
+import { saveNotifHistory } from './notifications.mjs';
+import { getMemory, getPipeline, getCostHistory, getInbox, getInboxAsync, inboxElsewhere } from './data-readers.mjs';
+import { log } from './log.mjs';
+import { bdCacheInvalidate, checkBeadsAvailable, bdWriteSerialised, bd, bdErr, getTasks, getTasksAsync, setTaskStatusInTasksMd, getReadDegradation } from './beads.mjs';
+import { getMetrics } from './metrics.mjs';
+import { agentActivity, agentActivitySince } from './agent-activity.mjs';
+import { issueTokensAsync, checkToken, checkBinding, consumeToken, approvalSnapshot, beginGateDecision, readTokens } from './gate-tokens.mjs';
+import { gateBrief, settle, readVerdictLogs, mapDocPaths } from '../../../scripts/lib/gate-brief.mjs';
+import { readTurns, turnPatch } from '../../../scripts/lib/turn-snapshot.mjs';
+import { appendEvent } from '../../../scripts/lib/agent-events.mjs';
+
+/** A gate decision — made or refused — as an agent event (ADR-024 §1). */
+function recordGateEvent(cwd, id, outcome) {
+  return appendEvent(path.join(cwd, '.great_cto'), { kind: 'pipeline', agent: id, outcome });
+}
+import { readVerdicts } from './verdicts.mjs';
+import { parseAgentBudgets, upsertAgentBudget, removeAgentBudget } from '../../../scripts/lib/agent-budget.mjs';
+import { resolveSecondOpinion, SECOND_OPINION_PROVIDERS } from '../../../scripts/lib/second-opinion.mjs';
+import { detectCodex } from '../../../scripts/lib/codex-exec.mjs';
+import { getWork } from './work.mjs';
+let publicationPreviewBusy = false;
+let publicationWriteBusy = false;
+import { publicationTickets, localPublicationOrigin } from './publication-tickets.mjs';
+const publicationTicketStore = publicationTickets();
+
+function publicationWorker(args, cwd, timeout = 20000) {
+  const controller = fileURLToPath(new URL('../../../scripts/work-task.mjs', import.meta.url));
+  return new Promise((resolve, reject) => execFile(process.execPath, [controller, ...args, '--dir', cwd],
+    { timeout, maxBuffer: 4 * 1024 * 1024, encoding: 'utf8' }, (error, stdout) => {
+      if (error) { reject(Error('publication worker failed; inspect host state before retry')); return; }
+      try { resolve(JSON.parse(stdout)); } catch { reject(Error('publication response is unreadable')); }
+    }));
+}
+import { listCodexRuns } from '../../../scripts/lib/codex-host-state.mjs';
+import { upsertCapability, capabilitiesFromProjectMd } from '../../../scripts/lib/stack-capabilities.mjs';
+// Moved to scripts/lib so the cross-review Stop hook can ask the same question
+// without importing a server. Re-exported here: this module's callers are unchanged.
+import { secondOpinionForTree } from '../../../scripts/lib/second-opinion-for-tree.mjs';
+import { readApprovalReceipt, readSecondOpinion, readTouches } from './receipt-read.mjs';
+import { getAgentsFleet, getAgentProfile, retireAgent, restoreAgent, appendDecisionLog, readDecisionsLog } from './fleet.mjs';
+import { getResume, getShareState, toggleShare } from './share.mjs';
+import { listSessions, readSession, editedFiles, searchSessions } from './transcripts.mjs';
+import { recordView, summarizeViews } from './view-counter.mjs';
+import { getSkillsInventory } from './skills-inventory.mjs';
+
+// ── HTTP router ────────────────────────────────────────────────────────────────
+// dispatch(req, res, url, cwd, projInfo) handles every /api/* route plus /api/sse.
+// Returns true if the request was handled (response already sent or streaming),
+// false if the caller (server.mjs) should fall through to static file serving.
+/**
+ * Headers for a response whose data came from the verdict reader.
+ *
+ * Metrics, cost, the pipeline strip and the inbox are all built from
+ * readVerdicts, which returned [] on every kind of failure — so an unreadable
+ * verdict directory arrived at four panels as "this project has not run
+ * anything". That is a different claim from "I could not look", and a confident
+ * one.
+ */
+function verdictHeaders(cwd, base = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }) {
+  try {
+    const { unread } = readVerdictsWithHealth(cwd);
+    if (unread) return { ...base, 'X-Board-Degraded': encodeURIComponent(unread) };
+  } catch { /* never fail a response over its own health check */ }
+  return base;
+}
+
+async function dispatch(req, res, url, cwd) {
+  const pathname = url.pathname;
+  const serverCwd = cwd;
+
+  // The selected project, resolved ONCE for every route below.
+  //
+  // The board is multi-project — a registry of twenty-two, a switcher in the
+  // sidebar — and sixteen of its eighteen endpoints read `cwd`, the directory
+  // the SERVER was started in. Switching to another project changed the heading
+  // and nothing else: a project with a .great_cto holding two verdicts and
+  // thirty-nine session logs had every panel show 0.
+  //
+  // Which is the failure this board keeps making in other forms: a read that did
+  // not happen looked exactly like an absence of data. Resolving here rather than
+  // per-route means the next endpoint added cannot forget.
+  //
+  // A slug that does not resolve falls back to the server's directory — that is
+  // pre-existing behaviour and it is defensible, but it must not be silent, so
+  // it is announced in a header rather than shown as if it were the project asked
+  // for.
+  const requestedProject = url.searchParams.get('project');
+  if (requestedProject) {
+    const info = resolveProjectInfo(requestedProject);
+    cwd = info.cwd;
+    if (info.resolved === 'fallback' && typeof res.setHeader === 'function') {
+      try { res.setHeader('X-Project-Fallback', String(info.requested || requestedProject)); } catch { /* headers already sent */ }
+    }
+  }
+
+  // These read models accept registered projects or the server's own root,
+  // never an arbitrary HOME directory supplied as a query parameter.
+  const knowledgeRead = ['/api/docs', '/api/doc', '/api/docs/search'].includes(pathname);
+  const scopedProject = (knowledgeRead || ['/api/skills', '/api/usage', '/api/outcomes'].includes(pathname))
+    ? scopedReadProject(cwd, serverCwd, requestedProject) : null;
+
+  if (knowledgeRead && req.method === 'GET' && !scopedProject) {
+    res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ error: 'Unknown project; documentation was not read', state: 'unavailable' }));
+    return true;
+  }
+
+  // Existing synchronous projections may consume a completed snapshot, but
+  // HTTP cold reads must await async I/O instead of freezing unrelated clients.
+  const taskRead = ['/api/work', '/api/sse', '/api/tasks', '/api/metrics',
+    '/api/memory', '/api/pipeline', '/api/heartbeat', '/api/share', '/api/cost', '/api/resume'].includes(pathname)
+    || /^\/api\/tasks\/[^/]+\/history$/.test(pathname);
+  const unknownWork = pathname === '/api/work' && requestedProject
+    && resolveProjectInfo(requestedProject).resolved === 'fallback';
+  let sseClosed = false;
+  if (pathname === '/api/sse') {
+    // Install lifecycle ownership before the cold snapshot await. Request
+    // 'close' also occurs for normally completed GET bodies; response close
+    // is the actual stream lifetime signal.
+    res.once('close', () => { sseClosed = true; sseClients.delete(res); });
+  }
+  const closedSse = () => pathname === '/api/sse'
+    && (sseClosed || req.aborted || res.destroyed || res.writableEnded);
+  if (req.method === 'GET' && taskRead && !unknownWork) {
+    try { await getTasksAsync(cwd); }
+    catch {
+      if (closedSse()) return true;
+      res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Task snapshot is unavailable; retry', state: 'unreadable' }));
+      return true;
+    }
+  }
+
+  if (pathname === '/api/work/publication') {
+    const respond = (status, body) => { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(body)); };
+    if (requestedProject && resolveProjectInfo(requestedProject).resolved === 'fallback') { respond(404, { error: 'Unknown project' }); return true; }
+    if (req.method !== 'POST') { respond(405, { error: 'Use explicit POST confirmation' }); return true; }
+    const origin = localPublicationOrigin(req);
+    // A missing Origin is acceptable for preview, never for an external write.
+    if (!origin || req.headers.origin !== origin || !originAllowed(req)) { respond(403, { error: 'Publication is available only from the local same-origin board' }); return true; }
+    if (publicationWriteBusy) { respond(429, { error: 'Another publication is running; inspect its outcome before retry' }); return true; }
+    publicationWriteBusy = true;
+    try {
+      let bytes = 0, body = '';
+      req.setTimeout(10000, () => req.destroy());
+      for await (const chunk of req) { bytes += chunk.length; if (bytes > 2048) throw Error('confirmation body too large'); body += chunk; }
+      req.setTimeout(0);
+      const parsed = JSON.parse(body);
+      if (parsed.confirm !== 'publish-draft-pr') throw Error('explicit draft PR confirmation required');
+      const ticket = publicationTicketStore.consume(parsed.ticket, { root: fs.realpathSync(cwd), origin, branch: parsed.branch });
+      const result = await publicationWorker(['publish', '--task', ticket.taskId, '--revision', String(ticket.expectedRevision),
+        '--approval', ticket.approval, '--base', ticket.base, '--allow', ticket.allow.join(','), '--confirm', 'publish-draft-pr'], cwd, 120000);
+      respond(200, { publication: result.task.publication });
+    } catch { respond(409, { error: 'Publication was not confirmed. Refresh task state and reconcile the original operation; no automatic retry was sent.' }); }
+    finally { publicationWriteBusy = false; }
+    return true;
+  }
+
+  // Preview never pushes. Local UI receives a short-lived confirmation ticket.
+  if (pathname === '/api/work/publication-preview') {
+    if (requestedProject && resolveProjectInfo(requestedProject).resolved === 'fallback') {
+      res.writeHead(404, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ error: 'Unknown project' })); return true;
+    }
+    if (req.method !== 'GET') {
+      res.writeHead(405, { 'Content-Type': 'application/json', Allow: 'GET' }); res.end(JSON.stringify({ error: 'Publication requires explicit host CLI confirmation' })); return true;
+    }
+    if (publicationPreviewBusy) {
+      res.writeHead(429, { 'Content-Type': 'application/json', 'Retry-After': '2' });
+      res.end(JSON.stringify({ error: 'Another publication preview is being read; retry shortly' })); return true;
+    }
+    publicationPreviewBusy = true;
+    try {
+      const taskId = url.searchParams.get('task'), base = url.searchParams.get('base') || 'main', allow = url.searchParams.get('allow');
+      if (!/^[0-9a-f-]{36}$/.test(taskId || '') || !/^[A-Za-z0-9][A-Za-z0-9/_-]{0,120}$/.test(base)) throw Error('invalid preview options');
+      // Git/receipt reads run off the board event loop, with one bounded worker.
+      const preview = await publicationWorker(['preview', '--task', taskId, '--base', base, ...(allow ? ['--allow', allow] : [])], cwd);
+      const origin = localPublicationOrigin(req);
+      if (origin) preview.ticket = publicationTicketStore.issue({ root: fs.realpathSync(cwd), origin, taskId,
+        branch: preview.branch, base: preview.base, allow: preview.allow, ...preview.confirmation });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(preview));
+    } catch {
+      res.writeHead(409, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Publication preview unavailable: require verified delivery, a clean committed feature branch, explicit path scope and canonical GitHub origin. Inspect with the host CLI.' }));
+    } finally { publicationPreviewBusy = false; }
+    return true;
+  }
+
+  // Inventory is a read-only local observation. Query parameters cannot choose
+  // filesystem roots, install skills or ask for network/upstream checks.
+  if (pathname === '/api/skills') {
+    const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+    if (req.method !== 'GET') {
+      res.writeHead(405, { ...headers, Allow: 'GET' });
+      res.end(JSON.stringify({ error: 'Skill inventory is read-only' }));
+      return true;
+    }
+    if (!scopedProject) {
+      res.writeHead(404, headers);
+      res.end(JSON.stringify({ error: 'Unknown project; skill inventory was not read' }));
+      return true;
+    }
+    try {
+      const snapshot = await getSkillsInventory(cwd);
+      res.writeHead(200, headers); res.end(JSON.stringify(snapshot));
+    } catch {
+      res.writeHead(503, headers);
+      res.end(JSON.stringify({ error: 'Skill inventory could not be read' }));
+    }
+    return true;
+  }
+
+  // New read model refuses project fallback rather than relabeling another project.
+  if (pathname === '/api/work') {
+    if (requestedProject && resolveProjectInfo(requestedProject).resolved === 'fallback') {
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Unknown project; work projection was not read' }));
+      return true;
+    }
+    if (req.method !== 'GET') {
+      res.writeHead(405, { 'Content-Type': 'application/json', Allow: 'GET' });
+      res.end(JSON.stringify({ error: 'Work execution is not connected; use the host CLI' }));
+      return true;
+    }
+    const snapshot = getWork(cwd);
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(snapshot));
+    return true;
+  }
+
+  // SSE
+  if (pathname === '/api/sse') {
+    if (closedSse()) return true;
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+    res._gctoCwd = cwd;  // remember which project this client wants
+    sseClients.add(res);
+    if (getReadDegradation(cwd)) {
+      res.write(`event: task-read-state\ndata: ${JSON.stringify({ ok: false, state: 'unreadable' })}\n\n`);
+    } else {
+      res.write(`event: tasks\ndata: ${JSON.stringify(getTasks(cwd))}\n\n`);
+    }
+    // ADR-021: the agent activity strip starts from a snapshot, then follows pushes.
+    // Phase 2: a client that hands back the cursor of the last frame it saw — the
+    // Last-Event-ID header, or ?since= from a page that had to recreate its
+    // EventSource — gets only what came after it. Each frame names its cursor.
+    let a;
+    try {
+      a = agentActivitySince(cwd, req.headers['last-event-id'] || url.searchParams.get('since') || null);
+    } catch (err) {
+      // Not "no events": the strip must say it could not measure them.
+      a = { state: 'unreadable', mode: 'snapshot', why: String(err?.message || err), events: [], attention: [], bad: 0, cursor: null, gap: false };
+    }
+    res._gctoAgentCursor = a.cursor;
+    res.write(`${a.cursor ? `id: ${a.cursor}\n` : ''}event: agent\ndata: ${JSON.stringify(a)}\n\n`);
+    return true;
+  }
+
+  // API
+  if (pathname === '/api/projects') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(listProjects()));
+    return true;
+  }
+
+  // Manually register a project at an arbitrary path (e.g. /tmp/...).
+  // Body: { path: "/tmp/neobank-test" }
+  //
+  // BH-23 (Security): this endpoint creates files + registers projects, so
+  // it MUST reject cross-origin requests. The board listens on 127.0.0.1
+  // but a malicious page the user visits can still issue text/plain POSTs
+  // (simple CORS request — no preflight) to localhost. Two gates:
+  //   1) Origin / Referer must be same-origin (originAllowed() in lib/util.mjs —
+  //      also enforced as the top-level CSRF guard in server.mjs before dispatch()
+  //      is ever called, so this is defense-in-depth, not the only check).
+  //   2) Resolved target path must live inside HOME — no /tmp, no /etc.
+  if (pathname === '/api/projects/register' && req.method === 'POST') {
+    if (!originAllowed(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'origin not allowed' }));
+      return true;
+    }
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { path: projPath } = JSON.parse(body || '{}');
+        if (!projPath || typeof projPath !== 'string') {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'path missing' }));
+        }
+        const resolved = path.resolve(projPath);
+        const home = os.homedir();
+        if (!resolved.startsWith(home + path.sep) && resolved !== home) {
+          res.writeHead(403, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'path must live inside HOME' }));
+        }
+        if (!fs.existsSync(resolved)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'path does not exist' }));
+        }
+        const greatCtoDir = path.join(resolved, '.great_cto');
+        const projectMd = path.join(greatCtoDir, 'PROJECT.md');
+        if (!fs.existsSync(projectMd)) {
+          fs.mkdirSync(greatCtoDir, { recursive: true });
+          fs.writeFileSync(projectMd, `# PROJECT — ${path.basename(resolved)}\n\nname: ${path.basename(resolved)}\narchetype: unknown\nphase: discovery\n`);
+        }
+        autoRegisterProject(resolved);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, path: resolved, slug: path.basename(resolved) }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return true;
+  }
+
+  if (pathname === '/api/tasks' && req.method === 'GET') {
+    const tasks = getTasks(cwd);
+    // An empty list has two very different meanings: "no tasks" and "we could
+    // not read them". Carry the second in a header so the UI can render an
+    // error state instead of a clean-looking empty board. A header keeps the
+    // array body shape, so existing consumers are unaffected.
+    const degraded = getReadDegradation(cwd);
+    const headers = { 'Content-Type': 'application/json' };
+    if (degraded) headers['X-Board-Degraded'] = encodeURIComponent(degraded);
+    res.writeHead(200, headers);
+    res.end(JSON.stringify(tasks));
+    return true;
+  }
+
+  if (pathname === '/api/metrics') {
+    let days = parseInt(url.searchParams.get('days') || '30', 10);
+    if (!Number.isFinite(days) || days < 1) days = 30;
+    if (days > 365) days = 365;
+    res.writeHead(200, verdictHeaders(cwd));
+    res.end(JSON.stringify(getMetrics(cwd, days)));
+    return true;
+  }
+
+  // GET /api/views?since=<ISO>[&project=<name>]
+  //
+  // BRD-R9 (great_cto-ki1x.15): the only source for the K2/K3 kill-criteria in
+  // docs/product/BRIEF-board-redesign-2026-09.md and the 2026-09-20 kanban
+  // deep-link review already logged in .great_cto/decisions.md. Three states,
+  // not two — see lib/view-counter.mjs — mirroring the choice already made
+  // for /api/harnesses' evidence log just below: a line that fails to parse
+  // is counted in `unreadable_lines`, not silently dropped, and does not by
+  // itself flip the whole read to `unreadable`.
+  if (pathname === '/api/views' && req.method === 'GET') {
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    const since = url.searchParams.get('since') || null;
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(summarizeViews({ root: c, since })));
+    return true;
+  }
+
+  // POST /api/view  { view: 'decisions'|'ledger'|'fleet'|'harness'|'settings'|'kanban' }
+  //
+  // One line per top-level view open, appended to the resolved project's own
+  // `.great_cto/view-counter.log` — never sent anywhere (docs/PRIVACY.md:
+  // telemetry is opt-in and off by default; this is not telemetry, it is a
+  // local file). Guarded by origin like every other state-changing POST on
+  // this server (the board listens on 127.0.0.1, and a page the user happens
+  // to be visiting can still issue a simple cross-origin POST to localhost).
+  //
+  // Called once from switchTab() when the redesigned tabs land
+  // (great_cto-ki1x.5 / .13) — see that task's dispatch note for the exact line.
+  if (pathname === '/api/view' && req.method === 'POST') {
+    if (!originAllowed(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'origin not allowed' }));
+      return true;
+    }
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    let body = '';
+    req.on('data', (ch) => { body += ch; if (body.length > 1024) req.destroy(); });
+    req.on('end', () => {
+      let parsed;
+      try { parsed = JSON.parse(body || '{}'); }
+      catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_json', message: String(e.message || e) }));
+        return;
+      }
+      const view = String(parsed.view || '');
+      // Only into a project. The board's cwd can be a directory that is not one —
+      // a release worktree, deleted since — and mkdir here recreated it (3.58.1).
+      if (!isProjectState(path.join(c, '.great_cto'))) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, view, recorded: false, why: 'not a project' }));
+        return;
+      }
+      try {
+        recordView({ root: c, view });
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: String(e.message || e) }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, view, recorded: true }));
+    });
+    return true;
+  }
+
+  // ── /api/notifications — email alerts via greatcto.systems/notify relay ──
+  // No API keys to manage — user enters only their email + verifies via
+  // 6-digit code sent by our Cloudflare Worker. The Worker rate-limits to
+  // 100 emails/24h per verified email.
+  //
+  // Local state in ~/.great_cto/notifications.json:
+  //   { "to": "user@example.com", "verified": true, "enabled": true,
+  //     "triggers": ["incident.p0", ...] }
+  if (pathname === '/api/notifications') {
+    const NOTIFY_RELAY = process.env.GREATCTO_NOTIFY_URL || 'https://greatcto.systems';
+    const stateFile = path.join(GREAT_CTO_DIR, 'notifications.json');
+    const KNOWN_TRIGGERS = ['incident.p0', 'gate.stale', 'gate.blocked', 'cost.threshold', 'digest.weekly'];
+    let state = { to: '', verified: false, enabled: false, triggers: [] };
+    try { Object.assign(state, JSON.parse(fs.readFileSync(stateFile, 'utf8'))); } catch {}
+
+    function saveState() {
+      if (!fs.existsSync(GREAT_CTO_DIR)) fs.mkdirSync(GREAT_CTO_DIR, { recursive: true });
+      fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+    }
+
+    if (req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        to: state.to || '',
+        verified: !!state.verified,
+        enabled: !!state.enabled,
+        triggers: state.triggers || [],
+        known_triggers: KNOWN_TRIGGERS,
+        relay: NOTIFY_RELAY,
+      }));
+      return true;
+    }
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', c => body += c);
+      req.on('end', async () => {
+        let parsed;
+        try { parsed = JSON.parse(body || '{}'); }
+        catch {
+          res.writeHead(400); return res.end(JSON.stringify({ error: 'invalid_json' }));
+        }
+        const action = parsed.action || 'save';
+
+        // ── verify: ask the worker to send a 6-digit code to <to> ──
+        if (action === 'verify') {
+          const to = String(parsed.to || '').trim().toLowerCase();
+          if (!to) { res.writeHead(400); return res.end(JSON.stringify({ error: 'to_required' })); }
+          try {
+            const r = await fetch(`${NOTIFY_RELAY}/notify/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ to }),
+            });
+            const j = await r.json().catch(() => null);
+            // Persist email (still unverified) so the UI can show the pending state
+            state.to = to;
+            state.verified = false;
+            saveState();
+            res.writeHead(r.ok ? 200 : (r.status || 502), { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify(j || { error: 'relay_unreachable' }));
+          } catch (e) {
+            res.writeHead(502); return res.end(JSON.stringify({ error: e.message }));
+          }
+        }
+
+        // ── confirm: send the user-typed code to the worker, mark verified on 200 ──
+        if (action === 'confirm') {
+          const to = String(parsed.to || state.to || '').trim().toLowerCase();
+          const code = String(parsed.code || '').trim();
+          if (!to)   { res.writeHead(400); return res.end(JSON.stringify({ error: 'to_required' })); }
+          if (!code) { res.writeHead(400); return res.end(JSON.stringify({ error: 'code_required' })); }
+          try {
+            const r = await fetch(`${NOTIFY_RELAY}/notify/confirm`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ to, code }),
+            });
+            const j = await r.json().catch(() => null);
+            if (r.ok) {
+              state.to = to;
+              state.verified = true;
+              saveState();
+            }
+            res.writeHead(r.ok ? 200 : (r.status || 502), { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify(j || { error: 'relay_unreachable' }));
+          } catch (e) {
+            res.writeHead(502); return res.end(JSON.stringify({ error: e.message }));
+          }
+        }
+
+        // ── save: persist triggers + enabled flag locally ──
+        if (action === 'save') {
+          const triggers = Array.isArray(parsed.triggers)
+            ? parsed.triggers.filter(t => KNOWN_TRIGGERS.includes(t))
+            : (state.triggers || []);
+          state.triggers = triggers;
+          if (parsed.enabled != null) state.enabled = !!parsed.enabled;
+          saveState();
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ ok: true, verified: state.verified, enabled: state.enabled }));
+        }
+
+        // ── test: fire a synthetic alert through the relay ──
+        if (action === 'test') {
+          if (!state.verified || !state.to) {
+            res.writeHead(400); return res.end(JSON.stringify({ error: 'verify_first' }));
+          }
+          try {
+            const r = await fetch(`${NOTIFY_RELAY}/notify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: state.to,
+                title: '🧪 GreatCTO test alert',
+                body: 'If you see this, the email alert pipeline is working end-to-end (board → Cloudflare worker → Resend → inbox).',
+                level: 'info',
+                project: 'great_cto',
+                link: 'http://localhost:3141/#notifications',
+                action: 'Open Notifications tab',
+                kv: { test: 'ok', sent_at: new Date().toISOString() },
+                event: 'test',
+              }),
+            });
+            const j = await r.json().catch(() => null);
+            res.writeHead(r.ok ? 200 : (r.status || 502), { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ ok: r.ok, response: j }));
+          } catch (e) {
+            res.writeHead(502); return res.end(JSON.stringify({ error: e.message }));
+          }
+        }
+
+        res.writeHead(400); return res.end(JSON.stringify({ error: 'unknown_action' }));
+      });
+      return true;
+    }
+  }
+
+  if (pathname === '/api/share') {
+    if (req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(getShareState(cwd)));
+      return true;
+    }
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', c => body += c);
+      req.on('end', async () => {
+        // BH-24: malformed JSON used to throw inside the async handler,
+        // turning into an unhandled rejection and hanging the request.
+        // Sibling endpoints (/status, /priority, /gates) were fixed in
+        // PR #40 (BH-14); /api/share was missed.
+        let parsed;
+        try { parsed = JSON.parse(body || '{}'); }
+        catch {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          return res.end(JSON.stringify({ error: 'invalid_json' }));
+        }
+        try {
+          const state = await toggleShare(parsed.enabled, cwd, !!parsed.force);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(state));
+        } catch (e) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return true;
+    }
+  }
+
+  // ── Read a project doc (markdown) referenced from a task — for the side-panel viewer.
+  // Path-traversal-safe: the resolved path must stay inside the project cwd; .md only.
+  // Which documents exist, and the two diagrams nobody hand-draws.
+  //
+  // /api/doc could already fetch one document by path; the question before that
+  // — which documents exist — had no answer, so a project's twenty architecture
+  // documents and ten ADRs were reachable only by knowing a filename.
+  //
+  // The maps are computed per request rather than stored. docs/ARCHITECTURE.md
+  // is a hand-drawn diagram, three months old, that says "34 agents" where there
+  // are sixty-nine; a picture that is regenerated when looked at cannot drift.
+  // The whole fleet on one screen.
+  //
+  // Every other endpoint answers about one project, so "what needs me right now
+  // across all twenty-two" had no answer and the switcher was a poor substitute
+  // for one. Read-only, file-only: gate approval is authoritative but costs about
+  // 530ms per project, which is twelve seconds on a screen meant to be glanced
+  // at. This reads 23 projects in about 140ms.
+  if (pathname === '/api/portfolio' && req.method === 'GET') {
+    try {
+      const { portfolio } = await import('./portfolio.mjs');
+      const reg = readProjectsRegistry();
+      const degraded = getRegistryDegradation();
+      // A registry that could not be read used to render as a board with no
+      // projects — the same silence this screen exists to remove, one level out.
+      // The pipeline map, so the fleet can say which projects are waiting on a
+      // decision rather than only which ones failed. Read once for the sweep;
+      // unreadable means the gate question is simply not answered, never
+      // answered as "nothing is waiting".
+      let transitions = null;
+      try {
+        const { pipelineMapFor } = await import('../../../scripts/lib/pipeline-health.mjs');
+        // Use the pure parser, not the native hook that merely reexports it.
+        const { parsePipelineToml } = await import('../../../scripts/lib/pipeline-toml.mjs');
+        const map = pipelineMapFor(cwd);
+        if (map.path) transitions = parsePipelineToml(fs.readFileSync(map.path, 'utf8'));
+      } catch { transitions = null; }
+      const out = portfolio(degraded ? { unread: degraded } : reg, { transitions });
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify(out));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: String(e.message || e) }));
+    }
+    return true;
+  }
+
+  if (pathname === '/api/docs' && req.method === 'GET') {
+    const c = scopedProject.path;
+    try {
+      const [{ listDocs, readProjectFile }, { toMermaid, pipelineMermaid }, { knowledgeMap }] = await Promise.all([
+        import('./docs.mjs'), import('../../../scripts/lib/system-map.mjs'), import('./knowledge.mjs'),
+      ]);
+      const map = knowledgeMap(c);
+      let pipeline = null;
+      const pipelineSource = readProjectFile(c, 'shared/pipeline.toml');
+      if (pipelineSource.state === 'readable') pipeline = pipelineMermaid(pipelineSource.content);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({
+        ...listDocs(c),
+        map: { ...map, mermaid: toMermaid(map) },
+        pipeline,
+      }));
+    } catch {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Documentation index is unavailable' }));
+    }
+    return true;
+  }
+
+  if (pathname === '/api/doc' && req.method === 'GET') {
+    const c = scopedProject.path;
+    const rel = String(url.searchParams.get('path') || '');
+    const abs = path.resolve(c, rel);
+    if (!rel || path.isAbsolute(rel) || rel.includes('\0') || rel.split(/[\\/]/).includes('..')
+      || !abs.startsWith(c + path.sep) || !abs.toLowerCase().endsWith('.md')) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'path must be a .md file inside the project' }));
+      return true;
+    }
+    try {
+      const { readProjectFile, declaredStatus } = await import('./docs.mjs');
+      const read = readProjectFile(c, rel);
+      if (read.state !== 'readable') throw new Error('not a readable doc');
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ name: path.basename(abs), path: rel, content: read.content,
+        status: declaredStatus(read.content), sourceRevision: null }));
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Document is missing, unreadable or exceeds the size limit' }));
+    }
+    return true;
+  }
+  // (board-triggered agent launch removed — the board no longer spawns coding agents)
+
+  // Gate approval / rejection
+  if (pathname.startsWith('/api/gates/') && req.method === 'POST') {
+    const id = pathname.replace('/api/gates/', '');
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      // BH-14a: catch JSON parse error explicitly → 400 (was 500/uncaught)
+      let parsed;
+      try {
+        parsed = JSON.parse(body || '{}');
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_json', message: String(e.message || e) }));
+        return;
+      }
+      const { action, reason } = parsed;
+      const gateCwd = parsed.project ? resolveProjectCwd(parsed.project) : cwd;
+      if (!['approve', 'reject'].includes(action)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid action' }));
+        return;
+      }
+      // ADR-024 §1 — an approval is bound to one request and one state. Checked before
+      // anything is written: a refused request changes no gate, logs no decision,
+      // wakes nothing and publishes nothing. A rejection needs the token too (a forged
+      // reject is still a forged request) but is never refused for a changed tree.
+      const refuse = (r) => {
+        recordGateEvent(gateCwd, id, r.outcome);
+        res.writeHead(r.status, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: r.why, outcome: r.outcome, ...(r.changed ? { changed: r.changed } : {}) }));
+      };
+      const tok = checkToken(gateCwd, id, parsed.token);
+      if (!tok.ok) { refuse(tok); return; }
+      if (action === 'approve') {
+        // The typed-name ritual used to live only in the page; the server now agrees.
+        if (tok.entry.guarded && String(parsed.confirm ?? '').trim() !== tok.entry.gate) {
+          refuse({ status: 403, outcome: 'refused-confirm', why: `this gate is expensive to undo — type ${tok.entry.gate} to approve it` });
+          return;
+        }
+        const bound = checkBinding(gateCwd, tok.entry);
+        if (!bound.ok) { refuse(bound); return; }
+      }
+      // A project can be tasks.md-backed (no working beads — e.g. its path
+      // contains a space, which embedded-dolt can't open). Only 409 when there
+      // is neither a beads store NOR a tasks.md to record the decision in.
+      const beadsErr = checkBeadsAvailable(gateCwd);
+      const tasksMdPath = path.join(gateCwd, '.great_cto', 'tasks.md');
+      const hasTasksMd = fs.existsSync(tasksMdPath);
+      if (beadsErr && !hasTasksMd) {
+        res.writeHead(409, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(beadsErr));
+        return;
+      }
+      // Named outside the serialised block so the wake below can say WHICH gate a
+      // human approved; the lookup itself belongs inside the lock.
+      let gateTitle = id;
+      const endDecision = beginGateDecision(gateCwd);
+      if (!endDecision) {
+        refuse({ status: 409, outcome: 'refused-busy', why: 'A gate decision is in progress for this project; retry' });
+        return;
+      }
+      try {
+
+      // BH-16 fix: serialise gate writes through bd-write queue.
+      // Without this, concurrent approve+reject on the same gate produced
+      // TWO appendDecisionLog entries (one wrong) — log says approved AND
+      // rejected. bdWriteSerialised guarantees one-at-a-time semantics.
+      const result = await bdWriteSerialised(async () => {
+        const status = action === 'approve' ? 'closed' : 'blocked';
+        let via = 'beads';
+        // Try beads first (unless there's no store at all); on any bd failure
+        // fall back to rewriting the tasks.md status cell so the gate still lands.
+        const r = beadsErr
+          ? { status: 1, error: { code: 'NO_BEADS' } }
+          : bd(['update', id, '--status', status, ...(reason ? ['--notes', `[${action}] ${reason}`] : [])],
+              // 20s: this is the gate-approval write, and it failed in the full
+              // gate at 71s wall-clock with the gate simply absent from the
+              // inbox afterwards. bd was measured at up to 8.7s under the
+              // suite's own parallelism; 5s could not be met.
+              { cwd: gateCwd, timeout: 20000 });
+        if (r.status !== 0) {
+          if (!setTaskStatusInTasksMd(gateCwd, id, status)) {
+            return { error: (beadsErr ? 'beads unavailable' : bdErr(r, 'bd update failed'))
+              + ` — and no matching '${id}' row in tasks.md to update` };
+          }
+          via = 'tasks.md';
+        }
+        bdCacheInvalidate(gateCwd);
+
+        // The decision log, and why this is not one try block any more.
+        //
+        // It used to be: look the gate's TITLE up through getTasks(), then write
+        // the line — all inside one `catch { /* best-effort */ }`, after which the
+        // handler returned `{ ok: true }` whatever had happened. getTasks() reads
+        // beads, beads takes a Dolt lock, and under a loaded test run that read
+        // throws. So the approval landed, the API answered 200 ok:true, and the
+        // decision was never recorded — a write that did not happen, wearing the
+        // response of one that did. It surfaced as a test failing one run in four
+        // with "Got 0 decisions", four layers away from the swallowed exception.
+        //
+        // The title is a NICETY — `id` was already its documented fallback. The
+        // line is the record. So the lookup gets its own try and cannot take the
+        // record down with it, and the caller is told which of the two happened.
+        // A project given by PATH (the gate pane names its project by the session
+        // root, which resolves for any project under HOME) is logged by its
+        // directory's name: the path is the operator's own, and decisions.md may be
+        // committed.
+        const projectSlug = parsed.project && !/^[\/~]/.test(parsed.project) ? parsed.project : path.basename(gateCwd);
+        let title = id;
+        try {
+          const gateTask = (await getTasksAsync(gateCwd)).find((t) => t.id === id);
+          if (gateTask?.title) title = gateTask.title;
+        } catch { /* the id is a documented fallback; the record still gets written */ }
+        gateTitle = title;
+
+        let decision;
+        try {
+          appendDecisionLog({
+            ts: new Date().toISOString(),
+            project: projectSlug,
+            action,
+            id,
+            title,
+            reason: reason || '',
+            cwd: gateCwd,   // project-scoped (ADR-008) — never the global log
+          });
+          decision = { logged: true };
+        } catch (err) {
+          // Named, not swallowed — the same rule the `wake` handler thirty lines
+          // below already states: a handler that reports nothing is only better
+          // than one that guesses. The approval itself stands; what is reported
+          // is that its record does not.
+          log.warn(`[decisions] approve ${id} landed but was not logged: ${err?.message || err}`);
+          decision = { logged: false, why: String(err?.message || err) };
+        }
+        return { ok: true, via, decision };
+      });
+      if (!result || result.error) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: (result && result.error) || 'bd update failed' }));
+        return;
+      }
+      // Single use: the decision landed, so its token is spent.
+      consumeToken(gateCwd, id);
+      recordGateEvent(gateCwd, id, action === 'approve' ? 'approved' : 'rejected');
+      // An approval is evidence that the pipeline is waiting — record it.
+      //
+      // `session-pipeline-resume` opens with a freshness shortcut: a pipeline
+      // whose newest verdict is over a day old is treated as history and the
+      // hook returns before reading a single gate. Approve `gate:arch` on a
+      // stage that ran three days ago and the one fact that proves work is
+      // waiting is the one thing never consulted.
+      //
+      // This records the approval so the next session looks properly. It
+      // decides nothing: tickDecision still applies every refusal it has,
+      // including never dispatching devops or infra-provisioner unattended
+      // (ADR-009). Best-effort — a wake we cannot write must not fail an
+      // approval that already happened.
+      let wake = null;
+      if (action === 'approve') {
+        try {
+          const { recordWake } = await import('../../../scripts/lib/pipeline-wake.mjs');
+          const r = recordWake(gateCwd, { gate: gateTitle, id });
+          wake = r.ok ? { recorded: true } : { recorded: false, why: r.why };
+        } catch (e) {
+          // Report the actual failure. The first version of this catch guessed
+          // ("unavailable in this board build") and printed the guess as a
+          // finding — it was a ReferenceError three lines up, and the guess sent
+          // the reader looking at packaging. A handler that names a cause it did
+          // not observe is worse than one that says nothing.
+          wake = { recorded: false, why: String(e?.message || e) };
+        }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      // `decision` rides out with the response for the same reason `wake` does:
+      // the caller asked for a gate to be approved and a record to be kept, and
+      // `ok: true` alone cannot say whether the second half happened.
+      res.end(JSON.stringify({ ok: true, id, action, via: result.via,
+        ...(result.decision ? { decision: result.decision } : {}), ...(wake ? { wake } : {}) }));
+      broadcastTasks(gateCwd);
+      // Auto-republish share report when a gate is approved (fire-and-forget)
+      if (action === 'approve') {
+        const shareState = getShareState(gateCwd);
+        if (shareState.enabled) {
+          toggleShare(true, gateCwd, true)
+            .then(() => log.info(`report: auto-republished after gate approve (${id})`))
+            .catch(e => log.warn(`report: republish after gate failed: ${e.message}`));
+        }
+      }
+      } finally { endDecision(); }
+    });
+    return true;
+  }
+
+  // Inbox — what needs your attention right now
+  if (pathname === '/api/inbox') {
+    const snapshot = approvalSnapshot(cwd);
+    let inbox;
+    try { inbox = await getInboxAsync(cwd); }
+    catch {
+      res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Task snapshot is unavailable; retry', state: 'unreadable' }));
+      return true;
+    }
+    // BRD-R3: the Decisions row shows both reviewers. The second opinion is a
+    // fact about the TREE, not about a gate — every pending gate on this tree
+    // shares it — so it is resolved once: the newest cross-review line whose
+    // `sha` is the current HEAD. Four states, none of which may read as a
+    // verdict: `not-run` (capability none / undeclared / unavailable),
+    // `unmeasured` (declared, no line for this sha), `unreadable` (only
+    // pre-join-key lines exist), `ok` (a paired verdict).
+    let second_opinion;
+    try { second_opinion = await readSecondOpinion(cwd); }
+    catch { second_opinion = { state: 'unreadable', why: 'Second opinion evidence is unavailable; retry', verdict: null }; }
+    // What is waiting on the person in their OTHER projects. The headline and
+    // the badge are about the person, and the person is not scoped to `cwd`.
+    // If the registry itself cannot be walked, say so — `unreadable` is not
+    // `{p0: 0}`, and the page must not print "nothing elsewhere" from it.
+    let elsewhere;
+    try { elsewhere = inboxElsewhere(listProjects(), cwd); }
+    catch (e) { elsewhere = { state: 'unreadable', why: String(e?.message || e) }; }
+    // ADR-024 §1: each pending gate carries the token an approval must present,
+    // bound to the project as it is now. The typed name stored with it is the one
+    // the page asks for; a store that cannot be read issues nothing and says so.
+    const gates = inbox.pending_gates || [];
+    const issued = await issueTokensAsync(cwd, gates.map((g) => ({
+      id: g.id,
+      gate: g.reversibility?.gate ? `gate:${g.reversibility.gate}` : g.id,
+      guarded: ['expensive', 'unclassified'].includes(g.reversibility?.state),
+    })), { snapshot });
+    const pending_gates = gates.map((g) => ({ ...g, token: issued.tokens[g.id] || null }));
+    const approval_tokens = { state: issued.state, ...(issued.why ? { why: issued.why } : {}) };
+    res.writeHead(200, verdictHeaders(cwd, { 'Content-Type': 'application/json' }));
+    res.end(JSON.stringify({ ...inbox, pending_gates, approval_tokens, elsewhere, second_opinion }));
+    return true;
+  }
+
+  // Gate brief (ADR-036) — one page of what this gate approves.
+  //
+  // A projection over evidence already recorded: the tree the token was issued
+  // for, the change and its tier, reversibility, verdicts, the second model and
+  // what the diff touches. It never approves and never writes. Each source is
+  // read on its own; one that fails makes its section `unknown`, not empty.
+  const briefPath = req.method === 'GET' && pathname.match(/^\/api\/gates\/([^/]+)\/brief$/);
+  if (briefPath) {
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    const id = decodeURIComponent(briefPath[1]);
+    let inbox;
+    try { inbox = await getInboxAsync(c); }
+    catch {
+      res.writeHead(503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Task snapshot is unavailable; retry', state: 'unreadable' }));
+      return true;
+    }
+    const gate = (inbox.pending_gates || []).find((g) => g.id === id);
+    if (!gate) {
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'not a pending gate', id }));
+      return true;
+    }
+    // Sequential: the evidence reader runs at most two workers at once, and the
+    // inbox poll may hold one.
+    const touches = await settle(readTouches(c));
+    const secondOpinion = await settle(readSecondOpinion(c));
+    const verdictLogs = await settle(() => readVerdictLogs(c));
+    // The documents the latest reviewer/architect verdicts point at, for the
+    // change map. mapDocPaths admits only paths under docs/ with no `..`.
+    const docs = {};
+    if (verdictLogs.ok) {
+      for (const { path: rel } of mapDocPaths(verdictLogs.value)) {
+        docs[rel] = await settle(() => fs.readFileSync(path.join(c, rel), 'utf8'));
+      }
+    }
+    const brief = gateBrief({
+      gate,
+      token: readTokens(c).tokens[id] || null,
+      binding: touches.ok ? { ok: true, value: touches.value.binding } : touches,
+      tests: touches.ok ? touches.value.tests : touches,
+      verdictLogs,
+      docs,
+      secondOpinion,
+      tier: await settle(() => getChangeTier(c)),
+    });
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(brief));
+    return true;
+  }
+
+  // Receipt — does the approval still apply to what is in the tree?
+  //
+  // The reviewing agents already record a hash-bound receipt of the bytes they
+  // read, and those verdicts are in the log this board reads. Nothing surfaced
+  // them, so the top rung of the evidence ladder — the reviewed bytes are the
+  // shipped bytes — was being written and never looked at. An approval that no
+  // longer describes the tree is the one thing a gate button cannot tell you.
+  if (pathname === '/api/receipt') {
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    let out;
+    try {
+      out = await readApprovalReceipt(c);
+    } catch (e) {
+      // Never "matches" on an error. Not knowing whether the approval still
+      // holds is its own state, and calling it a match would put the strongest
+      // reassurance exactly where the least is known.
+      out = { state: 'unreadable', why: String(e?.message || e), agent: null, ts: null };
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(out));
+    return true;
+  }
+
+  // Gate tiers — will this gate wait for you, or announce and proceed?
+  //
+  // A gate card offered Approve/Reject regardless, which is the right control
+  // for a `gated` gate and the wrong one for a tiered gate that already went
+  // ahead. Two states rendered where the machinery has three.
+  //
+  // `enabled` is returned alongside, because a tier is only in force when the
+  // project opted in with `gate-tiering: evidence`. Showing "notify" on a
+  // project that never opted in would describe a stand-down that will not
+  // happen — the mirror image of the defect this whole feature guards.
+  if (pathname === '/api/gate-tiers') {
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    try {
+      const { tierAll, tieringEnabled } = await import('../../../scripts/lib/gate-tier.mjs');
+      const { fileURLToPath: f2u } = await import('node:url');
+      const libDir = path.dirname(f2u(import.meta.url));
+      const histPath = path.join(libDir, '..', '..', '..', 'tests', 'eval', 'results-history.jsonl');
+
+      let enabled = false;
+      try { enabled = tieringEnabled(fs.readFileSync(path.join(c, '.great_cto', 'PROJECT.md'), 'utf8')); }
+      catch { /* no PROJECT.md — tiering is off, which is the safe reading */ }
+
+      const rows = [];
+      let historyRead = false;
+      try {
+        for (const line of fs.readFileSync(histPath, 'utf8').split('\n')) {
+          if (!line.trim()) continue;
+          try { rows.push(JSON.parse(line)); } catch { /* a bad row is not evidence */ }
+        }
+        historyRead = true;
+      } catch { /* reported as unmeasured below, never as gated-because-fine */ }
+
+      const byAgent = {};
+      for (const t of tierAll(rows)) byAgent[t.agent] = { tier: t.tier, why: t.why, evals: t.evals };
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ enabled, measured: historyRead, agents: byAgent }));
+    } catch (e) {
+      // The real error. An agent missing from `agents` reads as unmeasured on the
+      // client, which keeps its gate — the correct direction to be wrong in.
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ enabled: false, measured: false, agents: {}, why: String(e?.message || e) }));
+    }
+    return true;
+  }
+
+  // Stand-downs — gates that proceeded WITHOUT being asked, and on what evidence.
+  //
+  // ADR-009: a gate is not the only valid answer, but silence is never one. An
+  // evidence-tiered gate announces instead of waiting, and until now that
+  // announcement had nowhere on this board to land — the record was being
+  // written and nothing read it.
+  if (pathname === '/api/stand-downs') {
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    let rows = null;
+    let why = '';
+    try {
+      const { readStandDowns } = await import('../../../scripts/lib/stand-down.mjs');
+      rows = readStandDowns(c, { limit: 50 });
+    } catch (e) {
+      // The real error. A handler that names a cause it did not observe sends
+      // the reader looking in the wrong place — this file has done that once.
+      why = String(e?.message || e);
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    // Three states, because two cannot carry them: `readStandDowns` returns null
+    // when the ledger exists and could not be read, [] when nothing has stood
+    // down, and rows when something has. "I could not look" must never render as
+    // "nothing happened".
+    res.end(JSON.stringify(
+      rows === null
+        ? { state: 'unreadable', why: why || 'the stand-down ledger exists but could not be read', rows: [] }
+        : { state: rows.length ? 'some' : 'none', why: '', rows },
+    ));
+    return true;
+  }
+
+  // Resume — pick up where you left off (last verdicts + WIP + recent decisions)
+  if (pathname === '/api/resume') {
+    res.writeHead(200, verdictHeaders(cwd, { 'Content-Type': 'application/json' }));
+    res.end(JSON.stringify(getResume(cwd)));
+    return true;
+  }
+
+  // Decisions log — global ADR-style log across all projects
+  // Quality, kept apart from what happened.
+  //
+  // A verdict says what a run did; a score says how well, and is produced by a
+  // different actor at a different time. Exposed as its own endpoint for the
+  // same reason it is its own file: a re-score must not rewrite the run, and a
+  // run can carry several assessments from several scorers.
+  //
+  // `rate` is over ASSESSED runs and `unassessed` is returned beside it, so a
+  // caller cannot render "100%" without also being handed the count it is out
+  // of. An agent with nine unverifiable runs and one verified one is not a 100%
+  // agent, and the payload refuses to let the UI say it is.
+  // Is the judge connected, and let the operator connect it.
+  //
+  // Nothing breaks without a key — every stage comes back `unverifiable`, which
+  // is honest. But "the judge is not connected" and "the judge found nothing to
+  // check" read identically from here, and the user has no way to discover a key
+  // is involved: the README mentions OpenRouter once without saying where the key
+  // goes, and the router's own hint names a file it is not read from.
+  //
+  // GET NEVER RETURNS THE KEY. It answers presence, which of the three locations
+  // it came from, and eight characters of it — enough to tell two keys apart,
+  // useless as a key. A read path would make any future XSS in a 7,600-line
+  // single-page app a secret disclosure, and buys nothing: nobody needs to read
+  // back a key they already hold.
+  if (pathname === '/api/router-key' && req.method === 'GET') {
+    // The last live check rides along, but only for the key it checked: a replaced
+    // key must not inherit its predecessor's "verified". GET makes no network call.
+    const st = routerKeyStatus({ cwd });
+    const verification = routerKeyCheck && routerKeyCheck.fingerprint === st.fingerprint ? routerKeyCheck : null;
+    res.writeHead(200, verdictHeaders(cwd, { 'Content-Type': 'application/json' }));
+    res.end(JSON.stringify({ ...st, verification }));
+    return true;
+  }
+
+  // A live check against OpenRouter. POST and origin-checked like the write: it
+  // spends the key on an outbound request, so another page must not trigger it.
+  if (pathname === '/api/router-key/verify' && req.method === 'POST') {
+    if (!originAllowed(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'origin not allowed' }));
+      return true;
+    }
+    verifyRouterKey({ cwd }).then((r) => {
+      routerKeyCheck = r;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(r));
+    }, (e) => {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ state: 'unreachable', reason: String(e.message || e) }));
+    });
+    return true;
+  }
+
+  if (pathname === '/api/router-key' && req.method === 'POST') {
+    if (!originAllowed(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'origin not allowed' }));
+      return true;
+    }
+    let body = '';
+    req.on('data', (c) => { body += c; if (body.length > 4096) req.destroy(); });
+    req.on('end', () => {
+      let parsed;
+      try { parsed = JSON.parse(body || '{}'); }
+      catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_json', message: String(e.message || e) }));
+        return;
+      }
+      const r = writeRouterKey(String(parsed.key || ''));
+      if (!r.ok) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: r.error }));
+        return;
+      }
+      // The reply carries the new status, not the key, and names the backup —
+      // a write to a file holding other credentials should say what it saved
+      // first, because this file has been destroyed once by a careless write.
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, replaced: r.replaced, backup: r.backup,
+                               status: routerKeyStatus({ cwd }) }));
+    });
+    return true;
+  }
+
+  if (pathname === '/api/scores') {
+    const agent = url.searchParams.get('agent') || null;
+    const name = url.searchParams.get('name') || 'independent-verify';
+    const rawLimit = url.searchParams.get('limit');
+    const parsed = rawLimit != null ? parseInt(rawLimit, 10) : 50;
+    const limit = Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 500) : 50;
+
+    const { scores, rejected } = readScores(cwd, { agent, name });
+    const recent = scores.slice(-limit).reverse();
+    res.writeHead(200, verdictHeaders(cwd, { 'Content-Type': 'application/json' }));
+    res.end(JSON.stringify({
+      name,
+      agent,
+      scores: recent,
+      summary: summarizeScores(cwd, { name, agent }),
+      // A line that exists and could not be read is neither a score nor an
+      // absence of one, and saying so is cheaper than a support thread.
+      unreadable_lines: rejected,
+    }));
+    return true;
+  }
+
+  if (pathname === '/api/decisions') {
+    // Clamp `limit` to [1, 200]. Same defensive pattern as /api/cost?days
+    // — handle ?limit=abc / ?limit=0 / ?limit=-5 / ?limit=999 deterministically.
+    const rawLimit = url.searchParams.get('limit');
+    const parsed = rawLimit != null ? parseInt(rawLimit, 10) : 20;
+    const limit = Number.isFinite(parsed) && parsed > 0
+      ? Math.min(parsed, 200)
+      : 20;
+    res.writeHead(200, verdictHeaders(cwd, { 'Content-Type': 'application/json' }));
+    res.end(JSON.stringify(readDecisionsLog(limit, cwd)));
+    return true;
+  }
+
+  // Memory — 4-layer memory file contents
+  if (pathname === '/api/memory') {
+    res.writeHead(200, verdictHeaders(cwd, { 'Content-Type': 'application/json' }));
+    res.end(JSON.stringify(getMemory(cwd)));
+    return true;
+  }
+
+  // Pipeline — current stage states (idle / active / done / failed)
+  // ADR-021: agent events for this project — three states, never an empty list
+  // that could mean either "nothing happened" or "could not read".
+  if (pathname === '/api/agent-events') {
+    let limit = parseInt(url.searchParams.get('limit') || '20', 10);
+    if (!Number.isFinite(limit) || limit < 1) limit = 20;
+    if (limit > 200) limit = 200;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(agentActivity(cwd, { limit })));
+    return true;
+  }
+
+  // ADR-023: what each agent turn changed. Turns are git refs in the project's own
+  // repository; these read them and nothing else. A diff is file content, served only
+  // on a Host the board knows (xq9h) and escaped by the page before it is drawn.
+  if (pathname === '/api/turns') {
+    let limit = parseInt(url.searchParams.get('limit') || '10', 10);
+    if (!Number.isFinite(limit) || limit < 1) limit = 10;
+    if (limit > 50) limit = 50;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(readTurns(cwd, { limit })));
+    return true;
+  }
+  if (pathname === '/api/turns/diff') {
+    const turnParam = url.searchParams.get('turn');
+    const turn = /^\d{1,9}$/.test(turnParam || '') ? Number(turnParam) : NaN;
+    const p = turnPatch(cwd, { session: url.searchParams.get('session') || '', turn });
+    const status = p.state === 'ok' ? 200 : p.state === 'invalid' ? 400 : 404;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(p));
+    return true;
+  }
+
+  if (pathname === '/api/pipeline') {
+    res.writeHead(200, verdictHeaders(cwd, { 'Content-Type': 'application/json' }));
+    res.end(JSON.stringify(getPipeline(cwd)));
+    return true;
+  }
+
+  // Controlled Codex host runs are stored outside worker projects. Return the
+  // shared sanitized projection only: prompts, approval tokens and artifact
+  // bytes never cross into the browser payload.
+  if (pathname === '/api/codex-runs') {
+    if (requestedProject && resolveProjectInfo(requestedProject).resolved === 'fallback') {
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Unknown project; execution graphs were not read', state: 'unavailable' }));
+      return true;
+    }
+    const result = listCodexRuns({ root: cwd });
+    const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
+    if (result.state === 'degraded') headers['X-Board-Degraded'] = encodeURIComponent(`${result.unreadable} unreadable Codex run state file(s)`);
+    res.writeHead(200, headers);
+    res.end(JSON.stringify(result));
+    return true;
+  }
+
+  // change_tier for the current working-tree diff — the gate + judge plan (ADR-003/004).
+  if (pathname === '/api/change-tier') {
+    res.writeHead(200, verdictHeaders(cwd, { 'Content-Type': 'application/json' }));
+    res.end(JSON.stringify(getChangeTier(cwd)));
+    return true;
+  }
+
+  // Cost history — daily LLM burn over N days.
+  // Clamp `days` to [1, 365] to defend against:
+  //   ?days=abc       → NaN → default 30 (parseInt fallback to 30)
+  //   ?days=999       → 1000-bucket response (memory + payload bloat)
+  //   ?days=-5        → empty series, daily_avg = null in UI
+  //   ?days=0         → division-by-zero in daily_avg calc
+  // 365 is enough for "last year" views; anything bigger should use
+  // a different endpoint / batch query path.
+  if (pathname === '/api/cost') {
+    const rawDays = url.searchParams.get('days');
+    const parsed = rawDays != null ? parseInt(rawDays, 10) : 30;
+    const days = Number.isFinite(parsed) && parsed > 0
+      ? Math.min(parsed, 365)
+      : 30;
+    res.writeHead(200, verdictHeaders(cwd));
+    res.end(JSON.stringify(getCostHistory(cwd, days)));
+    return true;
+  }
+
+
+  // Create new task
+  if (pathname === '/api/tasks' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      // Validation hardening (2026-05-15): bug-hunt found 3 ways to crash this
+      // endpoint or silently drop bad input:
+      //   - invalid JSON body → 500 (parser exception in catch → 500)
+      //   - 10K-char title → 500 (bd argv too long)
+      //   - priority=99 → 200 (silently ignored, user thinks it worked)
+      // Each is now an explicit 400 with structured error.
+      let parsed;
+      try {
+        parsed = JSON.parse(body || '{}');
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_json', message: String(e.message || e) }));
+        return;
+      }
+      try {
+        const { title, description, priority, agent, labels } = parsed;
+        if (!title || typeof title !== 'string' || !title.trim()) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'title required' }));
+          return;
+        }
+        // Title length bound: bd issue titles practically cap around 200 chars;
+        // 500 is a safe ceiling that catches obvious junk while allowing
+        // long-form summaries when warranted.
+        if (title.length > 500) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'title_too_long',
+            message: `Title is ${title.length} chars; max 500 allowed.`,
+            length: title.length,
+          }));
+          return;
+        }
+        // Priority must be in P0–P3 if specified. Silent ignore was hiding
+        // typos like priority=11 (probably meant P1).
+        if (priority != null && (typeof priority !== 'number' || priority < 0 || priority > 3)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: 'invalid_priority',
+            message: 'priority must be an integer in [0, 3] (P0–P3).',
+            received: priority,
+          }));
+          return;
+        }
+        const beadsErr = checkBeadsAvailable(cwd);
+        if (beadsErr) {
+          res.writeHead(409, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(beadsErr));
+          return;
+        }
+        // Build bd create args
+        const args = ['create', title.trim()];
+        if (description) args.push('-d', description);
+        if (priority != null && priority >= 0 && priority <= 3) args.push('--priority', `P${priority}`);
+
+        // BH-12 fix: serialise bd writes through global write chain.
+        // Concurrent POST /api/tasks calls used to race on bd's file lock —
+        // one crash would leave a stale .beads/.lock that froze ALL writes.
+        const result = await bdWriteSerialised(() => {
+          // 20s, not 5s. `bd` was measured in this repository at 1.9s alone and
+          // up to 8.7s when ten test files spawn it at once (see the note in
+          // tests/pipeline-contracts.test.mjs), and bdWriteSerialised queues
+          // every write behind every other write on top of that. A 5s cap could
+          // not be met under the load the suite creates for itself, so "did bd
+          // succeed" was really asking "was the machine quiet" — and the answer
+          // came back as HTTP 500, indistinguishable from a malformed request.
+          const r = bd(args, { cwd, timeout: 20000 });
+          if (r.status !== 0) {
+            // A cap we imposed firing is not the same as beads refusing. The
+            // caller can retry one of them and not the other.
+            const timedOut = r.error && r.error.code === 'ETIMEDOUT';
+            return { error: bdErr(r, 'bd create failed'), timedOut };
+          }
+          const idMatch = (r.stdout || '').match(/Created issue:\s*(\S+)/);
+          const id = idMatch ? idMatch[1] : null;
+
+          // Apply optional labels + agent within the same lock window
+          if (id) {
+            const updateArgs = ['update', id];
+            let needUpdate = false;
+            if (agent) { updateArgs.push('--assignee', agent); needUpdate = true; }
+            const lbls = Array.isArray(labels) ? labels : (labels ? [labels] : []);
+            for (const lbl of lbls) {
+              if (lbl) { updateArgs.push('--add-label', lbl); needUpdate = true; }
+            }
+            if (agent && !lbls.includes(agent)) { updateArgs.push('--add-label', agent); needUpdate = true; }
+            if (needUpdate) bd(updateArgs, { cwd, timeout: 20000 });
+          }
+          return { id };
+        });
+
+        if (!result || result.error) {
+          // 503 for a timeout: the request was fine, beads was busy, and coming
+          // back shortly is the right response. 500 told every caller — the UI,
+          // the tests, a person — that they had done something wrong.
+          const status = result && result.timedOut ? 503 : 500;
+          if (status === 503) res.setHeader('Retry-After', '5');
+          res.writeHead(status, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            error: (result && result.error) || 'bd create failed',
+            retryable: status === 503,
+          }));
+          return;
+        }
+
+        bdCacheInvalidate(cwd);
+        broadcastTasks(cwd);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, id: result.id }));
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: String(e.message || e) }));
+      }
+    });
+    return true;
+  }
+
+  // Task status update — BH-14/BH-16 fixes: JSON parse 400, write serialisation
+  if (pathname.match(/^\/api\/tasks\/[^/]+\/status$/) && req.method === 'POST') {
+    const id = pathname.split('/')[3];
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(body || '{}');
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_json', message: String(e.message || e) }));
+        return;
+      }
+      const { status } = parsed;
+      const validStatuses = ['open', 'in_progress', 'blocked', 'closed'];
+      if (!validStatuses.includes(status)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_status', message: `status must be one of: ${validStatuses.join(', ')}`, received: status }));
+        return;
+      }
+      const result = await bdWriteSerialised(() => {
+        // 20s for the same reason as the create path above: bd was measured at
+        // up to 8.7s under `node --test` parallelism, and 5s could not be met.
+        const r = bd(['update', id, '--status', status], { cwd, timeout: 20000 });
+        if (r.status !== 0) return { error: bdErr(r, 'bd update failed') };
+        bdCacheInvalidate(cwd);
+        return { ok: true };
+      });
+      if (!result || result.error) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: (result && result.error) || 'bd update failed' }));
+        return;
+      }
+      broadcastTasks(cwd);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    return true;
+  }
+
+  // Task priority update
+  if (pathname.match(/^\/api\/tasks\/[^/]+\/priority$/) && req.method === 'POST') {
+    const id = pathname.split('/')[3];
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(body || '{}');
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_json', message: String(e.message || e) }));
+        return;
+      }
+      const { priority } = parsed;
+      if (priority == null || typeof priority !== 'number' || priority < 0 || priority > 3) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_priority', message: 'priority must be an integer in [0, 3]', received: priority }));
+        return;
+      }
+      const result = await bdWriteSerialised(() => {
+        const r = bd(['update', id, '--priority', String(priority)], { cwd, timeout: 20000 });
+        if (r.status !== 0) return { error: bdErr(r, 'bd update failed') };
+        bdCacheInvalidate(cwd);
+        return { ok: true };
+      });
+      if (!result || result.error) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: (result && result.error) || 'bd update failed' }));
+        return;
+      }
+      broadcastTasks(cwd);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+    });
+    return true;
+  }
+
+  // Task history / timeline from interactions.jsonl
+  if (pathname.match(/^\/api\/tasks\/[^/]+\/history$/) && req.method === 'GET') {
+    const taskId = pathname.split('/')[3];
+    // 404 for unknown task IDs so the UI can distinguish "task does not exist"
+    // from "task exists but has no history yet".
+    const allTasks = getTasks(cwd);
+    if (!allTasks.some(t => t.id === taskId)) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'task_not_found', id: taskId }));
+      return true;
+    }
+    const interactionsFile = path.join(cwd, '.beads', 'interactions.jsonl');
+    if (!fs.existsSync(interactionsFile)) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ events: [] }));
+      return true;
+    }
+    try {
+      const lines = fs.readFileSync(interactionsFile, 'utf8').split('\n').filter(Boolean);
+      const events = [];
+      // A row we could not parse is dropped — that is right, one bad line is
+      // not evidence — but it was dropped SILENTLY, so a short history and a
+      // complete one looked identical. Count them and send the count: the
+      // client can then say "3 rows unreadable" instead of quietly showing less
+      // than happened. Same rule as routes.mjs:661 one screen up, which does
+      // report what it skipped.
+      let unreadableRows = 0;
+      for (const line of lines) {
+        try {
+          const obj = JSON.parse(line);
+          if (obj.id === taskId) {
+            events.push({
+              ts: obj.ts || obj.created_at || null,
+              actor: obj.actor || obj.agent || null,
+              action: obj.action || obj.type || 'updated',
+              from: obj.from || null,
+              to: obj.to || null,
+              notes: obj.notes || null,
+            });
+          }
+        } catch { unreadableRows++; }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ events, unreadable_rows: unreadableRows }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: String(e.message || e) }));
+    }
+    return true;
+  }
+
+  // Memory — single global pattern content
+  if (pathname === '/api/memory-pattern') {
+    const id = url.searchParams.get('id') || '';
+    if (!/^GP-[A-Za-z0-9_-]+$/.test(id)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'invalid id' }));
+      return true;
+    }
+    const fp = path.join(GREAT_CTO_DIR, 'global-patterns', id + '.md');
+    const content = readFileSafe(fp);
+    res.writeHead(content == null ? 404 : 200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ content: content || null }));
+    return true;
+  }
+
+  // Session logs — list .great_cto/logs/session-*.md for the current project.
+  // When no /save logs exist, synthesize day-grouped entries from verdicts so
+  // the panel is useful immediately — every project with agent activity gets
+  // a meaningful log even before the first /save.
+  if (pathname === '/api/logs') {
+    const logsDir = path.join(cwd, '.great_cto', 'logs');
+    let logs = [];
+    // Why the session-log read failed, if it did. "No logs" and "could not read
+    // the logs directory" look identical in the UI otherwise — the same collapse
+    // that made an unreadable tasks.md look like an empty backlog.
+    let logsDegraded = null;
+    try {
+      const files = fs.readdirSync(logsDir)
+        .filter(f => f.startsWith('session-') && f.endsWith('.md'))
+        .sort().reverse().slice(0, 30);
+      logs = files.map(f => {
+        const fp = path.join(logsDir, f);
+        const raw = readFileSafe(fp) || '';
+        const dateM = raw.match(/^date:\s*(.+)$/m);
+        const timeM = raw.match(/^time:\s*(.+)$/m);
+        const durM  = raw.match(/^duration:\s*(.+)$/m);
+        const titleM = raw.match(/^#\s+Session:\s*(.+)$/m) || raw.match(/^#\s+(Session[^\n]*)$/m);
+        // Headings vary across /save versions and hand-written logs: "## Done",
+        // "## Done today", "## Pending", "## Next", "## TODO". Match the keyword
+        // and ignore any trailing words on the heading line; bullets may be - or *.
+        // Accept "- ", "* ", and "1." / "2)" numbered list items.
+        const bulletsFrom = (m) => m
+          ? m[1].trim().split('\n').filter(l => /^(?:[-*]|\d+[.)])\s+/.test(l)).map(l => l.replace(/^(?:[-*]|\d+[.)])\s+/, ''))
+          : [];
+        const doneM = raw.match(/##\s+Done[^\n]*\n([\s\S]*?)(?=\n##|$)/i);
+        let done = bulletsFrom(doneM);
+        const pendM = raw.match(/##\s+(?:Pending|Next(?:\s+steps?)?|To\s?do|Blocked)[^\n]*\n([\s\S]*?)(?=\n##|$)/i);
+        let pending = bulletsFrom(pendM);
+
+        // v2.7.0: SessionEnd hook auto-captures use a different schema
+        // (## Git / ## Beads / ## Cost). When no /save format found,
+        // synthesise done/pending bullets from those sections so the
+        // panel still has content.
+        let source = 'save';
+        if (!done.length && !pending.length) {
+          source = 'auto';
+          const gitM   = raw.match(/## Git\n([\s\S]*?)(?=\n##|$)/);
+          const beadsM = raw.match(/## Beads\n([\s\S]*?)(?=\n##|$)/);
+          const costM  = raw.match(/## Cost[^\n]*\n([\s\S]*?)(?=\n##|$)/);
+          const bullets = (sec) => sec ? sec[1].trim().split('\n').filter(l => l.startsWith('- ')).map(l => l.slice(2)) : [];
+          // Done = factual snapshot (Git + Cost)
+          done = [...bullets(gitM)];
+          if (costM) {
+            const costLines = costM[1].trim().split('\n').filter(l => l && !l.startsWith('```') && !l.includes('(no cost log)'));
+            if (costLines.length) done.push(`Cost: ${costLines.join(' · ')}`);
+          }
+          // Pending = open work (Beads)
+          pending = [...bullets(beadsM)];
+        }
+        return {
+          file: f,
+          source,
+          date: dateM?.[1]?.trim() || f.slice(8, 18),
+          time: timeM?.[1]?.trim() || '',
+          duration: durM?.[1]?.trim() || '',
+          title: titleM?.[1]?.trim() || f.replace(/^session-\d{4}-\d{2}-\d{2}-/, '').replace('.md', ''),
+          done,
+          pending,
+          raw,
+        };
+      });
+    } catch (e) {
+      // ENOENT is the normal "this project has never run /save" state; anything
+      // else means logs exist and we failed to read them, which the user must see.
+      if (e && e.code !== 'ENOENT') {
+        logsDegraded = `session logs could not be read: ${e.message || e}`;
+        log.warn(`[logs] ${logsDegraded}`);
+      }
+    }
+
+    // Fallback: synthesize from verdicts grouped by day
+    if (!logs.length) {
+      try {
+        // Scope to THIS project: readVerdicts(cwd) returns project-local verdicts
+        // plus global lines tagged `project=<slug>`. Without the cwd every project
+        // showed the same unfiltered global verdict feed (another project's work).
+        const verdicts = readVerdicts(cwd);
+        const byDay = new Map();
+        for (const v of verdicts) {
+          const day = (v.ts || '').slice(0, 10);
+          if (!day) continue;
+          if (!byDay.has(day)) byDay.set(day, { ok: [], fail: [], earliest: v.ts, latest: v.ts });
+          const b = byDay.get(day);
+          const verdictUp = (v.verdict || '').toUpperCase();
+          const isOk = ['OK','APPROVED','DONE','PASS','PASSED'].includes(verdictUp);
+          const isFail = ['FAIL','FAILED','BLOCKED','REJECTED'].includes(verdictUp);
+          const summary = `${v.agent}: ${v.verdict || 'event'}${v.raw ? ` — ${v.raw.replace(/\s+/g,' ').slice(0,140)}` : ''}`;
+          if (isFail) b.fail.push(summary);
+          else b.ok.push(summary);
+          if (v.ts < b.earliest) b.earliest = v.ts;
+          if (v.ts > b.latest)   b.latest   = v.ts;
+        }
+        logs = Array.from(byDay.entries())
+          .sort(([a],[b]) => b.localeCompare(a))
+          .slice(0, 30)
+          .map(([day, b]) => ({
+            file: `auto-${day}`,
+            source: 'verdicts',
+            date: day,
+            time: (b.earliest || '').slice(11, 16),
+            duration: '',
+            title: `Auto-log · ${b.ok.length + b.fail.length} agent run${(b.ok.length+b.fail.length)===1?'':'s'}`,
+            done: b.ok.slice(0, 50),
+            pending: b.fail.slice(0, 50),
+            raw: '_Auto-generated from ~/.great_cto/verdicts/. Run `/save` to create a curated session log._',
+          }));
+      } catch (e) {
+        logsDegraded = logsDegraded
+          || `verdict fallback could not be built: ${e?.message || e}`;
+        log.warn(`[logs] ${logsDegraded}`);
+      }
+    }
+
+    const logHeaders = { 'Content-Type': 'application/json' };
+    if (logsDegraded) logHeaders['X-Board-Degraded'] = encodeURIComponent(logsDegraded);
+    res.writeHead(200, logHeaders);
+    res.end(JSON.stringify({ logs, degraded: logsDegraded || undefined }));
+    return true;
+  }
+
+  // Real dispatches per agent, read from Claude Code's session logs on this
+  // machine (scripts/lib/agent-usage.mjs). Machine-wide, not per project: the logs
+  // are one history. The first pass over a large history takes about a minute, so
+  // the snapshot answers at once — `computing`, then the last result — and never
+  // makes a request wait for the scan.
+  if (pathname === '/api/agent-usage') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(boardUsage().get()));
+    return true;
+  }
+
+  // What Claude Code and Codex consumed in the selected project — tokens, models, the
+  // heaviest conversations, tools, skills, agents, cache, Codex's plan window —
+  // read from the hosts' own session logs (scripts/lib/session-usage.mjs).
+  // Filter before aggregation, including linked worktrees. Served on the
+  // board's own host only; nothing here is sent anywhere.
+  if (pathname === '/api/usage') {
+    if (!scopedProject) {
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Unknown project', state: 'unavailable' })); return true;
+    }
+    const rawDays = parseInt(url.searchParams.get('days') || '30', 10);
+    const days = Number.isFinite(rawDays) && rawDays > 0 ? Math.min(rawDays, 365) : 30;
+    const snap = boardSessionUsage().get(days, cwd);
+    let body;
+    if (snap.state !== 'counted') {
+      body = { state: snap.state, why: snap.why };
+    } else {
+      const sum = snap;
+      const ours = new Set(boardAgentNames());
+      for (const host of Object.keys(sum.lists)) {
+        sum.lists[host].agents = sum.lists[host].agents.map((a) => ({ ...a, ours: ours.has(a.name) }));
+      }
+      // Which hooks are great_cto's: a guard that names itself, a status message
+      // from our plugin.json, or a script in our scripts/hooks.
+      const mine = boardHookNames();
+      const tag = (rows, kind) => rows.map((r) => ({
+        ...r,
+        ours: kind === 'blocks' ? !r.name.startsWith('other: ') : mine.has(r.name.replace(/^[A-Za-z]+:\s*/, '')),
+      }));
+      for (const k of ['blocks', 'stopBlocks', 'errors', 'timeouts']) sum.hooks[k] = tag(sum.hooks[k], k);
+      body = { ...sum, seen: snap.seen, files: snap.files };
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(body));
+    return true;
+  }
+
+  // What the agents concluded and what reviews found in this project
+  // (scripts/lib/outcomes.mjs): verdicts per agent, Beads bugs by
+  // priority. Counts only — no bug title leaves the server. Answers at once:
+  // `computing` until the first read of this project's Beads lands.
+  if (pathname === '/api/outcomes') {
+    if (!scopedProject) {
+      res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      res.end(JSON.stringify({ error: 'Unknown project', state: 'unavailable' })); return true;
+    }
+    const rawDays = parseInt(url.searchParams.get('days') || '30', 10);
+    const days = Number.isFinite(rawDays) && rawDays > 0 ? Math.min(rawDays, 365) : 30;
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(boardOutcomes(days, scopedProject)));
+    return true;
+  }
+
+  // Domain reviewers this project's PROJECT.md requires (archetype, packs,
+  // compliance), each with whether a verdict exists — the list gate:ship refuses on.
+  // Sessions in this project that wait for a person — written by the
+  // Notification / Stop / UserPromptSubmit hooks (scripts/lib/session-status.mjs).
+  if (pathname === '/api/session-status') {
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ sessions: c ? readSessionStatus(c) : [] }));
+    return true;
+  }
+
+  if (pathname === '/api/required-reviewers') {
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(c ? reviewerStatus(c) : { state: 'no-project', reviewers: [] }));
+    return true;
+  }
+
+  // Installed agents — fleet view (DESIGN-agents-fleet-view §3.1).
+  //
+  // Extended in 2026-05-15 from a flat list to a faceted-fleet payload:
+  // each row carries domain (slug-derived), runs_30d, success_rate, last_run,
+  // retired (sidecar file marker), and savings_x. The board's /agents tab
+  // renders these into the .agent-row list with no further server round-trips.
+  if (pathname === '/api/agents-installed') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(getAgentsFleet(cwd)));
+    return true;
+  }
+
+  // ── session transcripts ───────────────────────────────────────────────
+  //
+  // The board reports outcomes. These four report HOW an outcome was reached,
+  // which is the only thing that separates a weak agent from a broken harness —
+  // a distinction this repo got wrong three times in one week by reading a score
+  // without reading the run.
+  //
+  // Read-only by construction: no writes, no index, no cache. A transcript is
+  // evidence, and a tool that edits evidence is not one.
+
+  if (pathname === '/api/sessions') {
+    const sessions = listSessions(cwd);
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ project: cwd, count: sessions.length,
+      // The absolute path stays on the server. A browser has no use for it and
+      // it names the operator's home directory.
+      sessions: sessions.map(({ file, ...rest }) => rest) }));
+    return true;
+  }
+
+  if (pathname.startsWith('/api/sessions/') && pathname.endsWith('/edits')) {
+    const id = pathname.slice('/api/sessions/'.length, -'/edits'.length);
+    const s = listSessions(cwd).find((x) => x.id === id);
+    if (!s) { res.writeHead(404, { 'Content-Type': 'application/json' }); res.end('{"error":"no such session"}'); return true; }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ session: id, files: editedFiles(s.file) }));
+    return true;
+  }
+
+  if (pathname.startsWith('/api/sessions/')) {
+    // The id comes from the URL and is used to pick from a list the server
+    // built — never to build a path. A traversal in the id matches nothing.
+    const id = pathname.slice('/api/sessions/'.length);
+    const s = listSessions(cwd).find((x) => x.id === id);
+    if (!s) { res.writeHead(404, { 'Content-Type': 'application/json' }); res.end('{"error":"no such session"}'); return true; }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ session: id, title: s.title, modified: s.modified, turns: readSession(s.file) }));
+    return true;
+  }
+
+  if (pathname === '/api/session-search') {
+    const q = url.searchParams.get('q') || '';
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify(searchSessions(cwd, q)));
+    return true;
+  }
+
+  // Build version — so the board shows which great_cto version it's running.
+  if (pathname === '/api/version') {
+    // A board is a process, and a process keeps the version it started with.
+    // This one served v2.95.0 for nine days while three installs in a row
+    // reported success: the installer updated files, the running server kept
+    // answering, and nothing compared the two. The installer restarts the board
+    // now, but a board started any other way still needs to be able to say that
+    // it is behind — an install the operator cannot see is not an install.
+    //
+    // Three states, not two. `unknown` when the cache cannot be read: a version
+    // we failed to look up must not render as agreement.
+    let installed = null;
+    try {
+      const root = path.join(os.homedir(), '.claude', 'plugins', 'cache', 'local', 'great_cto');
+      const versions = fs.readdirSync(root).filter((d) => /^\d+\.\d+\.\d+$/.test(d));
+      installed = versions.sort((a, b) => {
+        const x = a.split('.').map(Number), y = b.split('.').map(Number);
+        return (x[0] - y[0]) || (x[1] - y[1]) || (x[2] - y[2]);
+      }).pop() || null;
+    } catch { installed = null; }
+    // Direction, not inequality. `installed !== BUILD_VERSION` is true in both
+    // directions, and the banner it fed said "restart to pick up the new
+    // version" either way — so a board running 3.2.0 against an installed 3.1.0
+    // was told to restart into the OLDER build. A prompt to downgrade that
+    // looks exactly like a prompt to upgrade is the same defect this endpoint
+    // was written to fix, pointed the other way.
+    //
+    // Four states: `behind` (an install is waiting), `ahead` (the running code
+    // is newer — restarting would lose it), `no`, and `unknown`.
+    const cmp = (a, b) => {
+      const x = a.split('.').map(Number), y = b.split('.').map(Number);
+      return (x[0] - y[0]) || (x[1] - y[1]) || (x[2] - y[2]);
+    };
+    let stale = 'unknown';
+    if (installed && BUILD_VERSION !== 'unknown' && /^\d+\.\d+\.\d+$/.test(BUILD_VERSION)) {
+      const d = cmp(installed, BUILD_VERSION);
+      stale = d > 0 ? 'behind' : d < 0 ? 'ahead' : 'no';
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({
+      version: BUILD_VERSION, installed, stale,
+      surface: 'builder', node: process.version.replace(/^v/, ''),
+    }));
+    return true;
+  }
+
+  // Per-agent profile drawer (DESIGN-agents-fleet-view §3.2).
+  // GET /api/agents/<slug> → { slug, description, model, applies_to,
+  //                            runs_30d, success_rate, last_run, savings_x,
+  //                            retired, runs[20], failure_modes[N] }
+  if (pathname.startsWith('/api/agents/') && req.method === 'GET') {
+    const rest = pathname.slice('/api/agents/'.length);
+    const [slug, sub] = rest.split('/');
+    if (!slug || !/^[a-z0-9-]+$/i.test(slug)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'invalid_slug' }));
+      return true;
+    }
+    if (!sub) {
+      // Scoped to the selected project — see getAgentProfile. Unscoped, this
+      // reported an agent's record across all twenty-two projects while the
+      // reader was looking at one of them.
+      const profile = getAgentProfile(slug, cwd);
+      if (!profile) {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'agent_not_found', slug }));
+        return true;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(profile));
+      return true;
+    }
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'unknown_subpath', sub }));
+    return true;
+  }
+
+  // POST /api/agents/<slug>/retire | restore — sidecar marker
+  // (DESIGN-agents-fleet-view §9 Top-2 #2: reversible sidecar chosen over
+  // filesystem move; founder may revise.)
+  if (pathname.startsWith('/api/agents/') && req.method === 'POST') {
+    // Cross-origin guard — same helper as BH-23 on /api/projects/register
+    // (originAllowed() in lib/util.mjs; also enforced as the top-level CSRF
+    // guard in server.mjs before dispatch() is ever called).
+    if (!originAllowed(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'origin_not_allowed' }));
+      return true;
+    }
+    const rest = pathname.slice('/api/agents/'.length);
+    const [slug, action] = rest.split('/');
+    if (!slug || !/^[a-z0-9-]+$/i.test(slug) || !['retire', 'restore'].includes(action)) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'invalid_request' }));
+      return true;
+    }
+    try {
+      const result = action === 'retire' ? retireAgent(slug) : restoreAgent(slug);
+      res.writeHead(result.ok ? 200 : 404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+      return true;
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+      return true;
+    }
+  }
+
+  // ── /api/push — Web Push subscription management ────────────────────────
+  // GET  /api/push/vapid-key → { publicKey } (base64url, for browser subscribe)
+  // POST /api/push/subscribe → body: { endpoint, keys: { p256dh, auth } }
+  // DELETE /api/push/subscribe → body: { endpoint }
+  if (pathname === '/api/push/vapid-key' && req.method === 'GET') {
+    const keys = getVapidKeys(VAPID_KEYS_FILE);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ publicKey: keys.publicKey }));
+    return true;
+  }
+
+  if (pathname === '/api/push/subscribe' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const sub = JSON.parse(body || '{}');
+        if (!sub.endpoint) { res.writeHead(400); return res.end(JSON.stringify({ error: 'endpoint_required' })); }
+        addSubscription(PUSH_SUBS_FILE, sub);
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({ ok: true }));
+      } catch {
+        res.writeHead(400); return res.end(JSON.stringify({ error: 'invalid_json' }));
+      }
+    });
+    return true;
+  }
+
+  if (pathname === '/api/push/subscribe' && req.method === 'DELETE') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { endpoint } = JSON.parse(body || '{}');
+        if (!endpoint) { res.writeHead(400); return res.end(JSON.stringify({ error: 'endpoint_required' })); }
+        removeSubscription(PUSH_SUBS_FILE, endpoint);
+        res.writeHead(204);
+        return res.end();
+      } catch {
+        res.writeHead(400); return res.end(JSON.stringify({ error: 'invalid_json' }));
+      }
+    });
+    return true;
+  }
+
+  // ── /api/notif-history — in-app notification history ─────────────────────
+  // GET  /api/notif-history?unread=1&limit=N → JSON array (newest first)
+  // POST /api/notif-history/read → body: { id? } (omit id = mark all read)
+  if (pathname === '/api/notif-history' && req.method === 'GET') {
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 100);
+    const unreadOnly = url.searchParams.get('unread') === '1';
+    // Surface filter: the builder board must not see operate-side alerts (autopilot dead-letters,
+    // connector health, case SLA). Default to the builder surface; `?scope=operate|all` opts in.
+    // Classify by event name too, so entries written before the surface tag existed are filtered.
+    const scope = url.searchParams.get('scope') || 'builder';
+    const surfaceOf = (n) => n.surface || eventSurface(n.event);
+    let items = notifHistory;
+    if (scope === 'builder') items = items.filter(n => surfaceOf(n) !== 'operate');
+    else if (scope === 'operate') items = items.filter(n => surfaceOf(n) === 'operate');
+    items = items.slice(0, limit);
+    if (unreadOnly) items = items.filter(n => !n.read);
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(items));
+    return true;
+  }
+
+  if (pathname === '/api/notif-history/read' && req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const { id } = JSON.parse(body || '{}');
+        if (id) {
+          const n = notifHistory.find(n => n.id === id);
+          if (n) n.read = true;
+        } else {
+          // Mark all read
+          for (const n of notifHistory) n.read = true;
+        }
+        saveNotifHistory();
+        res.writeHead(204);
+        return res.end();
+      } catch {
+        res.writeHead(400); return res.end(JSON.stringify({ error: 'invalid_json' }));
+      }
+    });
+    return true;
+  }
+
+  // ── Heartbeat watchdog (Paperclip pattern) ──────────────────────────────
+  // GET /api/heartbeat → { stuck: [{id,title,agent,age_h}], budgets: {agent→cap},
+  //                        goal_ancestry: string, tool_failure_rate_1h: number }
+  if (pathname === '/api/heartbeat') {
+    const tasks = getTasks(cwd);
+    const nowMs = Date.now();
+    const STUCK_H = 48;
+    // `stuck` was ALWAYS EMPTY and had been since it was written. It read
+    // `t.startedAt`, a field no code path in this repository produces — a task
+    // carries created_at / updated_at / closed_at and nothing else. Every row
+    // got `age_h: null` and was removed by the filter below, so the panel
+    // reported "nothing is stuck" about a question it never asked. There are
+    // seven in-progress tasks here as this is written.
+    //
+    // `updated_at` is the honest proxy: in progress, and unchanged for STUCK_H.
+    // A task whose age cannot be determined is COUNTED, not dropped — an
+    // unmeasurable task is not a healthy one.
+    const inProgress = tasks.filter(t => t.status === 'in_progress');
+    let stuckUnmeasurable = 0;
+    const stuck = inProgress
+      .map(t => {
+        const since = t.updated_at || t.created_at || null;
+        const ms = since ? new Date(since).getTime() : NaN;
+        if (!Number.isFinite(ms)) { stuckUnmeasurable += 1; return null; }
+        return { id: t.id, title: t.title, agent: t.agent, age_h: Math.round((nowMs - ms) / 3600000), since };
+      })
+      .filter(t => t && t.age_h > STUCK_H);
+
+    // Per-agent budgets from PROJECT.md
+    const projectMdPath = path.join(cwd, '.great_cto', 'PROJECT.md');
+    let budgets = {};
+    let budgetsDeprecatedKey = null;
+    const budgetsMalformed = [];
+    let goalAncestry = null;
+    let budgetsRead = true;
+    let budgetsWhy = null;
+    try {
+      const projectTxt = fs.readFileSync(projectMdPath, 'utf8');
+      // One parser, in scripts/lib/agent-budget.mjs — the same one the pipeline
+      // dispatcher enforces with and the fleet view judges with. This was an
+      // inline regex reading a different key (`agent-budget:`) with a different
+      // meaning ("$X/run"), so the board could display a cap the dispatcher had
+      // never heard of, and vice versa.
+      const parsed = parseAgentBudgets(projectTxt);
+      for (const [agent, cap] of parsed.budgets) budgets[agent] = cap;
+      if (parsed.deprecatedKey) budgetsDeprecatedKey = parsed.deprecatedKey;
+      for (const bad of parsed.malformed) budgetsMalformed.push(bad);
+      // Goal ancestry
+      const archetype = (projectTxt.match(/^(?:archetype|primary):\s*(\S+)/m) || [])[1] || null;
+      const compliance = (projectTxt.match(/^compliance:\s*(.+)$/m) || [])[1] || null;
+      const phase = (projectTxt.match(/^phase:\s*(\S+)/m) || [])[1] || null;
+      const complianceClean = compliance && !/^\[?none\]?$/i.test(compliance.trim()) ? compliance.trim() : null;
+      if (archetype) goalAncestry = `[archetype:${archetype}]${complianceClean ? ` [compliance:${complianceClean}]` : ''}${phase ? ` [phase:${phase}]` : ''}`;
+      budgetsRead = true;
+    } catch (err) {
+      // "No PROJECT.md" and "PROJECT.md is there and we could not read it" are
+      // different answers, and budgets={} renders as "no caps set" for both. A
+      // cap its author believes they have, silently not shown, is the same
+      // defect the caps exist to prevent — so say which happened.
+      budgetsRead = false;
+      budgetsWhy = err?.code === 'ENOENT' ? 'no PROJECT.md' : String(err?.message || err);
+    }
+
+    // Tool failure rate in last hour
+    let toolFailureRate1h = 0;
+    let failuresMeasured = true;
+    let failuresWhy = null;
+    try {
+      const failLog = fs.readFileSync(path.join(cwd, '.great_cto', 'tool-failures.log'), 'utf8');
+      const cutoff = new Date(nowMs - 3600000).toISOString();
+      toolFailureRate1h = failLog.split('\n').filter(l => l > cutoff && l.trim()).length;
+    } catch (err) {
+      // Zero failures and an unreadable log render identically, and the
+      // reassuring one is what the operator would see.
+      failuresMeasured = false;
+      failuresWhy = err?.code === 'ENOENT' ? 'no tool-failures.log' : String(err?.message || err);
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    // `budgets_deprecated_key` and `budgets_malformed` travel with the caps.
+    // A limit somebody wrote under the old key still works and they are told; a
+    // line the parser could not read is reported rather than dropped, because a
+    // budget silently ignored is a limit its author believes they have.
+    res.end(JSON.stringify({
+      stuck, stuck_in_progress: inProgress.length, stuck_unmeasurable: stuckUnmeasurable,
+      budgets, goal_ancestry: goalAncestry, tool_failure_rate_1h: toolFailureRate1h,
+      budgets_deprecated_key: budgetsDeprecatedKey,
+      budgets_malformed: budgetsMalformed,
+      // Three states, not two: read / absent / unreadable. Without these, a
+      // failed read is indistinguishable from an empty result on the client.
+      budgets_read: budgetsRead,
+      budgets_why: budgetsWhy,
+      tool_failures_measured: failuresMeasured,
+      tool_failures_why: failuresWhy,
+    }));
+    return true;
+  }
+
+  // Set or clear one agent's spending cap, by writing PROJECT.md.
+  //
+  // GET /api/harnesses — the two harnesses and which one gives the second opinion.
+  //
+  // Claude Code is the host: it runs the pipeline, so it is always "here". Codex
+  // is detected, not assumed — version, login and the model it would run, read
+  // from disk — and reported in three states, because a card that shows an
+  // absent Codex as a quiet toggle in the off position is the same defect as a
+  // pending gate that renders as passed. The evidence section is the tail of
+  // `.great_cto/cross-review.log`: what the second opinion DID, not what it is
+  // set to.
+  if (pathname === '/api/harnesses' && req.method === 'GET') {
+    const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+    const mdPath = path.join(c, '.great_cto', 'PROJECT.md');
+    let projectMd = null;
+    try { projectMd = fs.readFileSync(mdPath, 'utf8'); } catch { projectMd = null; }
+    const codex = detectCodex();
+    const second = resolveSecondOpinion({ projectMd: projectMd ?? '', codex });
+    const declared = projectMd == null ? null : capabilitiesFromProjectMd(projectMd).map.second_opinion;
+
+    // Last 20 review lines, newest first; unparseable lines are counted, not
+    // dropped, so a corrupted log does not read as a quiet one.
+    let evidence = [], unreadable = 0, logState = 'absent';
+    try {
+      const raw = fs.readFileSync(path.join(c, '.great_cto', 'cross-review.log'), 'utf8');
+      logState = 'ok';
+      for (const line of raw.trim().split('\n').filter(Boolean)) {
+        try { evidence.push(JSON.parse(line)); } catch { unreadable += 1; }
+      }
+      evidence = evidence.slice(-20).reverse();
+    } catch (e) { logState = e.code === 'ENOENT' ? 'absent' : 'unreadable'; }
+
+    // BRD-R2: a parsed row without a usable `sha` (BRD-R1's join key, additive
+    // since a2f5d4e7 — scripts/lib/cross-model-review.mjs) cannot be paired
+    // with the tree it reviewed. A verdict you cannot pair with a tree is not
+    // a verdict about this tree, so it renders `unreadable` here — distinct
+    // from `ok`/`skipped`/`BLOCK`, and from the whole-log `unreadable` state
+    // above (that one means "could not read the file"; this one means "read
+    // the line fine, but it predates the field"). `sha` must be a non-empty
+    // string: missing, `null`, or `''` all mean "not supplied". Verdict/cost
+    // are nulled in the response so neither renders as a real result; the
+    // original line is kept under `raw` so nothing is lost.
+    evidence = evidence.map((r) => (
+      typeof r.sha === 'string' && r.sha !== ''
+        ? r
+        : { ...r, state: 'unreadable', verdict: null, cost: null, raw: r }
+    ));
+
+    const reviewed = evidence.filter((r) => r.state === 'ok');
+    const summary = {
+      runs: evidence.length,
+      reviewed: reviewed.length,
+      skipped: evidence.filter((r) => r.state !== 'ok' && r.state !== 'unreadable').length,
+      unreadable: evidence.filter((r) => r.state === 'unreadable').length,
+      blocked: reviewed.filter((r) => r.verdict === 'BLOCK').length,
+      unreadable_lines: unreadable,
+    };
+
+    res.writeHead(200, verdictHeaders(c));
+    res.end(JSON.stringify({
+      claude_code: { state: 'host', version: BUILD_VERSION },
+      codex,
+      second_opinion: {
+        ...second,
+        declared: declared ?? { state: projectMd == null ? 'no-project-md' : 'undeclared', tool: null },
+        providers: SECOND_OPINION_PROVIDERS,
+      },
+      evidence: { state: logState, summary, recent: evidence },
+    }));
+    return true;
+  }
+
+  // POST /api/harnesses/second-opinion  { provider: codex|openrouter|none|null }
+  //
+  // Writes `capabilities: second_opinion:` into PROJECT.md — a file the operator
+  // owns and git tracks — from a browser, behind the same origin gate as
+  // /api/agent-budgets. `null` removes the key: back to UNDECLARED, which is a
+  // different state from `none` and is offered on purpose.
+  //
+  // The reply carries the previous value, and the resolved state AFTER the
+  // write: choosing codex on a machine without one succeeds as a declaration
+  // and comes back `unavailable`, so the card can say so at the moment of the
+  // click rather than on the next review.
+  if (pathname === '/api/harnesses/second-opinion' && req.method === 'POST') {
+    if (!originAllowed(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'origin not allowed' }));
+      return true;
+    }
+    let body = '';
+    req.on('data', (ch) => { body += ch; if (body.length > 1024) req.destroy(); });
+    req.on('end', () => {
+      let parsed;
+      try { parsed = JSON.parse(body || '{}'); }
+      catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_json', message: String(e.message || e) }));
+        return;
+      }
+      const provider = parsed.provider == null ? null : String(parsed.provider).toLowerCase();
+      if (provider != null && !SECOND_OPINION_PROVIDERS.includes(provider)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `provider must be one of ${SECOND_OPINION_PROVIDERS.join(', ')}, or null to undeclare` }));
+        return;
+      }
+      const c = url.searchParams.get('project') ? resolveProjectCwd(url.searchParams.get('project')) : cwd;
+      const mdPath = path.join(c, '.great_cto', 'PROJECT.md');
+      let before;
+      try { before = fs.readFileSync(mdPath, 'utf8'); }
+      catch (e) {
+        res.writeHead(409, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'no PROJECT.md to write to', detail: String(e.message || e) }));
+        return;
+      }
+      let out;
+      try { out = upsertCapability(before, 'second_opinion', provider); }
+      catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: String(e.message || e) }));
+        return;
+      }
+      try {
+        const tmp = `${mdPath}.tmp-${process.pid}`;
+        fs.writeFileSync(tmp, out.text);
+        fs.renameSync(tmp, mdPath);
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `could not write PROJECT.md: ${String(e.message || e)}` }));
+        return;
+      }
+      const resolved = resolveSecondOpinion({ projectMd: out.text, codex: detectCodex() });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, provider, previous: out.previous, created_block: out.created === true, resolved }));
+    });
+    return true;
+  }
+
+  // POST /api/agent-budgets  { agent, limit_usd }   set / replace
+  // POST /api/agent-budgets  { agent, remove: true } clear
+  //
+  // This writes a file the operator owns and git tracks, from a browser. Same
+  // two gates as /api/projects/register, for the same reason: the board listens
+  // on 127.0.0.1, and a page the user happens to be visiting can still issue a
+  // simple cross-origin POST to localhost.
+  //
+  // The reply always reports the PREVIOUS value. A cap that silently replaced
+  // another is a change the operator cannot see they made.
+  if (pathname === '/api/agent-budgets' && req.method === 'POST') {
+    if (!originAllowed(req)) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'origin not allowed' }));
+      return true;
+    }
+    let body = '';
+    req.on('data', (c) => { body += c; if (body.length > 4096) req.destroy(); });
+    req.on('end', () => {
+      let parsed;
+      try { parsed = JSON.parse(body || '{}'); }
+      catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'invalid_json', message: String(e.message || e) }));
+        return;
+      }
+      const mdPath = path.join(cwd, '.great_cto', 'PROJECT.md');
+      let before;
+      try { before = fs.readFileSync(mdPath, 'utf8'); }
+      catch (e) {
+        // No PROJECT.md is not a project we may create one for from a browser.
+        res.writeHead(409, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'no PROJECT.md to write to', detail: String(e.message || e) }));
+        return;
+      }
+      let out;
+      try {
+        out = parsed.remove
+          ? removeAgentBudget(before, parsed.agent)
+          : upsertAgentBudget(before, parsed.agent, parsed.limit_usd);
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: String(e.message || e) }));
+        return;
+      }
+      try {
+        // Write through a temp file in the same directory, then rename: a
+        // half-written PROJECT.md is the project's own identity truncated.
+        const tmp = `${mdPath}.tmp-${process.pid}`;
+        fs.writeFileSync(tmp, out.text);
+        fs.renameSync(tmp, mdPath);
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: `could not write PROJECT.md: ${String(e.message || e)}` }));
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        ok: true,
+        agent: String(parsed.agent || '').toLowerCase(),
+        previous_usd: out.previousUsd,
+        removed: out.removed === true,
+        created_block: out.created === true,
+      }));
+    });
+    return true;
+  }
+
+  // Search INSIDE documents, not only their titles.
+  //
+  // The docs list has always matched on filename and heading. A hundred and
+  // eighty-seven documents whose contents cannot be searched are a directory
+  // listing, and the thing an operator actually wants — "where did we write down
+  // the reason for X" — was answerable only by leaving the board.
+  //
+  // GET /api/docs/search?q=...  ->  { q, matched, scanned, results[] }
+  if (pathname === '/api/docs/search' && req.method === 'GET') {
+    const c = scopedProject.path;
+    const q = (url.searchParams.get('q') || '').trim();
+    if (q.length < 2) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'query must be at least 2 characters' }));
+      return true;
+    }
+    try {
+      const { listDocs, readProjectFile } = await import('./docs.mjs');
+      const all = listDocs(c);
+      const needle = q.toLowerCase();
+      const results = [];
+      let scanned = 0, unreadable = 0;
+      for (const g of (all.groups || [])) {
+        for (const d of (g.docs || [])) {
+          if (results.length >= 60) break;
+          const read = readProjectFile(c, d.path);
+          if (read.state !== 'readable') { unreadable++; continue; }
+          const text = read.content; scanned++;
+          const lines = text.split('\n');
+          const hits = [];
+          for (let i = 0; i < lines.length && hits.length < 3; i++) {
+            if (lines[i].toLowerCase().includes(needle)) {
+              hits.push({ line: i + 1, text: lines[i].trim().slice(0, 160) });
+            }
+          }
+          if (hits.length) results.push({ path: d.path, title: d.title || d.name, group: g.label, hits });
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      // `scanned` and `unreadable` travel with the answer: "no results" over
+      // 187 files and "no results" over 3 that could be opened are different
+      // facts, and only one of them means the phrase is not there.
+      res.end(JSON.stringify({ q, matched: results.length, scanned, unreadable, results }));
+    } catch {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Documentation search is unavailable' }));
+    }
+    return true;
+  }
+
+  // API requests get a JSON 404 so frontends can JSON.parse() the response
+  // without crashing. Static-file 404s stay plain text.
+  if (pathname.startsWith('/api/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found', path: pathname, hint: 'Endpoint missing — restart the board after a great-cto update.' }));
+    return true;
+  }
+
+  return false;
+}
+
+
+/**
+ * The second opinion as it applies to the tree at HEAD — what the Decisions
+ * row's Codex cell shows. Pure over the two files it reads (PROJECT.md and
+ * cross-review.log) plus `git rev-parse HEAD`; every failure is a state, never
+ * a throw, because "could not tell" is data for the row, not a reason to lose
+ * the inbox.
+ */
+
+
+let _usageSnap = null;
+function boardAgentNames() {
+  const agentsDir = path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..', 'agents');
+  try { return fs.readdirSync(agentsDir).filter((f) => f.endsWith('.md')).map((f) => f.slice(0, -3)); } catch { return []; }
+}
+
+function boardUsage() {
+  if (!_usageSnap) {
+    // No agents dir: every count is unavailable-by-omission.
+    const agents = boardAgentNames();
+    _usageSnap = usageSnapshot({ compute: () => agentUsage({ agents }) });
+  }
+  return _usageSnap;
+}
+
+let _hookNames = null;
+function boardHookNames() {
+  if (_hookNames) return _hookNames;
+  const root = path.join(path.dirname(new URL(import.meta.url).pathname), '..', '..', '..');
+  const names = new Set();
+  try {
+    const text = fs.readFileSync(path.join(root, '.claude-plugin', 'plugin.json'), 'utf8');
+    for (const m of text.matchAll(/"statusMessage"\s*:\s*"([^"]+)"/g)) names.add(m[1]);
+  } catch { /* no manifest: only scripts count */ }
+  try {
+    for (const f of fs.readdirSync(path.join(root, 'scripts', 'hooks'))) {
+      names.add(f.replace(/\.(mjs|js|py|sh)$/, ''));
+      // A Stop hook that sends the turn back opens its message with a label —
+      // "PIPELINE-NEXT: senior-dev succeeded …"; the labels our hooks write are ours.
+      try {
+        const src = fs.readFileSync(path.join(root, 'scripts', 'hooks', f), 'utf8');
+        for (const m of src.matchAll(/['"`]([A-Z][A-Z0-9_-]{2,40}):\s/g)) names.add(m[1]);
+      } catch { /* a directory or unreadable: its name is enough */ }
+    }
+  } catch { /* none */ }
+  _hookNames = names;
+  return names;
+}
+
+const _outcomes = new Map();
+const OUTCOMES_TTL = 5 * 60 * 1000;
+function scopedReadProject(cwd, serverCwd, requested) {
+  const canonical = dir => { try { return fs.realpathSync(dir); } catch { return path.resolve(dir); } };
+  const projectPath = canonical(cwd);
+  const entries = (readProjectsRegistry().projects || []).filter(p => p?.path);
+  const own = entries.filter(p => canonical(p.path) === projectPath);
+  if (requested && (resolveProjectInfo(requested).resolved === 'fallback'
+    || (!own.length && projectPath !== canonical(serverCwd)))) return null;
+  const labels = p => {
+    const result = [p.slug, p.name, p.path, path.basename(p.path)];
+    let fd;
+    try {
+      fd = fs.openSync(path.join(p.path, '.great_cto', 'PROJECT.md'), 'r');
+      const bytes = Buffer.alloc(65536);
+      const text = bytes.subarray(0, fs.readSync(fd, bytes, 0, bytes.length, 0)).toString('utf8');
+      for (const key of ['slug', 'project', 'name']) result.push(text.match(new RegExp(`^${key}:\\s*(.+)$`, 'm'))?.[1]?.trim());
+    } catch { /* aliases absent; canonical path still identifies the root */ }
+    finally { if (fd !== undefined) fs.closeSync(fd); }
+    return result.filter(Boolean);
+  };
+  const foreign = new Set(entries.filter(p => canonical(p.path) !== projectPath).flatMap(labels));
+  const aliases = [...new Set([...own, { path: projectPath }].flatMap(labels))].filter(label => !foreign.has(label)).sort();
+  return { name: own[0]?.slug || own[0]?.name || path.basename(projectPath), path: projectPath, aliases };
+}
+function boardOutcomes(days, project) {
+  const projectPath = project.path;
+  const key = JSON.stringify([days, projectPath, project.aliases]);
+  const slot = _outcomes.get(key) || {};
+  const fresh = slot.value && Date.now() - slot.at < OUTCOMES_TTL;
+  if (!fresh && !slot.running) {
+    slot.running = computeOutcomes({ days, roster: boardAgentNames(), projects: [project], projectScope: true })
+      .then((v) => { slot.value = { ...v, scope: { kind: 'project', path: projectPath } }; }, () => { slot.value = slot.value || { state: 'unavailable', why: 'Outcomes could not be read.' }; })
+      .finally(() => { slot.at = Date.now(); slot.running = null; });
+    if (_outcomes.size >= 32 && !_outcomes.has(key)) {
+      const evict = [..._outcomes].find(([, s]) => !s.running);
+      if (evict) _outcomes.delete(evict[0]);
+    }
+    _outcomes.set(key, slot);
+  }
+  return slot.value || { state: 'computing', why: 'reading this project\'s verdicts and Beads' };
+}
+
+let _sessionUsageSnap = null;
+function boardSessionUsage() {
+  if (!_sessionUsageSnap) _sessionUsageSnap = usageReports();
+  return _sessionUsageSnap;
+}
+
+export { dispatch, secondOpinionForTree };

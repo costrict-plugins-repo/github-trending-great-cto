@@ -1,0 +1,759 @@
+---
+description: "Before merging a branch: a code review with evidence for every finding and no false alarms — a domain compliance review (`--domain tax|legal|hr-ai|api|accounting|rcm|msp|procurement|voice`), or a smart-contract audit (`--contracts`). Code review = 12 angles + skeptical triage (3 rounds + arbiter); `--deep` triages every P0/P1 angle, not just security/reliability; creates or closes gate:code. Domain review = the matching compliance reviewer writes docs/sec-threats/TM-<domain>-<slug>.md and raises its gate. Contracts = smart-contract-auditor writes docs/security/AUDIT-<slug>.md."
+argument-hint: "[PR/branch name | --deep | --domain <tax|legal|hr-ai|api|accounting|rcm|msp|procurement|voice> [arch-slug] | --contracts [--package] [path ...]]"
+user-invocable: true
+disable-model-invocation: true
+allowed-tools: Read, Write, Bash, Glob, Grep, Agent, advisor_20260301
+model: sonnet
+advisor-model: claude-opus-5
+advisor-max-uses: 2
+beta: advisor-tool-2026-03-01
+---
+
+You are the great_cto `/review` command. Two modes:
+
+- **Code review** (default) — 12 independent angles over the branch diff, then skeptical triage.
+- **Domain compliance review** (`--domain <name>`) — one regulated-domain reviewer against the ARCH doc.
+- **Smart-contract audit** (`--contracts [path ...]`) — the Solidity/EVM code that exists, audited by `smart-contract-auditor`.
+
+Traceability (REQ → use-case → task → test) is **`/trace`**, not `/review`.
+
+## Contracts mode (`--contracts` — early branch, exits before the code review)
+
+Audits Solidity/EVM code that already exists — no ARCH doc needed, unlike domain mode.
+With no path, the auditor's own scope rule picks the production contracts and deploy
+scripts; a named path is always in scope.
+
+Use the Agent tool with `subagent_type: smart-contract-auditor` and prompt:
+
+> Audit the smart contracts in this repository{ — only: <paths> }. Follow your steps:
+> scope, build and tool inventory, the always-run analyzers, the system map, the
+> vector-by-vector review, four-gate proof with a Foundry PoC for Critical/High, deep
+> checks only if the contracts hold value or `--deep` was passed. Write
+> `docs/security/AUDIT-<slug>.md` and the verdict line.
+
+With `--package` (code headed to an external audit) add to that prompt:
+
+> This is prepare mode. Also write the threat model, the invariant specification, a
+> Foundry invariant suite under `test/invariant/<slug>/` that you ran, and the auditors'
+> package in `docs/security/audit-package-<slug>/` (Steps 4, 5b, 7, 9).
+
+Then report in ≤ 6 lines: the AUDIT file path (and the package folder with `--package`),
+Critical / High / Medium counts, invariants tested / specified, the tools that did **not** run, the verdict (PASS | FAIL | BLOCKED), and the next action — FAIL →
+fix and re-run `/review --contracts`; BLOCKED → the build or tool problem to fix first.
+**Do not continue into the code review below.**
+
+## Domain mode (`--domain` — early branch, exits before the code review)
+
+| Domain | Also accepts | Reviewer agent | Writes | What it checks | Gate · signs off |
+|--------|--------------|----------------|--------|----------------|------------------|
+| `tax` | `tax-review` | `tax-reviewer` | `TM-tax-{slug}.md` | IRS MeF e-file schema, Form 8879, PTIN / Circular 230, IRC §7216 consent | `gate:tax-filing-signoff` · EA/CPA compliance lead |
+| `legal` | `upl`, `upl-check` | `legal-reviewer` | `TM-legal-{slug}.md` | Unauthorized practice of law gating, IOLTA/trust accounting, privilege, conflict screening, e-filing redaction | `gate:upl-review` |
+| `hr-ai` | `hrai`, `aedt`, `aedt-bias-audit` | `hr-ai-reviewer` | `TM-hrai-{slug}.md` | AEDT scope; NYC LL 144, EEOC, Illinois AIVIA, Colorado SB 205, EU AI Act Annex III; bias-audit pipeline (4/5 rule, intersectional) | `gate:aedt-audit` |
+| `api` | `api-platform`, `api-contract-review` | `api-platform-reviewer` | `TM-api-{slug}.md` | Rate limits, OAuth scopes, webhook signing, idempotency, Sunset/deprecation, pagination, error envelope, versioning — critical before v1 GA | `gate:api-contract` |
+| `accounting` | `close`, `close-review` | `accounting-reviewer` | `TM-accounting-{slug}.md` | Double-entry integrity, ASC 606 revenue recognition, period lock, SOX ITGC | `gate:close-signoff` · controller / finance lead |
+| `rcm` | `coding`, `coding-audit` | `rcm-reviewer` | `TM-rcm-{slug}.md` | ICD-10-CM/CPT/HCPCS autonomous coding: False Claims Act exposure (upcoding/unbundling), NCCI PTP + MUE, LCD/NCD medical necessity, modifiers, HIPAA minimum-necessary | `gate:coding-signoff` · certified coder (CPC/CCS) |
+| `msp` | `msp-review` | `msp-reviewer` | `TM-msp-{slug}.md` | Client isolation, credential vaulting, SLA tracking, incident escalation | `gate:msp-controls` · security lead / MSP operations |
+| `procurement` | `procurement-review` | `procurement-reviewer` | `TM-procurement-{slug}.md` | Three-way match, segregation of duties, OFAC screening, SOX procurement controls | `gate:procurement-controls` · finance / controller |
+| `voice` | `voice-compliance` | `voice-ai-reviewer` | `TM-voice-{slug}.md` | TCPA, STIR/SHAKEN, state recording consent, EU AI Act Art. 50, synthetic-voice deepfake laws | `gate:voice-compliance` · regulatory lead |
+
+The "Also accepts" names are the former standalone commands (`/tax-review`, `/upl-check`, …),
+kept as aliases so `/review --domain upl-check` still means `legal`. A leading `/` is ignored.
+
+### Step D1 — Resolve the domain and the ARCH doc
+
+```bash
+DOMAIN=""; SLUG=""; _prev=""
+for arg in "$@"; do
+  case "$arg" in
+    --domain=*) DOMAIN="${arg#--domain=}" ;;
+    --*) ;;
+    *) if [ "$_prev" = "--domain" ]; then DOMAIN="$arg"; elif [ -z "$SLUG" ]; then SLUG="$arg"; fi ;;
+  esac
+  _prev="$arg"
+done
+
+# >>> resolve_domain
+resolve_domain() {
+  D="${1#/}"; D=$(printf '%s' "$D" | tr '[:upper:]' '[:lower:]')
+  SKIP_WITHOUT_SIGNALS=true
+  case "$D" in
+    tax|tax-review)
+      D=tax; AGENT=tax-reviewer; TM=tax; GATE=gate:tax-filing-signoff
+      SIGNALS='\bptin\b|circular 230|form 8879|\bmef\b|pub(lication)? 4557|section 7216|tax prep|e-file|irs|1040|efin' ;;
+    legal|upl|upl-check)
+      D=legal; AGENT=legal-reviewer; TM=legal; GATE=gate:upl-review
+      SIGNALS='matter|docket|litigation|retainer|iolta|clio|mycase|pacer|ecf|conflict.?check|engagement.?letter|paralegal|law.?firm|attorney' ;;
+    hr-ai|hrai|aedt|aedt-bias-audit)
+      D=hr-ai; AGENT=hr-ai-reviewer; TM=hrai; GATE=gate:aedt-audit
+      SIGNALS='recruit|hiring|candidate|resume|interview|ats|talent|performance review|workforce scheduling' ;;
+    api|api-platform|api-contract-review)
+      D=api; AGENT=api-platform-reviewer; TM=api; GATE=gate:api-contract
+      SIGNALS='openapi|graphql|grpc|webhook|public api|partner api|developer portal|api key|oauth|sdk' ;;
+    accounting|close|close-review)
+      D=accounting; AGENT=accounting-reviewer; TM=accounting; GATE=gate:close-signoff
+      SIGNALS='general ledger|\bgaap\b|asc.?606|journal entry|month.?end close|chart of accounts|1099|three.?way reconciliation|revenue recognition|sox.itgc' ;;
+    rcm|coding|coding-audit)
+      # An explicit rcm review runs even without signals — medical billing hides behind generic words.
+      D=rcm; AGENT=rcm-reviewer; TM=rcm; GATE=gate:coding-signoff; SKIP_WITHOUT_SIGNALS=false
+      SIGNALS='medical coding|icd-?10|cpt|hcpcs|drg|revenue cycle|\brcm\b|claim scrub|837|835|cms-?1500|ub-?04|e/m level|prior auth|charge capture|denial management|ncci|modifier|upcoding|payer' ;;
+    msp|msp-review)
+      D=msp; AGENT=msp-reviewer; TM=msp; GATE=gate:msp-controls
+      SIGNALS='\bmsa\b|\bsla\b|\brmm\b|\bpsa\b|multi.?tenant|managed service|credential vault|managed service provider' ;;
+    procurement|procurement-review)
+      D=procurement; AGENT=procurement-reviewer; TM=procurement; GATE=gate:procurement-controls
+      SIGNALS='purchase order|three.?way match|procurement|requisition|\brfp\b|\brfq\b|vendor onboarding|\bofac\b|punchout|cxml|spend analytics|maverick spend' ;;
+    voice|voice-compliance)
+      D=voice; AGENT=voice-ai-reviewer; TM=voice; GATE=gate:voice-compliance
+      SIGNALS='twilio|vonage|livekit|deepgram|elevenlabs|whisper|ivr|telephony|outbound call|inbound call|voice agent|tts|stt' ;;
+    *) AGENT=""; return 1 ;;
+  esac
+}
+# <<< resolve_domain
+
+if [ -n "$DOMAIN" ]; then
+  if ! resolve_domain "$DOMAIN"; then
+    echo "Unknown domain: $DOMAIN"
+    echo "Use one of: tax · legal · hr-ai · api · accounting · rcm · msp · procurement · voice"
+    exit 1
+  fi
+  if [ -z "$SLUG" ]; then
+    ARCH=$(ls docs/architecture/ARCH-*.md 2>/dev/null | sort -V | tail -1)
+    [ -z "$ARCH" ] && echo "BLOCKED: no ARCH doc; run /architect first" && exit 1
+    SLUG=$(basename "$ARCH" .md | sed 's/^ARCH-//')
+  else
+    ARCH="docs/architecture/ARCH-${SLUG}.md"
+    [ ! -f "$ARCH" ] && echo "BLOCKED: $ARCH not found" && exit 1
+  fi
+  echo "Domain review: $D → $AGENT on $ARCH"
+
+  HITS=$(grep -ciE "$SIGNALS" "$ARCH" .great_cto/PROJECT.md 2>/dev/null | awk -F: '{s+=$NF} END {print s+0}')
+  echo "$D signal hits: $HITS"
+  if [ "$HITS" -eq 0 ]; then
+    if [ "$SKIP_WITHOUT_SIGNALS" = true ]; then
+      echo "No $D signals in ARCH or PROJECT.md — skipping $D review."
+      exit 0
+    fi
+    echo "No $D signals found — running anyway (explicit --domain $D)."
+  fi
+fi
+```
+
+### Step D2 — Invoke the reviewer
+
+Use the Agent tool with `subagent_type: $AGENT` and prompt:
+
+> Review `docs/architecture/ARCH-${SLUG}.md` and `.great_cto/PROJECT.md`.
+> Produce `docs/sec-threats/TM-${TM}-${SLUG}.md` using the template at
+> `skills/great_cto/templates/TM-${TM}.md`. Report critical/high findings,
+> raise `${GATE}` when a human sign-off is due, and append the HANDOFF block.
+> Verdict: signed-off or blocked.
+
+For `rcm` add: every autonomously assigned code needs a documentation-evidence trace (the
+False Claims Act defence); set the confidence floor and the FCA-high patterns that escalate to a
+certified coder.
+
+### Step D3 — Report, then stop
+
+In ≤ 6 lines: the TM file path, Critical / High counts, verdict (signed-off | blocked), gates
+raised, and the next action — blocked → fix the critical items and re-run; signed-off → the
+sign-off owner from the table approves the gate. Add the one domain-specific line the table's
+"What it checks" column implies (AEDT in/out of scope for `hr-ai`, UPL-gated surfaces and
+conflict-check status for `legal`, FCA-high paths needing a coder for `rcm`, SLA targets for
+`api`). Do not restate the threat model. **Do not continue into the code review below.**
+
+## Setup
+
+```bash
+[ "$1" = "trace" ] && { echo "Traceability moved to /trace — run: /trace ${2:-<bd-id|feature slug>}"; exit 0; }
+source .great_cto/env.sh 2>/dev/null || export PATH="/opt/homebrew/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+REVIEW_MODE=$(grep "^approval-level:" .great_cto/PROJECT.md 2>/dev/null | awk '{print $2}'); REVIEW_MODE=${REVIEW_MODE:-auto}
+TYPE=$(grep "^primary:" .great_cto/PROJECT.md 2>/dev/null | awk '{print $2}')
+ARCHETYPE=$(grep "^archetype:" .great_cto/PROJECT.md 2>/dev/null | awk '{print $2}'); ARCHETYPE=${ARCHETYPE:-web-service}
+
+# Parse --deep flag (triage all P0/P1 angles, not just security/reliability)
+DEEP_TRIAGE=false
+DIFF_TARGET=""
+for arg in "$@"; do
+  case "$arg" in
+    --deep) DEEP_TRIAGE=true ;;
+    --*) ;;  # unknown flag, ignore (--domain never reaches here: domain mode exited above)
+    *) [ -z "$DIFF_TARGET" ] && DIFF_TARGET="$arg" ;;
+  esac
+done
+
+# Get diff scope
+if [ -n "$DIFF_TARGET" ]; then
+  git diff main..."$DIFF_TARGET" --name-only 2>/dev/null | head -30
+  DIFF=$(git diff main..."$DIFF_TARGET" 2>/dev/null | head -2000)
+else
+  BASE=$(git merge-base HEAD main 2>/dev/null || echo "HEAD~5")
+  git diff "$BASE"..HEAD --name-only 2>/dev/null | head -30
+  DIFF=$(git diff "$BASE"..HEAD 2>/dev/null | head -2000)
+fi
+echo "Files changed: $(git diff "$BASE"..HEAD --name-only 2>/dev/null | wc -l)"
+echo "Deep triage mode: $DEEP_TRIAGE  (triage ALL P0/P1 angles, not just 2/4/7/9)"
+
+# Detect design system (for Angle 12)
+DESIGN_SYSTEM="none"
+grep -rl "MaterialTheme\|androidx.compose.material3" . --include="*.kt" 2>/dev/null | head -1 | grep -q . && DESIGN_SYSTEM="material3"
+grep -rl "tailwind\|@apply\|className=" . --include="*.tsx" --include="*.jsx" --include="*.css" 2>/dev/null | head -1 | grep -q . && DESIGN_SYSTEM="tailwind"
+grep -rl "SwiftUI\|\.foregroundStyle\|Color\.accentColor" . --include="*.swift" 2>/dev/null | head -1 | grep -q . && DESIGN_SYSTEM="swiftui"
+grep -rl "StyleSheet\.create\|useTheme\|ThemeProvider" . --include="*.tsx" --include="*.ts" 2>/dev/null | head -1 | grep -q . && [ "$DESIGN_SYSTEM" = "none" ] && DESIGN_SYSTEM="rn-custom"
+echo "Design system detected: $DESIGN_SYSTEM"
+```
+
+## Cache discipline
+
+Setup above produces the **stable prefix** shared across all 12 angles: archetype, design-system detection, and the full `$DIFF`. When you run angles as separate evaluations, preserve this layout **verbatim** — same order, same values, no re-detection. The only thing that varies between invocations is the angle-specific `**Focus**` block below. Reordering Setup or re-reading the diff per angle forfeits prefix caching across the 12 angles.
+
+## Finding discipline — coverage before filter (applies to every angle)
+
+This harness has two stages: **finding** (the 12 angles below) and **filter** (Skeptical
+Triage + arbiter, further down). They have different jobs — do not conflate them.
+
+At the **finding stage your job is coverage, not filtering.** Report every issue you find,
+including ones you are uncertain about or judge low-severity. Do not silently drop a finding
+because it feels minor or you are not fully sure — the triage stage exists precisely to rank
+and discard. It is better to surface a finding that triage later filters out than to drop a
+real bug at the finding stage.
+
+Concretely, for **every** angle:
+- Emit a one-line entry for **each** finding at **every** severity — P0, P1 **and P2** — plus
+  any borderline/uncertain item, not just P0/P1. (Below, the per-angle output details P0/P1;
+  additionally list each P2 / uncertain item as a single `FILE:LINE — <issue>  [P2|conf:low]`
+  line so it reaches triage rather than collapsing to a bare count.)
+- Tag every finding with **severity** (P0/P1/P2) AND a **confidence** (high / med / low). The
+  downstream triage uses both to rank; your job is to populate them honestly, not to pre-filter.
+- Do not generalize an instruction from one item to the next — review **every** changed hunk,
+  not a representative sample.
+
+Why this matters: the current model investigates as deeply as before but, told to "report
+blockers," will faithfully report fewer of the low-severity/uncertain ones. Coverage here +
+filtering at triage restores recall without raising false-positive gate blocks.
+
+## Angle 1 — Performance Reviewer
+
+**Focus**: latency, memory, unnecessary computation, N+1 queries, missing caching, unbounded loops.
+
+Review the diff for:
+- Database queries inside loops (N+1 anti-pattern)
+- Missing indexes on filtered/sorted columns
+- Synchronous blocking calls where async exists
+- Unbounded result sets (no pagination, no LIMIT)
+- Large object allocation in hot paths
+- Missing cache where repeated computation is obvious
+- Regex compiled on every call instead of pre-compiled
+
+Rate each finding: **P0** (will cause production incident) / **P1** (measurable degradation under load) / **P2** (optimization opportunity).
+
+Output format:
+```
+## Reviewer 1: Performance
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <issue description>
+  Impact: <what happens under load>
+  Fix: <specific change>
+
+[If no P0/P1: "No performance blockers found."]
+```
+
+## Angle 2 — Security Reviewer
+
+**Focus**: injection, auth bypass, information disclosure, insecure defaults, secret handling.
+
+Review the diff for:
+- SQL/NoSQL injection: raw query string interpolation
+- Command injection: unsanitized input in exec/spawn/system calls
+- Auth bypass: missing auth check on new routes/endpoints
+- IDOR: direct object reference without ownership check
+- Secrets: API keys, tokens, passwords in code or logs
+- XSS: unescaped user input in HTML/template output
+- Insecure deserialization: user-controlled pickle/eval/JSON.parse with reviver
+- SSRF: URL constructed from user input without allowlist
+
+Rate: **P0** (exploitable in production) / **P1** (potential attack vector) / **P2** (hardening opportunity).
+
+Output format:
+```
+## Reviewer 2: Security
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <vulnerability type>
+  Attack vector: <how an attacker exploits this>
+  Fix: <specific change>
+
+[If no P0/P1: "No security blockers found."]
+```
+
+## Angle 3 — Readability Reviewer
+
+**Focus**: clarity, naming, complexity, test coverage of new code, missing error handling.
+
+Review the diff for:
+- Functions >50 lines without a clear single responsibility
+- Variable names that require context to understand (a, tmp, data, obj)
+- Missing error handling on operations that can fail (network, I/O, parsing)
+- Tests missing for new public functions/endpoints
+- Magic numbers or strings without named constants
+- Commented-out code left in
+- Boolean parameters that make call sites unreadable (`doThing(true, false, null)`)
+
+Rate: **P1** (will cause maintenance incidents or confusion leading to bugs) / **P2** (code health).
+
+Output format:
+```
+## Reviewer 3: Readability
+Findings: P1:N P2:N
+
+[For each P1:]
+  FILE:LINE — <issue>
+  Why it matters: <maintenance or bug risk>
+  Fix: <specific change>
+
+[If no P1: "No readability blockers found."]
+```
+
+## Angle 4 — SQL Safety Reviewer
+
+**Focus**: injection, N+1 patterns, unbounded queries, missing transactions.
+
+Review for:
+- Raw string interpolation in SQL queries (not parameterized)
+- ORM calls inside loops (N+1 anti-pattern)
+- Missing `LIMIT` on queries that can return unbounded rows
+- Mutations (INSERT/UPDATE/DELETE) outside a transaction block
+- Missing indexes implied by new WHERE / ORDER BY clauses
+- Soft-delete logic that could expose deleted records
+
+Rate: **P0** (injection/data exposure) / **P1** (N+1, unbounded result) / **P2** (style/optimization).
+
+Output format:
+```
+## Reviewer 4: SQL Safety
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <issue>
+  Risk: <what breaks or leaks>
+  Fix: <specific change>
+
+[If no P0/P1: "No SQL safety blockers found."]
+```
+
+## Angle 5 — LLM Trust Boundaries (skip if archetype ≠ ai-system)
+
+```bash
+[ "$ARCHETYPE" = "ai-system" ] || echo "SKIP: not an AI system" && exit 0
+```
+
+**Focus**: prompt injection, output sanitization, tool-call trust, hallucination guards.
+
+Review for:
+- User input injected directly into system prompt without sanitization
+- LLM output used in shell exec / DB query / file write without validation
+- Missing output schema validation (relying on LLM to return valid JSON)
+- Tool calls whose results are trusted without bounds checking
+- PII passed to external LLM API without masking
+- Missing retry/fallback when LLM returns malformed output
+
+Rate: **P0** (prompt injection exploitable, PII leak) / **P1** (trust boundary missing) / **P2** (hardening).
+
+Output format:
+```
+## Reviewer 5: LLM Trust Boundaries
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <issue>
+  Attack path: <how it's exploited>
+  Fix: <specific change>
+
+[If no P0/P1: "No LLM trust issues found." OR "SKIPPED — not ai-system archetype."]
+```
+
+## Angle 6 — Conditional Side Effects Reviewer
+
+**Focus**: operations that happen as unintended consequences of control flow.
+
+Review for:
+- Side effects (DB write, email send, payment charge) inside `if` branches where the condition is about something else
+- Functions that mutate state AND return a value — hidden mutation
+- Early `return` paths that skip required cleanup (file close, lock release, metric recording)
+- Retry logic that could trigger the same side effect multiple times
+- Event emission inside a loop (N events when 1 was intended)
+
+Rate: **P1** (data corruption, duplicate charges) / **P2** (code smell).
+
+Output format:
+```
+## Reviewer 6: Conditional Side Effects
+Findings: P1:N P2:N
+
+[For each P1:]
+  FILE:LINE — <issue>
+  Consequence: <what happens unexpectedly>
+  Fix: <specific change>
+
+[If no P1: "No conditional side effect issues found."]
+```
+
+## Angle 7 — Data Privacy Reviewer
+
+**Focus**: PII logging, over-collection, retention policy gaps.
+
+Review for:
+- Logging statements that include email, phone, SSN, IP, or token values
+- PII fields stored without encryption at rest
+- Full request/response bodies logged (may contain auth tokens, PII)
+- User-controlled data returned in error messages (information disclosure)
+- Missing data classification on new DB columns containing PII
+- Analytics events that include more user data than needed
+
+Rate: **P0** (regulatory violation — GDPR/HIPAA breach) / **P1** (PII in logs/errors) / **P2** (over-collection).
+
+Output format:
+```
+## Reviewer 7: Data Privacy
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <issue>
+  Regulation: <GDPR / HIPAA / CCPA>
+  Fix: <specific change>
+
+[If no P0/P1: "No data privacy issues found."]
+```
+
+## Angle 8 — Error Handling Reviewer
+
+**Focus**: swallowed exceptions, missing retries, unclear failure modes.
+
+Review for:
+- `catch` blocks that log and swallow the error without propagating or alerting
+- Network/I/O calls with no timeout set
+- External API calls with no retry on transient errors (429, 503)
+- `Promise.all` without error handling (one rejection kills all)
+- Error messages exposed to the user that include stack traces or internal paths
+- Operations that silently succeed when they should have failed (no return value check)
+
+Rate: **P0** (silent data loss) / **P1** (swallowed error hides real failure) / **P2** (robustness gap).
+
+Output format:
+```
+## Reviewer 8: Error Handling
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <issue>
+  Failure mode: <what breaks silently>
+  Fix: <specific change>
+
+[If no P0/P1: "No error handling blockers found."]
+```
+
+## Angle 9 — Concurrency Reviewer
+
+**Focus**: race conditions, deadlocks, shared mutable state.
+
+Review for:
+- Shared mutable state accessed from multiple goroutines/threads without synchronization
+- `async/await` patterns where parallel operations share state
+- Read-modify-write on DB records without `SELECT FOR UPDATE` or optimistic locking
+- Lock acquisition order inconsistency (deadlock risk)
+- Unbounded goroutine/thread spawning inside a loop
+- Cache stampede: multiple concurrent misses all hitting the source
+
+Rate: **P0** (data corruption, deadlock in prod) / **P1** (race condition under load) / **P2** (potential issue under scale).
+
+Output format:
+```
+## Reviewer 9: Concurrency
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <issue>
+  Trigger: <what load/condition exposes it>
+  Fix: <specific change>
+
+[If no P0/P1: "No concurrency issues found."]
+```
+
+## Angle 10 — Dependency Freshness Reviewer
+
+**Focus**: outdated, abandoned, or vulnerable direct dependencies added in this diff.
+
+Review for:
+- New `import`/`require`/`use` statements added in the diff — check if the package is recent and maintained
+- `package.json` / `requirements.txt` / `go.mod` / `Cargo.toml` changes adding pinned old versions
+- Dependencies pinned to a version >12 months old when a newer major is available
+- Packages with known CVEs in the version range being added
+- Packages with 0 downloads/stars or last commit >2 years ago (abandoned)
+
+```bash
+# Check npm packages added in diff
+grep '^\+.*"version"' package.json 2>/dev/null | head -10
+# Check Python packages
+grep '^\+' requirements*.txt 2>/dev/null | grep -v "^+++" | head -10
+```
+
+Rate: **P1** (known CVE in added version) / **P2** (outdated / abandoned).
+
+Output format:
+```
+## Reviewer 10: Dependency Freshness
+Findings: P1:N P2:N
+
+[For each P1:]
+  PACKAGE@VERSION — <CVE or abandonment reason>
+  Fix: upgrade to <version> or replace with <alternative>
+
+[If no P1: "No dependency freshness issues found."]
+```
+
+## Angle 11 — API Contracts Reviewer
+
+**Focus**: breaking changes to APIs consumed by external callers.
+
+Review for:
+- Removing or renaming a field from a response object (breaking consumers)
+- Changing a field type (string → number, optional → required)
+- Removing an endpoint or HTTP method
+- Changing URL path parameters
+- Changing error response format or HTTP status codes in error cases
+- gRPC/Protobuf: removing fields, renumbering field IDs
+- Event schema changes (Kafka/SQS message format)
+
+Rate: **P0** (breaks existing callers with no migration path) / **P1** (deprecation without notice) / **P2** (additive, backwards-compatible change).
+
+Output format:
+```
+## Reviewer 11: API Contracts
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <breaking change>
+  Impact: <which callers break>
+  Fix: version the endpoint OR provide migration path OR add deprecation header
+
+[If no P0/P1: "No API contract violations found."]
+```
+
+## Angle 12 — Design System Reviewer (skip if archetype ≠ mobile-app and archetype ≠ web-service)
+
+```bash
+{ [ "$ARCHETYPE" = "mobile-app" ] || [ "$ARCHETYPE" = "web-service" ]; } || { echo "SKIPPED — not mobile-app or web-service archetype."; exit 0; }
+```
+
+**Focus**: design token usage, accessibility, component consistency, dark mode safety.
+
+Detect which design system is in use (`$DESIGN_SYSTEM`) and apply the matching token vocabulary:
+
+| System | Color tokens | Typography tokens | Spacing |
+|--------|-------------|-------------------|---------|
+| `material3` | `MaterialTheme.colorScheme.*` | `MaterialTheme.typography.*` | `dp` via `Dimens` |
+| `tailwind` | `text-primary`, `bg-surface-*` | `text-sm`, `font-semibold` | `p-4`, `gap-2` |
+| `swiftui` | `Color.accentColor`, `.background` | `.font(.title)` | `padding()`, `spacing:` |
+| `rn-custom` / other | `theme.colors.*` | `theme.typography.*` | `theme.spacing.*` |
+
+Review the diff for:
+- **Hardcoded colors** — hex values (`#1A73E8`, `Color(0xFF...)`, `rgb(...)`) or raw named colors (`Color.Blue`, `UIColor.blue`) instead of design system tokens. These break dark mode and theming.
+- **Hardcoded typography** — literal font sizes (`fontSize: 16`, `.font(.system(size: 14))`, `text-[14px]`) instead of type scale tokens.
+- **Hardcoded spacing** — magic pixel/dp values (`padding: 12`, `Modifier.padding(16.dp)`) instead of spacing scale or named constants.
+- **Wrong components** — raw primitives used when a design system component exists (e.g. `<div onClick>` instead of `<Button>`, `Box` instead of `Card`, raw `<input>` instead of `TextField`).
+- **Accessibility violations**:
+  - Images/icons without `contentDescription` / `aria-label` / `accessibilityLabel`
+  - Touch targets smaller than 48dp (Android) or 44pt (iOS)
+  - Interactive elements without focus indicator
+  - Color-only information (error state shown only in red with no icon/text)
+- **Elevation/shadow** — hardcoded shadow values instead of design system elevation (`elevation = 4` in Material without `CardDefaults.cardElevation`, raw `box-shadow` in CSS without token)
+- **Dark mode safety** — colors that look fine in light mode but are unreadable in dark mode (e.g. `Color.Black` on a surface that inverts, or `#FFFFFF` text hardcoded in a dark-mode-capable component)
+- **Motion/animation** — hardcoded animation durations (`animateDpAsState(durationMillis = 300)`, `transition: all 0.3s`) instead of design system motion tokens where available
+- **AI-default house style** (non-editorial archetypes) — the model's built-in editorial aesthetic creeping into a dashboard / dev-tool / fintech / healthcare / enterprise UI: warm cream/off-white backgrounds (`#F4F1EA`-ish), serif display type (Georgia, Fraunces, Playfair), terracotta/amber accents, oversized italic word-accents, hospitality-landing layout. Flag as P2 (P1 if it actively hurts density/legibility of a data-dense console). Also flag generic AI slop: Inter/Roboto/system fonts + purple-gradient-on-white.
+
+Rate:
+- **P0** — accessibility violation that blocks users (missing label on interactive element, touch target < 32dp, color contrast < 3:1 for large text / 4.5:1 for normal text)
+- **P1** — hardcoded value that breaks theming or dark mode
+- **P2** — wrong component choice, inconsistent spacing, missing motion token
+
+Output format:
+```
+## Reviewer 12: Design System
+Design system: <detected or "not detected — checking generic patterns">
+Findings: P0:N P1:N P2:N
+
+[For each P0/P1:]
+  FILE:LINE — <issue: what was used vs. what should be used>
+  Impact: <breaks dark mode / inaccessible / theme inconsistent>
+  Fix: <specific token or component to use instead>
+
+[If no P0/P1: "No design system violations found." OR "SKIPPED — not mobile-app or web-service archetype."]
+```
+
+## Merge duplicates (before triage)
+
+Several angles often report the same bug (Security, SQL Safety and Data Privacy all flag one
+string-built query). Merge them first so each bug is triaged **once**. Write the in-scope P0/P1
+findings (scope below) as a JSON array — one object per angle finding:
+`{"file","line","severity","title","evidence","angle"}` (`evidence` = the quoted code line, if any) — then:
+
+```bash
+PD=${CLAUDE_PLUGIN_ROOT:-.}
+node "$PD/scripts/lib/findings-dedupe.mjs" .great_cto/review-findings.json > .great_cto/review-groups.json
+# stderr: findings-dedupe: N raw → M unique
+```
+
+Same file + lines within ±3 + same normalised evidence (or title overlap ≥ 0.6) → one group,
+carrying the max severity and every angle that raised it. Triage each **group** below, not each
+raw finding; list its `sources` in the triage output (`[ANGLE]` → `[security, sql-safety]`).
+Report `N raw → M unique` in the Triage Summary. Never merges across files.
+
+## Skeptical Triage
+
+**This is the filter stage.** The angles above optimise for coverage (surface everything); this
+stage ranks and discards. Apply the **skeptical-triage skill** (`skills/skeptical-triage/SKILL.md`)
+to reduce false-positive gate:code blocks before counting findings — its rigour is what makes the
+upstream coverage mandate safe.
+
+**Scope** (depends on `--deep` flag):
+- **Default:** P0/P1 findings from Angles 2 (Security), 4 (SQL Safety), 7 (Data Privacy), 9 (Concurrency)
+- **`--deep`:** P0/P1 findings from **all** angles (Performance, Readability, Side Effects, Error Handling, Dependency Freshness, API Contracts, Design System included)
+
+P2 and low-confidence findings bypass the 3-round triage (cost > value) but are **kept in the
+report** as a triage-skipped backlog — never silently dropped. They don't block the gate; they
+give the human signer and the next iteration the full picture. (A P2 is only discarded if an
+angle itself retracts it.)
+
+For each in-scope finding, run the 4-step pattern from the skill:
+1. **Round 1 — Reachability:** attacker path / premise check
+2. **Round 2 — Verify defenses:** grep cited constants + implementations; resolve to numeric values
+3. **Round 3 — Missed angles:** error paths, integer edges, races, different callers
+4. **Arbiter:** final VALID/INVALID + one-sentence `crux`
+
+Apply hard rules from the skill (absence of defense → VALID; code quality ≠ security; name the line or it does not exist).
+
+**Confidence** = `valid_rounds / 3`. Severity action (per skill):
+- `INVALID` → filtered from gate tally, recorded as `[FILTERED]` for audit
+- `VALID` ≥ 50% conf → keep original severity
+- `VALID` < 50% conf → demote P0→P1, P1→P2
+- `UNCERTAIN` → keep severity, flag for manual review
+
+**Output per triaged finding:**
+```
+[FINDING-ID] [ANGLE] FILE:LINE — <title>
+  Rounds: [V V I → V]   Confidence: 67%
+  Crux: <one-sentence key fact the verdict turns on>
+  Verdict: VALID (arbiter)
+  Fix: <specific change>
+```
+
+**Log every triage to** `.great_cto/triage-log.jsonl` (append-only, one JSON per line, schema in skill). This is how we measure whether triage earns its keep — review weekly.
+
+```
+## Triage Summary
+Scope: [security/reliability only | --deep: all angles]
+Deduped: N raw → M unique (findings-dedupe)
+Triaged: M groups
+  ✅ VALID:     M  (🔥≥90% ✅≥70% 🤔≥50%)
+  ❌ INVALID:   K  (filtered from gate)
+  ❓ UNCERTAIN: L  (kept at original severity, manual review)
+```
+
+## Verdict + Gate
+
+Tally all findings. If `--deep`: use post-triage severities for all angles. Otherwise: post-triage for Angles 2/4/7/9; original for the rest.
+```bash
+# Total counts across all 12 angles
+# For triaged angles (2,4,7,9): count only findings with verdict != INVALID,
+# applying demotions from confidence < 0.5
+echo "P0 (post-triage): [sum]"
+echo "P1 (post-triage): [sum]"
+echo "P2:              [sum]"
+```
+
+**SPEC-OBJECTION decision (structural errors escalate to the CTO gate, ADR-005):**
+
+A code finding gets a `gate:code`. But if a P0 finding is **structural — the
+approved spec itself is wrong** (wrong data model, wrong integration surface, an
+invalidated assumption), `gate:code` is the wrong gate: the fix isn't in the code,
+it's in the spec. Raise a `SPEC-OBJECTION` instead, which re-opens `gate:plan` for
+the CTO (mid-build escape hatch — `docs/strategy/MID-BUILD-RECOVERY.md`):
+```bash
+# Only for STRUCTURAL P0s (spec/architecture/data-model/integration-surface):
+scripts/log-verdict.sh review SPEC-OBJECTION auto feature="<slug>" reason="<structural spec error>"
+bd create "gate:plan — SPEC-OBJECTION: structural spec error found mid-build, CTO decision needed" \
+  --type task --priority 0 --label gate 2>/dev/null
+echo "SPEC-OBJECTION raised — re-opens gate:plan. See /inbox. Do NOT keep building on the bad spec."
+```
+
+**Gate:code decision (code-level findings):**
+
+If P0 > 0 OR (approval-level = strict AND P1 > 0) **after triage**:
+```bash
+GATE_ID=$(bd create "gate:code — review findings require resolution before QA" \
+  --type task --priority 0 --label gate 2>/dev/null | grep -oE '[0-9]+' | head -1)
+echo "gate:code CREATED (ID: $GATE_ID) — resolve P0/P1 findings, then re-run /review"
+```
+If bd unavailable: append to `.great_cto/tasks.md`: `[GATE:CODE] <feature> — P0:N P1:N findings — resolve before QA.`
+
+If P0 = 0 AND (P1 = 0 OR approval-level = auto):
+```bash
+# Close existing gate:code if present
+# `bd list` prints a status symbol first — `○ ck-9lv ● P2 <title>` — so $1 is `○`,
+# not the id. Every bd command that followed was run against a bullet character and
+# failed silently. Match the id by shape, the way phase-task.sh already does.
+EXISTING=$(bd list --label gate --status open 2>/dev/null | grep "gate:code" | grep -oE '[a-zA-Z][a-zA-Z0-9_-]+-[a-z0-9]+' | head -1)
+[ -n "$EXISTING" ] && bd close "$EXISTING" "Review clean — P0:0 P1:[count]" 2>/dev/null
+echo "Code review: CLEAN — no gate:code needed. Proceed to qa-engineer."
+```
+
+**Log verdict:**
+This wrote the log directly, in the space dialect `<ts> <verdict> <details>` —
+with `code-review` sitting in the verdict slot. Every `/review` run therefore
+recorded its verdict as **CODE-REVIEW**, and the board displayed that instead of
+whether the review passed. Use the canonical writer, which names the fields:
+
+```bash
+_LV=$(ls ~/.claude/plugins/cache/*/great_cto/*/scripts/log-verdict.sh 2>/dev/null | awk -F'/plugins/cache/' '{split($NF,p,"/"); print p[3], $0}' | sort -V | tail -1 | cut -d' ' -f2-)
+[ -z "$_LV" ] && _LV="scripts/log-verdict.sh"
+
+# The verdict is the OUTCOME: a P0 blocks, anything else passes.
+if [ "<P0_post>" -gt 0 ]; then VERDICT=BLOCKED; else VERDICT=APPROVED; fi
+
+bash "$_LV" code-review "$VERDICT" "${REVIEW_COST:-0}" \
+  p0=<P0_post> p1=<P1_post> p2=<P2> mode="$REVIEW_MODE" angles=12 \
+  archetype="$ARCHETYPE" triaged=<triaged_count> valid=<valid_count> invalid=<invalid_count>
+```
+
+## Summary
+
+```
+/review complete — [N] files reviewed — 12 angles + skeptical triage
+
+Reviewer 1  (Performance):         P0:N P1:N P2:N
+Reviewer 2  (Security):            P0:N P1:N P2:N   [triaged: V:N I:N U:N]
+Reviewer 3  (Readability):         P0:N P1:N P2:N
+Reviewer 4  (SQL Safety):          P0:N P1:N P2:N   [triaged: V:N I:N U:N]
+Reviewer 5  (LLM Trust):           P0:N P1:N P2:N  [or SKIPPED]
+Reviewer 6  (Side Effects):        P1:N P2:N
+Reviewer 7  (Data Privacy):        P0:N P1:N P2:N   [triaged: V:N I:N U:N]
+Reviewer 8  (Error Handling):      P0:N P1:N P2:N
+Reviewer 9  (Concurrency):         P0:N P1:N P2:N   [triaged: V:N I:N U:N]
+Reviewer 10 (Dependency Freshness):P1:N P2:N
+Reviewer 11 (API Contracts):       P0:N P1:N P2:N
+Reviewer 12 (Design System):       P0:N P1:N P2:N  [or SKIPPED — <archetype>]
+──────────────────────────────────────────────────
+Raw total:                         P0:N P1:N P2:N
+Post-triage total:                 P0:N P1:N P2:N   [N filtered, N demoted]
+
+Top validated findings (sorted by confidence):
+  🔥 100% [VVV→V] FILE:LINE — <title>  CRUX: <key fact>
+  ✅  67% [VIV→V] FILE:LINE — <title>  CRUX: <key fact>
+  🤔  33% [IIV→I] FILE:LINE — <title>  [FILTERED — arbiter INVALID]
+
+Verdict: [CLEAN — proceed to /qa-engineer] OR [BLOCKED — gate:code created (ID: N)]
+[If blocked: list top 3 VALID findings to fix, highest confidence first]
+```

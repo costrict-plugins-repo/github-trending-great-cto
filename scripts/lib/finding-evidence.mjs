@@ -1,0 +1,299 @@
+#!/usr/bin/env node
+/**
+ * finding-evidence — a finding must carry the command that proves it.
+ *
+ * Why this exists
+ * ---------------
+ * The Structured Findings Format already asks for problems that are
+ * "evidence-backed". That is an adjective. Nothing reads it, nothing rejects a
+ * finding without evidence, and the failure it permits is the expensive one: an
+ * agent writes "the secret is not set" because it looks true, and the sentence
+ * is indistinguishable from one produced by running `grep` and reading the
+ * output. A reviewer cannot tell them apart either — a fluent wrong finding is
+ * exactly what plausibility-checking approves.
+ *
+ * So the check does not judge the prose. It asks whether the agent touched the
+ * world: a claim about live state carries the command it ran and that command's
+ * raw output, or it is a hypothesis and must say so.
+ *
+ * The status vocabulary is the existing one (scripts/lib/proof-status.mjs) —
+ * `passed` / `failed` are results, `not_run` / `inconclusive` are the two ways
+ * of not knowing, and neither may be rendered as a result. A finding whose
+ * evidence is not_run or inconclusive is a hypothesis: real, worth recording,
+ * and not a finding.
+ *
+ * Shape it enforces:
+ *
+ *   ### [High] Session secret is unset in production
+ *
+ *   - **Location**: `packages/board/lib/config.mjs:12`
+ *   - **Problem**: …
+ *   - **Evidence**: failed
+ *     ```
+ *     $ grep -n SESSION_SECRET .env.production
+ *     (no output — exit 1)
+ *     ```
+ *   - **Why it matters**: …
+ *   - **Recommended fix**: …
+ *
+ * A quoted passage is evidence too, and the cheapest kind to invent. Given a
+ * working directory (the CLI always passes one), every "quoted passage" or
+ * `> …` block paired with a file citation is looked up in that file by
+ * scripts/lib/quote-verify.mjs. A quote that is not there makes the finding
+ * invalid — under Hypotheses as well, because an invented quotation is not an
+ * open question. The honest alternative is a paraphrase marked `(paraphrase)`.
+ *
+ * CLI:
+ *   node scripts/lib/finding-evidence.mjs <report.md>... [--strict] [--json] [--no-quotes]
+ */
+
+import { PROOF, PROOF_VALUES, isProofStatus } from './proof-status.mjs';
+import { verifyQuotesInText, isVerified, QUOTE_STATUS } from './quote-verify.mjs';
+
+/** A heading that opens a finding: `### [Severity] Title`. */
+const FINDING_HEAD = /^#{2,4}\s*\[([^\]]+)\]\s*(.+?)\s*$/;
+
+/**
+ * Values that are syntactically present and semantically absent.
+ *
+ * The same list guards deploy secrets (scripts/lib/deploy-preflight.mjs), and it
+ * belongs here for the same reason: a model that has nothing to put in a field
+ * does not leave it empty, it fills it with something field-shaped. `<none>` in
+ * an Evidence block is the absence of evidence wearing evidence's clothes, and a
+ * check that accepts it passes exactly where it matters.
+ *
+ * Borrowed from a write-up of an MCP multiplexer that hit this at the argument
+ * layer — `undefined`, `null`, `<none>`, `<unknown>` arriving as literal strings
+ * — and concluded the same thing this repo keeps concluding: a prohibition in a
+ * prompt is a probability, the same rule in code is a constraint.
+ */
+// `<anything>` is covered as a class rather than by listing the variants: a
+// model inventing a stand-in reaches for angle brackets, and enumerating
+// `<none>`, `<unknown>`, `<command>`, `<output>` one at a time guarantees the
+// next one is missed. Dashes include the em and en forms — a lone `—` is what
+// a table cell gets when there is nothing to put in it.
+const PLACEHOLDER = /^(n\/?a|none|null|undefined|unknown|tbd|todo|xxx+|\.\.\.|[-–—]{1,3}|placeholder|no output|\(output\)|omitted|truncated|snip+ed?|<[^>]*>)$/i;
+
+/** Headings under which an unproven claim is allowed to live. */
+const HYPOTHESIS_SECTION = /^#{1,4}\s*(hypothes[ie]s|unverified|open questions|to investigate)\b/i;
+
+/**
+ * Split a report into finding blocks, remembering whether each sits under a
+ * hypotheses heading — because the same text is a defect in one section and a
+ * question in the other.
+ *
+ * @returns {Array<{severity, title, body, line, underHypotheses}>}
+ */
+export function parseFindings(text) {
+  const lines = String(text ?? '').split('\n');
+  const out = [];
+  let cur = null;
+  let underHypotheses = false;
+  let inFence = false;
+
+  const close = (end) => { if (cur) { cur.body = lines.slice(cur.line, end).join('\n'); out.push(cur); cur = null; } };
+
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    // A heading inside a fenced block is not a heading — a `# comment` in a
+    // shell example must not end the finding that quotes it.
+    if (/^\s*(```|~~~)/.test(l)) { inFence = !inFence; continue; }
+    if (inFence) continue;
+
+    if (/^#{1,4}\s/.test(l)) {
+      const head = l.match(FINDING_HEAD);
+      if (head) {
+        close(i);
+        cur = { severity: head[1].trim(), title: head[2].trim(), line: i + 1, underHypotheses, body: '' };
+        continue;
+      }
+      // A plain heading ends the current finding and may switch the section.
+      close(i);
+      if (HYPOTHESIS_SECTION.test(l)) underHypotheses = true;
+      else if (/^#{1,4}\s/.test(l)) underHypotheses = false;
+    }
+  }
+  close(lines.length);
+  return out;
+}
+
+/** `- **Evidence**: <status>` → the status, or null when the field is absent. */
+export function evidenceStatus(body) {
+  const m = String(body ?? '').match(/^\s*[-*]?\s*\*\*Evidence\*\*\s*:\s*([a-z_]+)/mi);
+  if (!m) return null;
+  const s = m[1].toLowerCase();
+  return isProofStatus(s) ? s : s;   // returned as-is so the caller can name a bad value
+}
+
+/**
+ * The fenced block that follows the Evidence field, if any.
+ *
+ * The command and its output live together on purpose: a command with no output
+ * proves nothing was observed, and output with no command cannot be re-run by
+ * the person reading it.
+ */
+export function evidenceBlock(body) {
+  const text = String(body ?? '');
+  const at = text.search(/^\s*[-*]?\s*\*\*Evidence\*\*\s*:/mi);
+  if (at === -1) return null;
+  const after = text.slice(at);
+  const fence = after.match(/```[\w-]*\n([\s\S]*?)```/);
+  if (!fence) return null;
+  const lines = fence[1].split('\n');
+  const cmdIdx = lines.findIndex((l) => /^\s*(\$|>|#)?\s*\S/.test(l) && l.trim());
+  if (cmdIdx === -1) return null;
+  const command = lines[cmdIdx].replace(/^\s*[$>#]\s*/, '').trim();
+  const output = lines.slice(cmdIdx + 1).join('\n').trim();
+  return { command, output, raw: fence[1] };
+}
+
+/**
+ * Look up every quoted passage in the file it cites.
+ *
+ * `status` is in the proof vocabulary: `passed` / `failed` when quotes were
+ * checked, `not_run` when there was no working directory or nothing quoted —
+ * which says nothing about the finding either way.
+ *
+ * @returns {{status: string, results: object[], problems: string[]}}
+ */
+export function checkQuotes(body, { cwd, ci = false } = {}) {
+  if (!cwd) return { status: PROOF.NOT_RUN, results: [], problems: [] };
+  const results = verifyQuotesInText(body, { cwd, ci });
+  if (!results.length) return { status: PROOF.NOT_RUN, results, problems: [] };
+  const problems = [];
+  for (const r of results.filter((x) => !isVerified(x.status))) {
+    const q = r.quote.replace(/\s+/g, ' ').trim();
+    const shown = q.length > 60 ? `${q.slice(0, 57)}...` : q;
+    if (r.status === QUOTE_STATUS.FILE_MISSING) {
+      problems.push(`the quote "${shown}" cites \`${r.file}\`, which does not exist here` +
+        (r.reason && r.reason !== 'no such file' ? ` (${r.reason})` : '') +
+        ' — cite the file you copied it from');
+    } else {
+      problems.push(`the quote "${shown}" is not in \`${r.file}\`` +
+        (r.nearest ? ` (nearest: line ${r.nearest.line}: ${r.nearest.text})` : '') +
+        ' — an unverified quote is not evidence: copy the real passage, or rewrite it as a ' +
+        'paraphrase marked (paraphrase)');
+    }
+  }
+  return { status: problems.length ? PROOF.FAILED : PROOF.PASSED, results, problems };
+}
+
+/**
+ * Check one finding. Pass `{cwd}` to also verify its quoted passages.
+ * @returns {{ok: boolean, problems: string[], status: string|null, hypothesis: boolean,
+ *            quotes: {status: string, results: object[]}}}
+ */
+export function checkFinding(finding, opts = {}) {
+  const q = checkQuotes(finding.body, opts);
+  const quotes = { status: q.status, results: q.results };
+  const problems = [...q.problems];
+  const status = evidenceStatus(finding.body);
+  const block = evidenceBlock(finding.body);
+
+  if (status === null) {
+    problems.push(
+      'no `**Evidence**` field — a claim about live state carries the command that ' +
+      `established it. If nothing was run, say so: ${PROOF.NOT_RUN}.`,
+    );
+    return { ok: false, problems, status: null, hypothesis: false, quotes };
+  }
+
+  if (!isProofStatus(status)) {
+    problems.push(`\`${status}\` is not a proof status — use one of: ${PROOF_VALUES.join(', ')}`);
+    return { ok: false, problems, status, hypothesis: false, quotes };
+  }
+
+  const settled = status === PROOF.PASSED || status === PROOF.FAILED;
+
+  // A field filled with a placeholder is worse than one left blank: blank is
+  // visibly incomplete, `<none>` looks answered.
+  const loc = (finding.body.match(/^\s*[-*]?\s*\*\*Location\*\*\s*:\s*(.+)$/mi) || [])[1];
+  if (loc && PLACEHOLDER.test(loc.trim().replace(/^`|`$/g, ''))) {
+    problems.push(`\`**Location**: ${loc.trim()}\` is a placeholder — give the file:line, or say where you looked and found nothing`);
+  }
+
+  if (settled) {
+    // A settled status is a claim that a command ran. Show it.
+    if (!block) {
+      problems.push(`\`${status}\` claims a check ran — include the command and its raw output in a fenced block`);
+    } else {
+      if (!block.command) problems.push('the evidence block has no command on its first line');
+      if (!block.output) {
+        problems.push(
+          'the evidence block shows a command but no output — a command with no output ' +
+          'proves nothing was observed',
+        );
+      } else if (PLACEHOLDER.test(block.output.trim())) {
+        problems.push(
+          `the evidence output is \`${block.output.trim()}\` — a placeholder, not an observation. ` +
+          'Paste what the command actually printed; if it printed nothing, say so in words ' +
+          'and give the exit code.',
+        );
+      }
+      if (block.command && PLACEHOLDER.test(block.command.trim())) {
+        problems.push(`the evidence command is \`${block.command.trim()}\` — name the command you ran`);
+      }
+    }
+  }
+
+  // not_run / inconclusive are honest, and they are not findings.
+  const hypothesis = !settled;
+  if (hypothesis && !finding.underHypotheses) {
+    problems.push(
+      `evidence is \`${status}\`, so this is a hypothesis — move it under a ` +
+      '“Hypotheses” heading rather than listing it as a finding',
+    );
+  }
+
+  return { ok: problems.length === 0, problems, status, hypothesis, quotes };
+}
+
+/**
+ * Check a whole report.
+ * @returns {{findings: number, hypotheses: number, problems: Array<{line, title, problem}>}}
+ */
+export function checkReport(text, opts = {}) {
+  const findings = parseFindings(text);
+  const problems = [];
+  let hypotheses = 0;
+  for (const f of findings) {
+    const r = checkFinding(f, opts);
+    if (r.hypothesis) hypotheses++;
+    for (const p of r.problems) problems.push({ line: f.line, title: f.title, problem: p });
+  }
+  return { findings: findings.length, hypotheses, problems };
+}
+
+// ── CLI ─────────────────────────────────────────────────────────────────────
+
+async function main(argv) {
+  const { readFileSync } = await import('node:fs');
+  const files = argv.filter((a) => !a.startsWith('--'));
+  if (!files.length) {
+    console.error('usage: finding-evidence.mjs <report.md>... [--strict] [--json] [--no-quotes]');
+    return 2;
+  }
+  const all = [];
+  for (const f of files) {
+    let text;
+    try { text = readFileSync(f, 'utf8'); } catch { console.error(`cannot read ${f}`); continue; }
+    // Citations in a report are repo-relative; the reviewer runs from the root.
+    const r = checkReport(text, argv.includes('--no-quotes') ? {} : { cwd: process.cwd() });
+    all.push({ file: f, ...r });
+  }
+  if (argv.includes('--json')) {
+    console.log(JSON.stringify(all, null, 2));
+  } else {
+    for (const r of all) {
+      const bad = r.problems.length;
+      console.log(`${r.file}: ${r.findings} finding(s), ${r.hypotheses} hypothes(e)s, ${bad} problem(s)`);
+      for (const p of r.problems) console.log(`  line ${p.line}  ${p.title}\n      ↳ ${p.problem}`);
+    }
+  }
+  const total = all.reduce((n, r) => n + r.problems.length, 0);
+  return argv.includes('--strict') && total ? 1 : 0;
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main(process.argv.slice(2)).then((c) => { process.exitCode = c; });
+}

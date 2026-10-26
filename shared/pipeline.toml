@@ -1,0 +1,348 @@
+# great_cto pipeline transition map
+# Codex hosts invoke the `codex-host` skill as the supported controller entrypoint
+# for this graph. Claude Code consumes the same graph through its hook dispatcher.
+# Machine-readable agent→agent handoff graph. Consumed by
+# scripts/hooks/pipeline-dispatcher.mjs (PostToolUse on Agent/Task) to tell the
+# orchestrating model what to run next when a subagent finishes.
+# Prose in skills/great_cto/SKILL.md describes the same pipeline for humans;
+# this file is the version code can act on.
+#
+# Copied into each project at SessionStart (next to orchestrator.toml).
+#
+# Schema per agent:
+#   on   = verdict tokens that mean "this stage succeeded" (from the agent's
+#          last line in .great_cto/verdicts/<agent>.log)
+#   gate = human gate(s) that must be approved before `next` may start. A
+#          string or a list; ALL of the listed gates that are ACTIVE at the
+#          project's approval-level must be approved. The map declares which
+#          gates guard an edge; approval-level decides which of them apply.
+#          The dispatcher never auto-approves gates — it only reminds the
+#          orchestrator to create/surface the gate and wait for the CTO.
+#
+#          Every gate name in scripts/lib/approval-level.mjs LEVEL_GATES must
+#          appear here, or a level silently promises a pause it cannot deliver.
+#          tests/hooks/pipeline-dispatcher.test.mjs enforces that.
+#   join = other agents whose success verdict must ALSO exist before `next`
+#          fires (parallel quorum, e.g. qa-engineer + security-officer).
+#   next = agents to spawn after `on` (and gate approval / join quorum).
+#   produces = list of meta keys whose VALUE the stage must name — its output
+#          contract. Borrowed from Pipelex, where every step declares typed
+#          inputs and outputs; here it is one direction, because what a stage
+#          CONSUMES is already implied by what its predecessor produced.
+#
+#          The gap it closes, measured: of seven scored runs, THREE came back
+#          `unverifiable` — senior-dev, qa-engineer and code-reviewer claim no
+#          artefact, so independent-verify had nothing to check. Not "the check
+#          failed": there was nothing to check, and a stage that declares
+#          nothing was the cheapest way to pass.
+#
+#          This lived as a hardcoded REQUIRED_CLAIMS object in
+#          scripts/lib/independent-verify.mjs with exactly one entry. A stage
+#          contract written in JavaScript instead of in the stage map is a list
+#          somebody has to remember to update, which is a list that will be
+#          wrong.
+#
+#          Declared only where BOTH the agent's own prompt and its verdict
+#          history agree on the key. A stage with no `produces` is not silently
+#          fine — `pipeline-contract.mjs` reports it, because "no contract" and
+#          "contract met" must not look alike.
+#   skip_next_when = "key=value" — when the succeeding stage's verdict meta
+#          carries this, the single `next` stage is bypassed and ITS next runs
+#          instead. Refused whenever an active gate sits on the skipped edge.
+#
+# Any verdict of BLOCKED / FAIL / REJECTED halts the chain at that stage.
+
+[transitions.product-owner]
+on = ["APPROVED", "DONE", "BRIEF_READY"]
+# BRIEF-{slug}.md — the validated product brief
+produces = ["brief"]
+gate = "gate:product"
+next = ["architect"]
+
+[transitions.architect]
+on = ["APPROVED", "DONE"]
+# ARCH-{slug}.md — the architecture the rest builds on
+produces = ["arch"]
+gate = "gate:arch"
+next = ["pm"]
+# pm decomposes work into parallel streams. At Small depth the architect has
+# already produced the decomposition — one implementation task — so pm would
+# decompose one into one. CLAUDE.md's triage says skip it below three streams;
+# this is that rule, read from the architect's own verdict instead of from a
+# human repeating a decision the architect already made and wrote down.
+#
+# A skip can never remove an ACTIVE gate: at `expert` gate:plan applies and pm
+# runs, because someone asked to see the plan. See resolveSkip() for why a field
+# an agent writes must not be able to drop a check.
+skip_next_when = "depth=small"
+
+# Deciding NOT to build is a real outcome, and the best one this stage can
+# produce. It was silence: the token is in product-owner's own verdict line and
+# matched nothing, so a brief that concluded "do not build this" looked exactly
+# like an agent that forgot to write a verdict.
+#
+# And it carries the same gate as BUILD. Deciding not to build writes
+# `.great_cto/DISCOVERY-NO-BUILD.md`, which `/start` reads on every later run and
+# product-owner reads at the top of every run — a standing suppression of the
+# idea. By ADR-009 that is expensive to undo wherever it sits in the pipeline,
+# and it was the one branch with no human on it: the dispatcher printed
+# "product-owner succeeded (NO_BUILD) — end of chain", which reads exactly like
+# any other success.
+[transitions.product-owner.NO_BUILD]
+on = ["NO_BUILD"]
+gate = "gate:product"
+next = []
+
+[transitions.pm]
+on = ["PLAN_READY", "DONE"]
+# PLAN-{slug}.md, and one IMPL-BRIEF per senior-dev task (Step 7b).
+#
+# `briefs` is PLURAL and names the directory, because pm writes one brief per
+# task and no single `brief=<path>` is true of a run that wrote four. The old
+# singular key held pm on REWORK for a reason that was this map's fault rather
+# than the agent's: it asked for something the stage cannot honestly produce.
+# A trailing slash marks a set; the directory is judged by what is in it, so
+# `mkdir -p` with nothing written still fails.
+produces = ["plan", "briefs"]
+gate = "gate:plan"
+next = ["senior-dev"]
+
+[transitions.senior-dev]
+on = ["TASK_DONE", "DONE"]
+# What this stage must leave behind.
+#
+# `receipt`, not a document path — and the difference is measured, not stylistic.
+# Across every project's verdict logs, senior-dev and code-reviewer have NEVER
+# written a path into their meta: not once. Declaring `produces = ["report"]` for
+# them would invent an obligation and start rejecting correct work, which is the
+# rule this file follows — a key is declared only where the agent's prompt and
+# its verdict history agree.
+#
+# They do leave evidence, and a stronger kind. The receipt records the head and
+# base commit and every file touched with its hash: 11 files on the last
+# senior-dev run, 6 on code-reviewer's. A path says "I wrote something
+# somewhere"; a receipt says exactly which bytes the stage saw, and it is what
+# makes "the code that was reviewed is the code that shipped" answerable.
+produces = ["receipt"]
+gate = ["gate:code"]
+# The review stage fans out (PLAN-2026-09-23-agent-speed S1): code-reviewer, QA
+# and security all read the same finished diff and none reads another's output,
+# yet they ran one after another. Measured medians: code-reviewer 2.6 min, QA
+# 5.7, security 4.3 — sequential, the sum; side by side, the slowest. If one of
+# them blocks and the code changes, the others' verdicts predate the change and
+# gate:ship refuses them (ship-evidence), so a fan-out cannot ship a stale pass.
+next = ["code-reviewer", "qa-engineer", "security-officer"]
+
+# The mid-build escape hatch, and it escaped into nothing.
+#
+# senior-dev's prompt tells it to stop rather than "proceed on the resolved spec"
+# when the plan is structurally wrong, and says the objection "re-opens gate:plan
+# for the CTO". Nothing matched the token, so the one mechanism that lets an
+# implementer refuse a bad plan produced no next stage at all — the build simply
+# stopped, looking like an agent that gave up.
+[transitions.senior-dev.SPEC-OBJECTION]
+on = ["SPEC-OBJECTION"]
+gate = ["gate:plan"]
+next = ["pm"]
+
+[transitions.code-reviewer]
+on = ["APPROVED", "DONE"]
+# See senior-dev above: a reviewer's evidence is the tree it reviewed, recorded
+# as a receipt, not a document it may or may not have written.
+produces = ["receipt"]
+join = ["qa-engineer", "security-officer"]
+# Whichever of the three reviewers finishes last opens the edge to devops, so this
+# edge carries the ship gate too — without it, a code-reviewer finishing after QA
+# and security would reach devops with no human decision.
+gate = ["gate:ship"]
+next = ["devops"]
+
+[transitions.qa-engineer]
+on = ["PASS", "DONE"]
+# the QA report its verdict rests on
+produces = ["report"]
+join = ["security-officer", "code-reviewer"]
+gate = ["gate:qa", "gate:ship"]
+next = ["devops"]
+
+[transitions.security-officer]
+on = ["APPROVED", "DONE"]
+# the security audit report
+produces = ["report"]
+join = ["qa-engineer", "code-reviewer"]
+gate = ["gate:security", "gate:compliance", "gate:ship"]
+next = ["devops"]
+
+[transitions.devops]
+on = ["DEPLOYED", "DONE"]
+next = ["l3-support"]
+
+[transitions.l3-support]
+on = ["OK", "DONE"]
+next = []
+
+# A verdict-keyed branch: `[transitions.<agent>.<VERDICT>]` overrides the agent's
+# default edge when that exact verdict is recorded.
+#
+# l3-support has always been able to say INCIDENT — its own prompt tells it to
+# write `<OK|INCIDENT>`. Nothing here matched that token, and decideNext returns
+# null for a token it does not recognise, so the dispatcher said NOTHING. Not a
+# halt, not a route: production broke, the agent reported it in the verdict log,
+# and the pipeline was silent. An incident that produces no next stage is
+# indistinguishable from a quiet night.
+#
+# The chain: fix it, review it, verify it, ship it, and confirm it is actually
+# resolved. `gate:ship` still sits on the qa/security edge, so a hotfix reaches
+# production through the same door as everything else — an incident is a reason
+# to hurry, not a reason to skip.
+#
+# The postmortem is not modelled as a stage. l3-support already writes one and
+# reports its path in `pm=`; a stage that produces a document the agent has
+# already produced would measure obedience rather than learning.
+[transitions.l3-support.INCIDENT]
+on = ["INCIDENT"]
+next = ["senior-dev"]
+
+# Contract-stage specialists: they gate senior-dev, not each other.
+#
+# Each writes ONE document that senior-dev then implements against. They were
+# reachable by topic-routing prose in SKILL.md and had no edge here, so the
+# dispatcher named no next stage after them and the chain stopped — the work was
+# done and nothing said what followed. `auth-engineer` and
+# `subscription-billing-engineer` are the two that matter most: authentication
+# and money, finishing without anything routing them onward to implementation
+# and from there to security-officer.
+#
+# They point at senior-dev, NOT at code-reviewer. A contract is a document; code
+# review of a document reviews the wrong artefact, and jumping to review would
+# skip the implementation the contract exists to direct.
+# `/audit` is where a project that has no pipeline history starts, so
+# project-auditor has no incoming edge and nothing it hands off to — the CTO
+# reads the audit and decides. It is in this map anyway, and only for its
+# contract: without an entry here the verifier reports `none` ("ran outside the
+# mapped pipeline"), which is honest and useless — the one stage most likely to
+# run against an unfamiliar codebase was the one nothing could check.
+#
+# `next = []` is the declaration that it ends here. An invented handoff would
+# make the dispatcher push work the CTO never asked for.
+[transitions.project-auditor]
+on = ["DONE", "AUDIT_COMPLETE"]
+# the combined audit report its findings rest on
+produces = ["audit"]
+next = []
+
+[transitions.auth-engineer]
+on = ["DONE"]
+next = ["senior-dev"]
+
+[transitions.subscription-billing-engineer]
+on = ["DONE"]
+next = ["senior-dev"]
+
+[transitions.integrations-engineer]
+on = ["DONE"]
+next = ["senior-dev"]
+
+[transitions.connector-builder]
+on = ["DONE"]
+next = ["senior-dev"]
+
+[transitions.media-pipeline-engineer]
+on = ["DONE"]
+next = ["senior-dev"]
+
+[transitions.geo-routing-engineer]
+on = ["DONE"]
+next = ["senior-dev"]
+
+# Writes code, so it takes senior-dev's path rather than a contract-stage one.
+# `mobile-store-reviewer` is not named here on purpose: it auto-attaches by file
+# pattern (scripts/hooks/auto-attach-reviewers.mjs), and naming it as `next`
+# would route policy sign-off ahead of code review instead of alongside it.
+[transitions.mobile-app-builder]
+on = ["DONE"]
+gate = ["gate:code"]
+next = ["code-reviewer"]
+
+# Runs after qa passes and replays against the live URL, so its success is the
+# last thing before a deploy rather than a step needing review.
+[transitions.e2e-test-engineer]
+on = ["PASSED", "DONE"]
+next = ["devops"]
+
+# Data import is the one edge in this map that destroys evidence.
+#
+# The agent's own prompt says "Rollback destroys post-import work", and its human
+# approval lived only in that prose — a sentence asking an operator to confirm a
+# dry-run, with nothing the dispatcher tracks. Re-importing over records someone
+# has since edited cannot be undone, which is ADR-009's "destroys evidence" test,
+# so it takes a real gate rather than a request to be careful.
+#
+# `gate:import` is active at EVERY approval level, including `auto` — see
+# IRREVERSIBLE_FLOOR in scripts/lib/approval-level.mjs. Choosing a faster level
+# is a statement about how much review you want, not permission to overwrite a
+# client's data unattended.
+[transitions.migration-import-engineer]
+on = ["DONE"]
+gate = ["gate:import"]
+next = ["senior-dev"]
+
+[transitions.ai-prompt-architect]
+on = ["APPROVED", "DONE"]
+next = ["ai-eval-engineer"]
+
+[transitions.ai-eval-engineer]
+on = ["PASS", "DONE"]
+next = ["senior-dev"]
+
+[transitions.db-migration-reviewer]
+on = ["PASS", "SAFE", "DONE"]
+next = ["qa-engineer"]
+
+[transitions.design-advisor]
+on = ["DONE", "APPROVED"]
+# DESIGN-{slug}.md — the design + a11y contract
+produces = ["design"]
+next = ["senior-dev"]
+
+# Audits the Solidity/EVM contracts once they exist (web3, or /review --contracts).
+# PASS hands the audit to security-officer, which reads it before gate:ship; FAIL
+# (an open Critical/High) goes back to whoever wrote the contract, like a
+# performance REGRESSION does, instead of stopping the chain silently.
+[transitions.smart-contract-auditor]
+on = ["PASS", "DONE"]
+# the audit report its verdict rests on: docs/security/AUDIT-{slug}.md
+produces = ["report"]
+next = ["security-officer"]
+
+[transitions.smart-contract-auditor.FAIL]
+on = ["FAIL"]
+next = ["senior-dev"]
+
+[transitions.performance-engineer]
+on = ["DONE", "PASS"]
+next = ["qa-engineer"]
+
+# Its own prompt: "p95 regression > 10% → REGRESSION: create Beads task, block QA
+# gate". The blocking half worked by not advancing; the "create a task and fix
+# it" half had nowhere to go, so a measured performance regression stopped the
+# chain silently instead of routing back to the person who caused it.
+[transitions.performance-engineer.REGRESSION]
+on = ["REGRESSION"]
+next = ["senior-dev"]
+
+# Runs after gate:ship to take a built app to a real live URL. It had no edge at
+# all, while e2e-test-engineer's prompt says plainly (line 46): "After
+# infra-provisioner reports the live URL, run the suite against it." The handoff
+# was declared in the other agent's prose and absent from the map.
+#
+# Its plan-and-stop and its refusal of prod domains are unchanged — those are the
+# agent's own controls and ADR-009 counts them as a valid answer. This only says
+# what verifies the result afterwards.
+[transitions.infra-provisioner]
+on = ["DONE"]
+next = ["e2e-test-engineer"]
+
+[transitions.growth-engineer]
+on = ["READY", "DONE"]
+next = ["devops"]

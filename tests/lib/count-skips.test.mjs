@@ -1,0 +1,123 @@
+// A skipped test is "not checked", never "checked and fine".
+//
+// ci-local's step() judged each step by exit code, and `node --test` exits 0
+// when tests skip. So a board e2e that could not start a browser — and pressed
+// no button — printed ✓, and the gate printed ALL GATES GREEN. HarnessRouter's
+// conformance report keeps `conformant` and `conformant_with_skips` apart for
+// the same reason.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, dirname, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { countSkips } from '../../scripts/lib/count-skips.mjs';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const CLI = join(ROOT, 'scripts/lib/count-skips.mjs');
+const GATE = readFileSync(join(ROOT, 'scripts/ci-local.sh'), 'utf8');
+
+test('TAP summaries are summed across every runner in the output', () => {
+  assert.equal(countSkips('1..4\n# tests 4\n# skip 2\n# todo 0\n...\n1..9\n# skip 3\n'), 5);
+});
+
+test('modern Node TAP skipped summaries count, including mixed runner formats', () => {
+  assert.equal(countSkips('1..2576\n# tests 2576\n# pass 2572\n# fail 0\n# skipped 4\n'), 4);
+  assert.equal(countSkips('# skipped 4\n# skip 2\nℹ skipped 3\n'), 9);
+});
+
+test('the spec reporter summary counts too', () => {
+  assert.equal(countSkips('ℹ tests 12\nℹ skipped 4\nℹ todo 0\n'), 4);
+});
+
+test('modern TAP skipped summaries and final pipeline summary are not silently zero', () => {
+  assert.equal(countSkips('# tests 10\n# skipped 5\n# skipped 9\n'), 14);
+  assert.equal(countSkips('\u001b[32m  ✓ 22 passed    – 5 skipped    (38s)\u001b[0m\n'), 5);
+  assert.equal(countSkips('  – L3 (skipped)\n  ✓ 22 passed    – 5 skipped    (38s)\n'), 5);
+});
+
+test('a real Node test runner with one skipped test contributes one unverified check', t => {
+  const dir = mkdtempSync(join(tmpdir(), 'modern-skips-')); t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const file = join(dir, 'skip.test.mjs');
+  writeFileSync(file, 'import {test} from "node:test"; test("unavailable fixture", {skip:true}, () => {});\n');
+  const env = { ...process.env }; delete env.NODE_TEST_CONTEXT;
+  const r = spawnSync(process.execPath, ['--test', '--test-reporter=tap', file], { env, encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr); assert.equal(countSkips(r.stdout), 1, r.stdout);
+});
+
+test('no skips is zero, and a zero summary is zero', () => {
+  assert.equal(countSkips('# tests 3\n# pass 3\n# skip 0\n'), 0);
+  assert.equal(countSkips(''), 0);
+});
+
+test('only summary lines count — a test named "skip" and its own # SKIP directive do not double it', () => {
+  const tap = '# Subtest: skip the board when there is no browser\n'
+    + 'ok 1 - skip the board when there is no browser # SKIP playwright is not installed\n'
+    + '# skip 1\n';
+  assert.equal(countSkips(tap), 1);
+});
+
+test('the CLI prints the count for a log, and refuses a log it cannot read', t => {
+  const dir = mkdtempSync(join(tmpdir(), 'skips-'));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const log = join(dir, 'step.log');
+  writeFileSync(log, '# skipped 2\n');
+  const ok = spawnSync(process.execPath, [CLI, log], { encoding: 'utf8' });
+  assert.equal(ok.status, 0);
+  assert.equal(ok.stdout.trim(), '2');
+  const missing = spawnSync(process.execPath, [CLI, join(dir, 'nope.log')], { encoding: 'utf8' });
+  assert.equal(missing.status, 2);
+  assert.equal(missing.stdout.trim(), '', 'an unreadable log is not "0 skipped"');
+});
+
+// The real step() from ci-local.sh, run under the shell macOS ships (bash 3.2).
+function runStep(body, { pipefail = true } = {}) {
+  const fn = (GATE.match(/^step\(\) \{[\s\S]*?^\}/m) || [])[0];
+  assert.ok(fn, 'step() not found in ci-local.sh');
+  const script = [
+    pipefail ? 'set -uo pipefail' : 'set -u', `cd "${ROOT}"`, 'FAIL=0', 'SKIP_TOTAL=0', 'SKIP_LINES=""', fn, body,
+    'echo "RESULT FAIL=$FAIL SKIP_TOTAL=$SKIP_TOTAL"', 'printf "%b" "$SKIP_LINES"',
+  ].join('\n');
+  return spawnSync('/bin/bash', ['-c', script], { encoding: 'utf8' });
+}
+
+test('step() counts a step that passed with skipped tests, and still passes it', () => {
+  for (const summary of ['# skip 2', '# skipped 2']) {
+    const r = runStep(`step "board e2e" bash -c 'echo "${summary}"; exit 0'`);
+    assert.equal(r.status, 0, r.stderr);
+    assert.match(r.stdout, /RESULT FAIL=0 SKIP_TOTAL=2/);
+    assert.match(r.stdout, /board e2e: 2/);
+  }
+});
+
+test('step() accounts for the modern Node summary before printing its gate verdict', () => {
+  const r = runStep(`step "board e2e" bash -c 'echo "# skipped 9"; exit 0'`);
+  assert.equal(r.status, 0, r.stderr); assert.match(r.stdout, /RESULT FAIL=0 SKIP_TOTAL=9/);
+});
+
+test('step() keeps the command\'s own exit status through the tee', () => {
+  const r = runStep(`step "cli unit tests" bash -c 'echo out; exit 3'`);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /✗ cli unit tests \(exit 3\)/);
+  assert.match(r.stdout, /RESULT FAIL=1 SKIP_TOTAL=0/);
+});
+
+test('the exit status survives the tee even without pipefail', () => {
+  // ci-local sets pipefail, under which `$?` of the pipeline would also be right.
+  // PIPESTATUS[0] does not depend on it, and does not report a failing tee as the
+  // command's own status. Without pipefail, `$?` is tee's 0 and a failure passes.
+  const r = runStep(`step "cli unit tests" bash -c 'exit 3'`, { pipefail: false });
+  assert.match(r.stdout, /✗ cli unit tests \(exit 3\)/);
+  assert.match(r.stdout, /RESULT FAIL=1/);
+});
+
+test('ALL GATES GREEN is printed only when nothing failed and nothing was skipped', () => {
+  assert.match(GATE,
+    /if \[ "\$FAIL" -eq 0 \] && \[ "\$SKIP_TOTAL" -eq 0 \]; then\s*\n\s*printf [^\n]*ALL GATES GREEN/);
+  assert.match(GATE, /SKIPPED — NOT CHECKED/);
+});
+
+test('the gate uses no bash arrays — bash 3.2 with set -u dies on an empty one', () => {
+  assert.doesNotMatch(GATE, /^\s*[A-Z_]+=\(|\+=\(/m);
+});

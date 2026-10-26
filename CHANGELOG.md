@@ -1,0 +1,15669 @@
+# Changelog
+
+All notable changes to great_cto are documented here.
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## v3.70.1 — 2026-10-25
+
+Work opens as a full-width list, and each task has its own workspace with a wide execution canvas. The public README and Blueprint landing describe the current controlled-run graphs, focused domains and responsibility contracts without claiming live-model completeness.
+
+### What's new
+
+- Canvas focus: compact 64px navigation in Execution, task switching, previous/next navigation, graph fit/zoom and horizontal or vertical layouts.
+- Read-only node inspector with keyboard focus restoration; recorded graph nodes and edges retain their existing meaning.
+- Project-bound task URLs, history and filter restoration; unavailable tasks never silently select another record.
+- Blueprint README and refreshed synthetic screenshots. No customer records or private project context are included.
+
+### Fixed
+
+- Close the mobile drawer on read-only Work navigation and clear the inspector when leaving Work.
+- Await stdout completion for large codex-pipeline list/status JSON responses instead of truncating them on immediate process exit.
+
+### Validation and limits
+
+The implementation candidate passed the full local gate with no executed failures, including 21 browser scenarios without skips. Independent source and security reviews approved the candidate. A fresh release gate is run on the combined release tree before publication. Fifteen live/opt-in checks remain NOT CHECKED; offline fixtures do not demonstrate live providers, complete native-session graphs, deployment success or a measured quality uplift. Domain packs remain opt-in. The release does not include the separate unreleased Kimi reviewer candidate.
+
+
+---
+
+## v3.70.0 — 2026-10-23
+
+Controlled runs now retain their recorded causal execution history.
+
+### What's new
+
+- The existing controller records bounded attempts, input identities, mandatory
+  checks, verification, gates, joins, repair, recovery, reuse and publication in
+  the same atomic run state. No second orchestrator or execution authority.
+- Execution renders a read-only project-scoped graph with keyboard node details,
+  zoom and mobile/light/dark layouts. Native and legacy history remains explicitly
+  partial or unavailable; missing edges are never inferred from timestamps.
+- Fresh isolated screenshots demonstrate actual offline controller transitions,
+  not hand-drawn dependencies. All sample data and responses are synthetic.
+
+### Verification and boundaries
+
+- Independent review approved PR #198 after fixing invalidated scheduling
+  frontiers. Historical reuse does not invoke a worker or inherit approval.
+- Approval tokens, prompts, raw reports and private paths are excluded from the
+  graph projection. Dispatch policy, required reviewers and gates remain intact.
+- The canonical gate retains 15 NOT CHECKED categories. Live provider/Docker
+  scenarios, native causal adapters, real deployment and quality uplift are not
+  certified by deterministic tests or public captures.
+
+
+---
+
+## v3.69.0 — 2026-10-23
+
+Recognize role responsibilities consistently in the board and team pages.
+
+### What's new
+
+- Nine shared outline symbols identify the role groups across the 72-role
+  inventory. The board shows them in group headings, executor rows and profile
+  titles; the site uses the same source on the homepage and Team page.
+- The README presents tasks, execution observations, evidence, project
+  knowledge and consumption with fresh isolated sample captures. Host support,
+  missing evidence and deployment authority are stated separately.
+- The browser keeps role names and actions readable if the symbol asset fails.
+  Initial site symbols also render without JavaScript; changed context presets
+  retain their matching symbols.
+
+### Safety and verification boundaries
+
+- Symbols identify responsibility, not run status, expertise or measured model
+  quality. Dispatch, required reviewers, permissions, budgets and gates are
+  unchanged. The separate causal execution-graph candidate is not included.
+- Independent review approved the shared symbols after correcting the site's
+  asset-copy leaf-symlink handling. Existing and dangling leaf links are refused;
+  atomic replacement preserves external hardlink contents.
+- Verification covers all 72 role mappings, browser rendering on desktop and
+  mobile, both admin themes, missing-asset fallback, public asset identity and
+  autonomous npm packaging. The earlier symbol gate recorded 19 browser tests
+  without skips; the corrected site suite recorded 54 tests without skips.
+- Live provider/model execution, live Docker/controller scenarios, real
+  delivery and paid learning are not certified. The full gate's existing
+  15 NOT CHECKED boundaries remain explicit, not converted into passes.
+
+See the [symbol verification report](docs/qa-reports/QA-2026-10-22-agent-group-icons.md)
+and [public capture contract](docs/reference/public-showcase.md).
+
+---
+
+## v3.68.1 — 2026-10-22
+
+Review receipts are compared against the base their stage actually recorded,
+and a verification that cannot be read is refused rather than read as passed.
+
+### Fixed
+
+- **Review receipts in worktrees.** A receipt recorded in a linked worktree is
+  now compared against the stage base it recorded, not against whatever base the
+  checking tree resolves to; legacy receipts without a recorded base keep their
+  original comparison instead of failing.
+- **Unreadable verification is refused.** When the verification state cannot be
+  read, the receipt check refuses (exit 2 in enforce mode) instead of treating
+  the missing evidence as agreement. Artifact metadata is refreshed with the
+  receipt.
+
+### Tests
+
+- Board readiness HTTP is bounded by the remaining startup budget; lifecycle
+  handshake phases and the classified receipt-rejection reason are printed only
+  when a lifecycle test fails; a hostile-receipt probe no longer trips the plugin
+  scanner; the orphan-document ratchet is tightened. Deadlines and assertions are
+  unchanged.
+
+- `turn-snapshot` names its branch (`git init -b main`) instead of trusting git's
+  default, which differs between Apple and Homebrew git. Added by the publisher
+  after its own gate went red on that assertion alone.
+
+### Verification and boundaries
+
+- Full local gate passed before the tag and again inside the publish step, browser tests included with no skips.
+- The same eight commits were prepared by Codex as PR #196 (rebased onto 3.68.0
+  from the follow-ups added to PR #195 after its verified candidate); its own
+  full gate on that exact head was green with 15 checks explicitly NOT CHECKED —
+  live Docker/controller/export, real mixed-host and model execution, and
+  capture, learning, notification, release, deployment and human-approval
+  scenarios.
+- One earlier full run on the pre-rebase tree failed in a receipt test. The
+  cause is not explained; a later green run is not proof that it is fixed. It is
+  tracked separately.
+
+## v3.68.0 — 2026-10-21
+
+Inspect tasks, project knowledge and consumption in one workspace. The pipeline graph now also watches for the architecture stage being skipped.
+
+### What's new
+
+- **Task-first navigation:** Work, Decisions, Knowledge, Insights and Settings.
+  Legacy Usage, Ledger, Fleet, Harness, Skills and agent-detail URLs remain usable.
+- **Work cockpit:** task filters and Overview, Execution and Evidence tabs.
+  Recorded controlled-run attempts retain separate identities; missing causal
+  dependencies and native-host linkage are explicit rather than inferred.
+- **Project Knowledge:** read-only Markdown, title/path filtering, declared status,
+  source-path metadata and a bounded LR flowchart viewer with source fallback.
+  Unknown projects, traversal, symlinks and oversized reads fail closed. Original
+  document language is preserved; application chrome stays English.
+- **Honest Insights:** recorded task outcomes stay separate from project token
+  consumption, price estimates and budgets. Missing acceptance, regression and
+  actual task-cost measurements remain Unavailable.
+- **Grouped technical controls:** Executors, Runtime, Capabilities and General
+  settings reuse existing controls without changing approval or publication authority.
+
+### Graph guard
+
+- On Claude Code the pipeline graph was advice the model could skip. Measured
+  over every local session transcript, after product-owner the model went
+  straight to design-advisor 94 times, and in 84 of 93 cases architect never ran
+  before implementation — the architecture stage and `gate:arch` skipped for UI
+  features, in 12 projects. A hook before each Agent call now catches that turn
+  ([ADR-039](docs/adr/ADR-039-graph-guard.md)): design-advisor, senior-dev or
+  mobile-app-builder dispatched while the latest product brief is newer than the
+  latest architecture. Exempt: small depth, `NO_BUILD`, a signed
+  `/exception graph`.
+- **Observe first.** `graph-guard:` in `.great_cto/PROJECT.md` — `observe`
+  (default) blocks nothing and records a would-block event; `enforce` denies
+  with the reason and the way out; `off`. A verdict log it cannot read never
+  blocks. Two weeks of observations decide whether enforce becomes the default.
+- `scripts/graph-adherence.mjs` re-takes the measurement from local transcripts
+  without printing project names.
+
+### Boundaries and verification
+
+This is a read-only projection over the existing controller, not a new graph
+orchestrator, causal execution DAG or workflow editor. The diagram viewer does
+not implement arbitrary Mermaid syntax. Native observations without stable
+controlled-run linkage remain partial. No live-model benchmark, quality uplift
+percentage or domain-pack default change is included.
+
+The [integration architecture](docs/architecture/ARCH-task-first-admin-v2.md)
+links the independent code review, QA and security reports. Real-server browser
+acceptance and populated light/dark contrast checks cover the new screens.
+Opt-in Docker/live-host checks and fixture-intercepted pipeline operations remain
+explicitly NOT CHECKED, not proof of end-to-end host or deployment readiness.
+
+### Release tooling
+
+Screenshot capture now uses the supported nested routes and waits for the actual
+target panel. Existing image names and version stamps are preserved; the old
+hidden Tools buttons are no longer used. Public screenshots use an isolated
+sample project, never the operator's own board.
+
+---
+
+## v3.67.1 — 2026-10-20
+
+The board no longer reports Codex runs from deleted test directories as
+unreadable, and the architect's gate-compliance eval judges what it asks.
+
+### Fixed
+
+- **"codex: N run state file(s) could not be read; project membership is
+  unknown"** on Work and History. Those files were read fine; their project
+  directory had been deleted, and resolving the missing path was counted as a
+  read failure. A run whose directory no longer exists is now counted as
+  orphaned — not this project, not an error. A corrupt file still degrades the
+  read.
+- **architect-gate-compliance case 2** required producing an ARCH document
+  while its own expected outcome and the eval's scenario ask for
+  classification. It now checks the sizing and the gates the work requires.
+  Writing the document is tested where it is asked for (case 9, and a new case
+  10: a one-way-door choice goes into a Proposed ADR and to gate:arch).
+
+### Added
+
+- `scripts/smoke-learning-and-gates.sh` — checks the 3.65–3.67 behaviour against
+  an installed plugin in a sandbox HOME, no network and no model calls
+  (`docs/LOCAL-CICD.md`). On 3.64.0 it fails 14 checks, on 3.65.0 the four that
+  3.66–3.67 added.
+
+### Verification and boundaries
+
+- Full local gate passed before the tag and again inside the publish step, browser tests included with no skips.
+- A rule added to the architect card for case 10's behaviour was measured
+  against the previous card as a control: both passed, so the rule had no
+  effect and is not in this release.
+
+## v3.67.0 — 2026-10-20
+
+Every review and architecture document carries a picture of what the change
+touches, and the gate brief shows it beside the approve button.
+
+### What's new
+
+- **`## Change map`** in code-reviewer's `REVIEW-*.md` and architect's
+  `ARCH-*.md`: a Mermaid flowchart drawn from the change itself — the files or
+  components it adds or changes, the calls and data flows between them, new
+  components marked. `artifact-lint` rejects a REVIEW or ARCH dated from
+  2026-10-20 without one, or with a diagram that has no edge; earlier
+  documents are not judged by the new rule. REVIEW documents, which nothing
+  checked before, now also need a Findings section.
+- **Change map on the gate brief.** The brief shows the flowchart from the
+  document the latest reviewer or architect verdict points at, marked "this
+  tree" only when that verdict saw these exact bytes. Only paths under `docs/`
+  are read. The board still ships no diagram library: the source is shown as
+  text, which reads as a list of edges and pastes into any Mermaid viewer.
+
+### Verification and boundaries
+
+- Full local gate passed before the tag and again inside the publish step, browser tests included with no skips.
+- Evals run live. code-reviewer-quality: 24/26, the new change-map case passes.
+  architect-gate-compliance (tuning, actor budget 12000): the change-map case
+  fails on the previous card and passes on this one; 4/6 on both, so the
+  missed 5/6 threshold predates this change (case 2, tracked separately).
+
+## v3.66.0 — 2026-10-20
+
+A lesson says which part of the harness it changes, and a skill lesson is
+measured against a control — so a hint that only helps alongside its skill is
+never promoted as advice on its own.
+
+### What's new
+
+- **`component:` on every lesson** — `prompt`, `constraint`, `skill`, `tool` or
+  `memory`. The learner sets it; an unknown value is dropped, a set one is never
+  replaced, and the promoted entry in `~/.great_cto/decisions.md` carries it, so
+  a promoted lesson can be checked and rolled back by part.
+- **`--measure` chooses its arms from the component**
+  ([ADR-038](docs/adr/ADR-038-lesson-component-and-control-arm.md)). Prompt,
+  constraint and memory lessons run baseline vs lesson. A skill lesson adds a
+  control arm — the hint alone — beside hint + the skill text named in
+  `changes:`, and the stamp records both deltas. When the hint alone regresses,
+  the promoted entry says so: promote the skill, not the hint. A tool lesson is
+  not measured by a prompt A/B and stays in its projects; an unlabelled one is
+  refused before anything is priced or run.
+
+### Verification and boundaries
+
+- Full local gate passed before the tag and again inside the publish step, browser tests included with no skips.
+- continuous-learner's eval run live on the updated card: 8/8, no skips ($0.36).
+- An end-to-end test drives `--measure --yes` with a stub runner where the hint
+  alone scores below baseline and hint + skill above it, and checks the stamp
+  and the promoted entry's wording.
+- Not in this release: measuring tool lessons, inferring a lesson's component
+  automatically.
+
+## v3.65.1 — 2026-10-20
+
+Nothing writes demo data or a free-text note into the memory every project
+reads, and a release cannot be tagged with stale screenshots.
+
+### Fixed
+
+- `npm run demo:seed` wrote into the operator's own `~/.great_cto`: seven demo
+  ADRs over the global `decisions.md`, four demo global patterns `/crystallize`
+  reads, a demo digest, a demo verdict log and a demo project in the board
+  registry. The seed now writes `/tmp/great_cto-demo/.home`, and the demo
+  recording starts the board with that HOME.
+- `/agent retire` appended its free-text reason to the global `decisions.md`,
+  read by every session of every project. It now writes
+  `~/.great_cto/metrics/agent-retirements.md`, which no session reads.
+- `release.sh` checks the screenshots after the bump and before the commit,
+  tag and push. 3.29.0 and 3.64.0 were tagged with stale images because the
+  check ran only in the publish gate, after the tag was public.
+
+### Verification and boundaries
+
+- A test now finds every file — code and the bash in commands — that can write
+  `~/.great_cto/{preferences,decisions,lessons}.md` or `global-patterns/` and
+  fails on one not on a reviewed list naming its guard; it is checked against
+  a bad script and a bad command. The demo scripts are held to never naming the
+  real home.
+- Full local gate passed before the tag and again inside the publish step, browser tests included with no skips.
+- Data already written by the demo seed on this machine was moved, not deleted,
+  to `~/.great_cto/archive/`; on other machines run the seed once more only after
+  upgrading.
+
+## v3.65.0 — 2026-10-19
+
+See what a gate approves before you approve it, and let a lesson reach every
+project only with measured evidence.
+
+### What's new
+
+- **Brief** beside every pending gate on the board: whether the tree moved since
+  the gate was shown, the change and its tier, how expensive it is to undo, the
+  latest verdict per reviewer — marked "this tree" only when its receipt matches
+  these bytes — the second opinion, and which parts of the system and which tests
+  the change touches. A source that cannot be read says "unknown"; no verdict at
+  all says "nobody has looked". The brief never approves or writes
+  (`GET /api/gates/<id>/brief`, [ADR-036](docs/adr/ADR-036-gate-brief.md)).
+- **A lesson seen in three projects is now a candidate, not a global decision.**
+  `~/.great_cto/decisions.md`, which every session of every project reads, gets
+  a lesson only with an A/B eval stamp that is not a regression.
+  `lessons-merge.mjs --measure <slug>` prints the cost and stops; `--yes` runs the
+  lesson's eval with and without the lesson and stamps it. One unmeasured lesson
+  can be promoted on purpose with `--no-eval "<why>" --slug <slug>`, logged as
+  `EVAL_BYPASS`. A lesson that names no eval stays in its projects
+  ([ADR-037](docs/adr/ADR-037-lesson-needs-evidence.md)).
+
+### Fixed
+
+- `/crystallize approve` could not read the eval stamp its own stamper writes:
+  a measured **regression** was activated by `--no-eval`, and a measured
+  improvement was blocked as "no evidence". Both formats are read now; tests run
+  the real stamper through the real gate.
+- A lesson could carry its own eval stamp: `lessons-write` now discards one an
+  incoming entry brings, and drops a stamp whose decision was superseded.
+- A `bd` call that ignored its timeout could hold the board's event loop for as
+  long as it liked: synchronous `bd` calls now stop with SIGKILL at the timeout.
+
+### Verification and boundaries
+
+- Full local gate passed before the tag and again inside the publish step, browser tests included with no skips.
+- continuous-learner's eval was updated to the candidate rule and run live:
+  8/8, no skips ($0.31) — the same as before the change. At 8 cases that shows
+  nothing broke; it does not show an improvement.
+- Not in this release: diagrams in the brief, LLM-written summaries, automatic
+  measuring at session end, any change to who may approve a gate.
+
+## v3.64.0 — 2026-10-16
+
+Focus Fleet on your project's roles without losing the full catalog.
+Keep mandatory reviewers visible. Prepare an explicit domain-pilot design without
+mistaking a proposed experiment for evidence of better outcomes.
+
+### What's new
+
+- Fleet opens in **Project focus**: eight existing core role names plus the
+  project's required reviewers. **All agents** restores the catalog; **Needs
+  attention** remains catalog-wide. This is a display filter, not fewer model
+  calls or a change to routing, permissions or gates.
+- Required retired reviewers remain visible; missing installed reviewers are
+  named. Unknown requirements restore catalog visibility. Stale project and
+  request-generation replies cannot overwrite the selected project's state.
+- Developer command `node scripts/domain-benchmark.mjs plan` prints 36 anonymous,
+  unexecuted trial slots. Models, budgets and source/scorer pins remain unset;
+  no hosts launch, no quality uplift is claimed, and packs remain opt-in.
+
+### Verification and boundaries
+
+- [ADR-034](docs/adr/ADR-034-focused-domain-experience.md) defines the reversible
+  presentation and experiment boundaries. The [QA report](docs/qa-reports/QA-2026-10-16-focused-domain-experience.md)
+  retains failed attempts, corrected fixtures and independent review.
+- Full serial gate passed: root/hooks/board 1444, libraries 3426, eval 242,
+  documentation 76, browser 16, CLI 375 and archetype scenarios 34. Counts
+  overlap. Fifteen opt-in/external checks remain explicitly NOT_CHECKED.
+- Timeout tests retain real deadlines and separately prove cleanup after live
+  child admission. CLI/checker-only-kill negative controls fail before cleanup;
+  production timeout runners are unchanged. Independent review approved the
+  final candidate and repeated 44 focused checks plus both negative controls.
+- No role deletion, automatic domain activation, native benchmark results,
+  clinical efficacy or measured quality improvement is included in this release.
+
+---
+
+## v3.63.5 — 2026-10-15
+
+Run the newest local board with its public role roster. Autonomous npm installations now carry the same public role data used by Usage ownership and dispatch/outcome aggregation; plugin installations select the newest available complete board cache.
+
+### What's new
+
+- Board discovery compares available numeric versions across local plugin caches and retains a complete fallback when another cache entry is partial. [PR #186](https://github.com/avelikiy/great_cto/pull/186).
+- The npm board includes 72 public top-level role Markdown files. Nested directories, private overlays and sidecars are excluded; invalid, empty or non-regular Markdown rosters fail packaging. [PR #191](https://github.com/avelikiy/great_cto/pull/191).
+- Usage browser coverage checks both a known built-in role and an unknown plugin-prefixed role. File presence does not attest host loading, invocation or agent quality.
+
+### Verification and boundaries
+
+The canonical serial gate passed at `3efec20d`: root/hooks/board 1,435; libraries 3,422; eval 242; documentation 76; browser 16; CLI 375; archetypes 34; pipeline 36. Six library and nine pipeline opt-in/native checks remain not checked. Counts are per suite, not unique tests. The final documentation/comment-only delta received independent read-only APPROVE at `88ff4bcca00d93bb6dd837b8e4ef0dc39a1be473`.
+
+The fixed unpublished archive passed all 16 browser cases and isolated CLI/controller construction checks. Its package metadata was still 3.63.4; release-version bytes require their own packaging and consumer checks before npm publication. The prior failing archive and unexplained lifecycle fixture failure are retained in the [QA history](docs/qa-reports/QA-2026-10-15-board-roster-package.md), not erased by the successful rerun.
+
+The hover change in #186 affects test precondition/action-result admission only, not in-flight cancellation or production CSS. Domain packs remain opt-in. No paid/native benchmark, quality uplift or full host parity is claimed. The historical operator-listener disappearance remains a separate investigation.
+
+---
+
+## v3.63.4 — 2026-10-14
+
+Give controlled host workers explicit, bounded private domain context.
+
+### What's new
+
+- Opt-in `--domain-policy` binds a separate provenance root and frozen workspace
+  policy. Commit, source bytes and review window are observed again before host
+  calls; drift or expiry refuses invocation instead of silently repinning.
+- The shared controller delivers data-only packets to routed Codex and Claude
+  Code workers, mixed waves and the independent Codex verifier. Provenance records
+  digests and context bytes, not raw source or private paths. Existing permissions,
+  specialist routing and human gates remain unchanged. No policy means no activation.
+- Benchmark summaries separate raw supplied acceptance from measured-budget-qualified
+  acceptance. Missing metrics stay unknown; inconsistent known token counts are rejected.
+- Explicit local `--serial` runs the same full root/lib test selection with one
+  file worker. Default remains two; deadlines, assertions and internal race tests
+  are unchanged. The inbox race probe now requires its exact snapshot-change reason.
+- This release provides controlled admission, not native trial results, verified
+  model adherence, measured quality uplift, full host parity or automatic promotion.
+
+### Verification and boundaries
+
+Full `ci-local.sh --e2e --serial` passed at the frozen executable candidate:
+root 1435, libraries 3416, eval 242, docs 76, browser 16, CLI 369 and archetype
+34 checks. Fifteen checks remain NOT CHECKED: six library and nine pipeline
+checks. Independent repeat read-only review approved the source with 64 focused
+passes and no skips. Earlier default-mode failures remain real failed attempts;
+serial success does not establish their full root cause or default-mode stability.
+See [ADR-033](docs/adr/ADR-033-explicit-domain-host-admission.md) and the
+[QA history](docs/qa-reports/QA-2026-10-14-domain-host-admission.md).
+
+---
+
+## v3.63.3 — 2026-10-14
+
+Prepare version-pinned engineering domain context without changing agent authority.
+
+### What's new
+
+- Five explicit-only candidate packs, version 0.1.0: money, crypto execution,
+  telemedicine workflows, venture evidence and mental wellbeing safety. Each has
+  three engineering invariants and negative scenario descriptions, not executed
+  product tests or professional certification.
+- Private project overlays bind exact source bytes, commit, pack digest and
+  expiry. Data-only host packets preserve provenance without raw source or paths.
+- A preregistered descriptive benchmark contract retains both hosts, core and
+  core-plus-pack arms, failed/missing trials and costs of rejected attempts.
+  Developer commands live in the GitHub source tree, not the npm CLI interface.
+
+### Verification and boundaries
+
+- PR #184 received independent read-only APPROVE for the opt-in foundation.
+  Canonical executed checks passed: 5607; failures: 0; NOT CHECKED: 15. Separate
+  reviewer domain contract tests passed 57/57 with no skips. See ADR-032 and the
+  2026-10-14 domain evidence QA report for source pins and earlier failed runs.
+- Lifecycle fixture corrections retain production deadlines and strict failure
+  cases. Domain packs remain candidates: no default activation, reviewer routing,
+  native dispatch, permission expansion or automatic learning changed.
+- Native experiments, independently attested scorer admission and quality uplift
+  remain unverified. Clinical efficacy, legal certification and investment
+  performance are explicitly excluded. Private overlays are not published.
+
+---
+
+## v3.63.2 — 2026-10-13
+
+great_cto writes its state only into great_cto projects, never into another repository a session happens to open.
+
+### Fixed
+
+- **No `.great_cto/` in repositories that are not projects.** Hooks fire in every repository a Claude Code session
+  opens. With no `.great_cto/PROJECT.md` up the tree, they ran in the session's directory and created `.great_cto`
+  there — `SKILL.md`, `ARCHETYPES.md`, `env.sh`, the events log, session status, the resume trace — which another
+  tool then showed as the agent's own changes. Hooks now write only where `.great_cto/PROJECT.md` (or `verdicts/`)
+  exists; the session-end learner, a paid run, does not start outside a project. Commands you run yourself
+  (`great-cto run`, `/digest`, …) still keep their state in the repository you ran them in.
+- A test fails any hook that creates `.great_cto` with a plain `mkdir`.
+
+---
+
+## v3.63.1 — 2026-10-13
+
+A subagent's completion is judged by its own verdict record, not by whichever record of its role was written last.
+
+### Fixed
+
+- **Completion evidence is validated, not just found.** The SubagentStop check counted a verdict log as evidence
+  when the file had been touched recently. It now needs a parsed record with a known verdict, this agent's role,
+  and a record time inside the run — touching an old log no longer makes it fresh, and another role's or a
+  malformed record never counts.
+- **Same-role runs no longer borrow each other's verdict.** When the host supplies `session_id` and `agent_id`,
+  each invocation gets a stable identity (SHA-256 of the pair). SubagentStart prints it as required verdict
+  metadata, SubagentStop looks for that invocation's record in an interleaved log, and the Codex pipeline carries
+  it on every agent-start/stop event, worker call and result. Without host identifiers the check stays on
+  role and time and says that concurrent same-role isolation is unverified.
+- **The inline-subagent guard reads the shell the way the shell does.** `claude -p` detection uses the shared
+  command parser — quoting, substitutions, `sh -c`, `env`, and `npx`/`xargs` options — instead of splitting on
+  punctuation.
+
+---
+
+## v3.63.0 — 2026-10-12
+
+Reviews are bound to the exact input they read, and each task on the board shows its evidence without claiming an approval it does not have.
+
+### What's new
+
+- **Review evidence contract (ADR-030).** `cross-model-review` records a SHA-256 binding of the exact diff and spec it
+  sent (`review_input`), never reviews a truncated prefix (a diff over 24 000 characters or a spec over 4 000 is
+  refused, not clipped), and normalizes the reviewer's answer: a malformed reply, two verdicts or a sparse finding
+  list are "no verdict", never a pass; a P0 finding overrides a PASS.
+- **Task evidence on the Work page.** Each task shows five read-only sections — execution, checks, review,
+  publication, runtime — as *Recorded* or *Unknown*. Recorded means an observation exists, not that the current
+  code passed a gate; nothing here grants approval.
+
+### Fixed
+
+- **The inbox no longer ticks a review that did not pass.** "Codex ✓" was the fallback for any state the renderer
+  did not name — including a review line with no verdict. It now needs state `ok` and verdict `PASS`.
+- **A diff refused for size is named as such.** The Stop gate (opt-in) told the agent to re-run a review that refuses
+  the same input every time; it now asks to split the change or review it another way. An empty diff no longer
+  holds the turn.
+- Root and board test files run with bounded concurrency (2) so fixture deadlines hold under load.
+- Home-directory paths removed from three QA and analysis reports.
+
+---
+
+## v3.62.3 — 2026-10-12
+
+The locally installed plugin ships its compiled CLI again, so `great-cto` starts from the installed plugin.
+
+### Fixed
+
+- **`install-local` copies `packages/cli/dist/`.** Since the tracked-only snapshot of 04.10 the installer copied
+  only files Git tracks; the compiled CLI is ignored by Git, so it never reached the installed plugin and
+  `great-cto` stopped with "dist/main.js not found" — every pipeline-suite check that runs the installed
+  CLI failed. The build output is now the one declared exception: copied when the plugin ships a CLI,
+  refused when missing or older than `packages/cli/src`. Other ignored files, secrets included, still stay out.
+
+---
+
+## v3.62.2 — 2026-10-11
+
+The board can keep answering while approval evidence is calculated. Receipt reads run in bounded background workers, and stale requests cannot reissue a consumed approval token.
+
+### What's new
+
+- Inbox binding, approval receipts and second-opinion projections use supervised asynchronous readers instead of blocking the HTTP event loop with Git commands.
+- Dirty-file evidence uses bounded streaming Git blob hashes, without starting a Git process for each untracked file or buffering entire files in memory. Changed or unreadable files fail closed.
+- A physical-project decision fence rejects overlapping approval decisions and stale token issuance, including requests through symlink aliases. Distinct Git worktrees remain separate projects.
+- Receipt reads have two active lanes, a 20-second deadline, a 16 MiB output limit and creator-owned process cleanup. No persistent evidence cache is introduced.
+
+### Verification and limits
+
+PR #180 was independently reviewed on `16bc030c`: nine targeted checks passed without skips and three P2 findings were mitigated. The complete canonical gate passed: 1404 root/hooks/board, 3324 library, 242 eval, 76 docs, 15 browser, 369 CLI and 34 archetype checks. Fifteen checks remain NOT CHECKED: six optional library live checks and nine external pipeline checks. Suites overlap and must not be summed as unique tests. A private npm consumer passed four actual HTTP scenarios, including stalled Git reads and concurrent approval/token issuance.
+
+This release addresses read-path responsiveness and single-board-process approval coordination, not distributed locking across multiple board instances. Synchronous write paths, paid-model quality and production delivery require separate verification. Installed runtime health is checked separately from source and package tests.
+
+---
+
+## v3.62.1 — 2026-10-11
+
+The board can keep answering while task snapshots are being read. Cold reads share bounded asynchronous work, and unavailable data remains explicitly unavailable instead of looking like an empty backlog or a recovered connection.
+
+### What's new
+
+- Cold task-backed HTTP routes and cross-project Inbox no longer perform blocking list reads in the request path.
+- Background watchers publish Tasks, Pipeline and Inbox from one coherent snapshot. Failed reads retain the last visible tasks and retract previously painted All clear claims.
+- Daily and weekly digests, cost thresholds and share publication avoid fabricated zero-activity reports when a task store cannot be read.
+- SSE reconnects preserve unreadable state until a successful snapshot. Clients disconnected during cold reads are not registered after they leave.
+- Task reads use at most four active lanes, a total queue/read budget, a stdout size limit and creator-owned process cleanup. Closed-pipe descendants are terminated as well as descendants holding inherited pipes.
+- A successful worker result is sent only after stdout and stderr have drained, preserving complete snapshots under backpressure before process-group cleanup.
+- The gate badge uses a supported font weight and theme-appropriate text contrast.
+- Agent instructions require continued scoped work through implementation and verification while preserving independent review and rollout authority.
+
+### Verification and limits
+
+PRs #178 and #179 were reviewed together on `48c4f88e`. The complete canonical gate passed: 1385 root/hooks/board, 3321 library, 242 eval, 76 docs, 15 browser, 369 CLI and 34 archetype checks; pipeline L1-L5 passed 36 checks. Suites overlap and must not be summed as unique tests. Fifteen checks remain NOT CHECKED: six optional library live checks and nine pipeline external-action checks. Independent re-review confirmed closure of three P2 findings and independently passed seven targeted checks without skips. A private npm consumer passed six worker lifetime/backpressure, two SSE bootstrap and one cold HTTP check. Earlier failed gates and regression baselines remain retained evidence.
+
+These changes isolate read paths, not synchronous Beads write execution. POSIX process-group cleanup is not universal sandbox containment; Windows direct-child handling is not descendant attestation. Fixture gates do not establish paid model execution, notification delivery, production deployment or universal host compatibility. Published source and installed runtime require separate verification.
+
+---
+
+## v3.62.0 — 2026-10-10
+
+Choose opt-in pipeline depth and share agent budgets across hosts.
+
+### What's new
+
+- Adaptive gate policy uses pinned Git evidence to remove only eligible human
+  pauses. Required product, security, compliance and ship floors remain;
+  unknown evidence fails closed. Existing defaults are unchanged.
+- An operator-owned budget can coordinate Claude Code and controlled Codex
+  workers and independent verifiers on one machine. Wave reservations are
+  all-or-none, fenced and audited; example limits are not product defaults.
+- Opt-in specialist policies support change-driven review plans and phased
+  preparation/delivery quorums. Scoped historical specialist reports require
+  exact dependency evidence and a fresh independent verifier. Core code, QA,
+  security and AI-eval reviews are never replaced by historical results.
+- Trusted local checks are available for explicitly selected trusted projects;
+  Docker remains a separate opt-in isolation backend, not a universal prerequisite.
+- Packaged controller and board runtime imports are checked as a self-contained
+  closure, with isolated private state for package smoke tests.
+
+### Verification and boundaries
+
+PR #167's exact 8542e41e canonical local gate completed with exit0: root/hooks/
+board1360, libraries3320, eval242, docs76, browser14, CLI369, archetypes34 and
+candidate36 passed. Six live library cases and nine candidate checks remained
+NOT CHECKED. The independent reviewer approved source and delivery evidence for
+the limited experimental scope; this is not a fresh paid-model quality benchmark,
+production readiness or proof of full native-host parity.
+
+The browser guardian remains Proposed/unactivated with no OS signal, deletion,
+admission or benchmark authority. Abrupt scorer death is characterized without
+claiming independent teardown. Strict graceful-unwind checks passed; earlier
+canonical failures and their unknown surviving identities remain in the QA report.
+The existing installed-board latency issue is not repaired by this release.
+
+Contracts: ADR-adaptive-runtime-gates, ADR-shared-agent-execution-budget,
+ADR-phased-specialist-workflow, ADR-scoped-review-evidence and
+ADR-trusted-local-checks. See docs/qa-reports/QA-2026-10-10-adaptive-independent-review.md.
+
+---
+
+## v3.61.0 — 2026-10-10
+
+Keep the Codex plugin current with an optional macOS refresh schedule.
+
+### What's new
+
+- An opt-in per-user launchd job refreshes the configured great-cto Git
+  marketplace every six hours and at load using Codex's own upgrade command.
+  Enable, status and disable are explicit operations; installation alone does
+  not enable the schedule.
+- Every refresh revalidates the marketplace's origin against the official
+  repository before downloading or replacing an artifact. An unexpected origin
+  fails closed. The timer does not edit the plugin cache itself.
+- The job records Node and Codex paths for launchd's non-interactive environment.
+  Enable refuses to interrupt a running refresh; RunAtLoad starts the first job
+  without a forced kickstart. Use a stable script path and inspect the logs:
+  enabled status is scheduling state, not proof that an upgrade succeeded.
+
+### Verification and boundaries
+
+PR #163's dc02e807 full local gate completed with exit 0, including ten updater
+tests, 14 browser scenarios, build and package creation. Independent application
+review returned APPROVED after fixing launchd PATH. The merged cf12f95c tree is
+byte-identical to the tested candidate. Fresh Snyk status on that head is SUCCESS.
+Four opt-in live library scenarios and one absent legacy pytest suite remain
+NOT CHECKED. HOL policy passes with the existing baseline; no security exception
+or baseline addition is used. Adaptive pipeline PR #167 is not included.
+
+The scheduler is macOS-only and opt-in. It does not prove hot-loading into an
+existing model session or a full mixed-host development cycle. Removing Node,
+Codex or the pinned script requires re-enabling from a stable installation.
+
+---
+
+## v3.60.0 — 2026-10-10
+
+Inspect local skills and compare host usage within one selected project.
+
+### What's new
+
+- A read-only Skills screen lists local Claude Code, Codex and project skill
+  documents, observed metadata, document hashes and declared provenance.
+  Search and host/source filters do not install, enable or execute skills.
+- Usage aggregates Claude Code and Codex sessions only after project
+  attribution, including existing linked Git worktrees and monorepo scopes.
+  Switching projects invalidates stale UI replies and separates cached reports.
+- Board-owned date, time and number formatting is pinned to English. Task
+  descriptions and document content retain their original language and timezone.
+
+### Fixed
+
+- Scoped outcomes recognize registered and PROJECT.md identities used by the
+  actual verdict writer. Copied foreign tags and ambiguous aliases do not count.
+- Skills and statistics refuse arbitrary HOME directories as project selectors.
+  An unregistered server root works without invented query identifiers; explicit
+  unknown selections fail closed instead of displaying another project's data.
+- In-flight Usage results survive bounded-cache pressure. Background scans keep
+  navigation responsive and surface unavailable/stale states explicitly.
+- The npm board bundler includes top-level script dependencies used by Skills,
+  keeping the generated board usable outside the source checkout.
+- ADR browser fixtures use the architecture-decision directory; dependency QA
+  reports are connected and the generated architecture map is current. Browser
+  startup waits for bounded project initialization, retaining all data assertions.
+
+### Verification and boundaries
+
+The complete local gate passed on 6afe445b; the merged tree was identical.
+Main suites: 1,336 root/hooks/board, 2,579 library, 238 eval, 76 documentation,
+14 browser, 55 pipeline, 362 CLI and 34 archetype checks passed. Four opt-in
+live library tests and one absent legacy pytest suite remain NOT CHECKED;
+this is not a no-skip global run. Independent application and test-delta
+reviews returned APPROVED. No security-gate exception is used.
+
+Inventory presence is not activation, trust, upstream verification or evidence
+that a skill improves task quality. Project usage excludes sessions whose
+identity cannot be recovered; missing history is not proof of no activity.
+Evidence ledger and live-model quality comparisons are not in this release.
+Read [ADR-029](docs/adr/ADR-029-read-only-skill-inventory.md),
+[independent review](docs/qa-reports/REVIEW-2026-10-10-skills-release.md) and
+[release QA](docs/qa-reports/QA-2026-10-10-skills-release.md) for source pins,
+retained failures, scanner policy, package checks and delivery status.
+
+---
+
+## v3.59.1 — 2026-10-09
+
+Run the board directly from a Git-installed plugin, with the same gate policy as the CLI.
+
+### What's new
+
+- **Self-contained plugin runtime.** The board no longer imports the gitignored CLI
+  build to calculate gates. A dependency-free policy module is generated from the
+  authoritative TypeScript policy and checked for drift in local and CLI CI.
+- **Isolated installer checks.** Postinstall does not launch a detached board under
+  Node's test runner, CI or explicit opt-out environments. Normal installs retain
+  automatic board startup; `GREAT_CTO_NO_BOARD=1` disables it.
+- **Accurate local-CI coverage.** The skip counter recognizes modern Node TAP
+  `# skipped N` summaries as well as the older spelling, so opt-in live checks
+  are reported as not checked instead of disappearing from the gate verdict.
+
+### Verification
+
+- Regression coverage boots a clean plugin fixture without CLI `dist` or
+  `node_modules`, resolves a registered project without falling back, and compares
+  the generated policy with the CLI across archetypes, sizes and risk tiers.
+- Gate requirements and approval authority are unchanged. This patch does not
+  claim a product-quality uplift or a new live dual-host benchmark result.
+
+---
+
+## v3.59.0 — 2026-10-09
+
+Inspect tasks and publish verified work as a draft PR from the board.
+
+### What's new
+
+- **Task cockpit.** Read the current stage, recorded evidence, blockers and bounded activity
+  from the existing task/controller stores. The inspector is read-only: it does not inject
+  terminal input or start another controller.
+- **Explicit draft-PR publication.** A managed, verified delivery task on a clean, committed
+  feature branch can preview publication, then confirm it from the CLI or a same-origin
+  loopback browser. An explicit path scope, current verification receipt, exact Git inputs,
+  historical patch scan, project lease and create-only remote ref protect the operation.
+  Creating a PR does not approve its merge or release. Live GitHub acceptance for this new
+  publication path remains unverified; automated tests use local Git remotes and mocked GitHub.
+- **Consistent navigation.** Work, History, Tools and view filters share row sizing, icons,
+  hover/focus and selected states. Tools sits with the other navigation, not at the bottom.
+- **Responsive statistics and project discovery.** Usage scans run in a bounded background
+  worker with a stale-while-refresh cache. The project switcher refreshes its inventory and
+  filters it as you type.
+
+### Safety and implementation
+
+- [ADR-028](docs/adr/ADR-028-task-cockpit.md) defines the publication checkpoints and authority
+  limits. Outgoing commit history is scanned, not just the final diff. Existing remote branch
+  content is never overwritten; uncertain PR creation is reconciled rather than blindly retried.
+- Browser publication tickets are single-use, expire after 120 seconds and are bound to the
+  project, origin, branch and approved inputs. Remote/tunneled browser writes are refused.
+  Workers and request bodies have explicit deadlines and size limits.
+- The sidebar has browser regression coverage for desktop, icon rail and mobile layouts,
+  theme tokens and keyboard navigation. The release gate is `bash scripts/ci-local.sh --e2e`;
+  opt-in live Docker/model tests are reported as skipped when not enabled, not as verified.
+
+### Known limits
+
+- Dirty-tree autocommit, changed-operation cancellation/reapproval and live GitHub publication
+  acceptance are not part of this slice. The local browser boundary is not account authentication.
+- The admin audit still has open follow-ups for selected-project drawer scoping, rapid project
+  switch races, intermittent server stalls and legacy projection/capability reporting. Moving
+  usage scans off the HTTP thread does not establish that all latency sources are fixed.
+
+---
+
+## v3.58.2 — 2026-10-07
+
+The board stays in a project: `--port` is honored, and restarts no longer carry it into a stray directory.
+
+### Fixed
+
+- **`server.mjs --port N` works**, as its usage line always said. Only `BOARD_PORT`/`PORT` counted, so
+  a test board started with `--port 3177` took :3141 instead.
+- **A restart keeps the board's directory only when it is a project.** `install-local` restarts the
+  board in the old board's cwd so it opens on the same project; it kept any cwd, and after a release
+  run from a scratch worktree the board lived in that worktree — deleted since — and titled itself
+  after it. Now: the old cwd if it holds `.great_cto/PROJECT.md`, else the most recently active
+  registered project, else `$HOME`.
+- **The view log is written only into a project.** `POST /api/view` created `.great_cto/` in whatever
+  directory the board ran in, which recreated the deleted worktree; it now answers `recorded: false`
+  outside a project.
+
+---
+
+## v3.58.1 — 2026-10-07
+
+The board says where Claude's plan readings come from once the recorder is on.
+
+### Fixed
+
+- **Usage → Limits no longer asks you to install what you installed.** Claude Code passes its plan
+  percentage only to a status line it draws: the terminal `claude` draws one, the desktop app's
+  Code tab does not. With the recorder on and no reading yet, the board kept saying "turn on the
+  recorder". It now reads one field — `statusLine.command` in `~/.claude/settings.json` — to tell
+  "on, no reading yet" from "never installed", and says that readings come from `claude` in a
+  terminal. `great-cto statusline install` and `status` say the same (`docs/PRIVACY.md`).
+- **Temp-dir teardowns retry.** The 3.58.0 publish gate went red on a test whose cleanup ran while
+  the board's bd was still writing into the temp home (`ENOTEMPTY`); a rerun passed 1278/1278. Every
+  `rmSync(d, { recursive: true, force: true })` teardown across 85 suites now retries
+  (`maxRetries: 5`), as `pipeline-contracts` already did.
+
+---
+
+## v3.58.0 — 2026-10-07
+
+The board shows Claude's exact plan use, recorded from the status line.
+
+### Added
+
+- **`great-cto statusline install`** (opt-in). Claude Code hands its plan use — the 5-hour window,
+  the week, the per-model weeks, each with a used percentage and a reset time — to the status line
+  command and to nothing else. This installs a small zero-dependency script as your status line:
+  it prints the status line you already had, unchanged (or a short one: model · folder · 5h % · 7d %),
+  and appends one line per change of the plan numbers to `~/.great_cto/claude-limits.jsonl`.
+  `settings.json` is backed up first; `great-cto statusline uninstall` puts your previous status
+  line back exactly. Nothing is sent anywhere (`docs/PRIVACY.md`).
+- **Usage → Limits for Claude** now draws real windows — percent used, reset time, when a window
+  filled, where the open one is heading at the current pace — and the host card shows the 5-hour
+  and weekly meters. Without the recorder it says how to turn it on instead of showing n/a. Plan
+  history starts when the recorder is installed: Claude Code kept none before.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.57.0 — 2026-10-07
+
+Hooks no longer treat the home directory as a project, and every check of a Bash call runs in one process.
+
+### Fixed
+
+- **The global layer was taken for a project.** Hooks find the project by walking up to the first
+  `.great_cto/PROJECT.md`, and `~/.great_cto` — the global layer every session reads — has one. A
+  session in a repository without its own PROJECT.md walked up to `$HOME`: the completion check
+  wrote one project's cut-off agent there, and the stall guard told another project's session to
+  resume it; agents were handed the global PROJECT.md as their project's. The walk in every hook
+  wrapper and in `projectRoot()` now skips `$HOME`, the event log refuses the global layer, and the
+  completion check and stall guard act only in a project's own `.great_cto`.
+- **Agents that are not great_cto's were asked for verdicts** — `general-purpose`, `Explore`, another
+  plugin's `code-reviewer`. Only great_cto's roster is asked now.
+- **The inline-subagent rule never fired.** It read the command from a field Claude Code does not
+  send. It now reads `tool_input.command` and judges each simple command by its program, so a
+  `.claude` path next to a `-p` flag is not mistaken for `claude -p`. ⚠️ The plugin's contract sets
+  `inline_subagents_allowed = false`, so an agent running `claude -p` from Bash is now refused in
+  Claude Code; a project that needs it sets `inline_subagents_allowed = true` in its own
+  `orchestrator.toml`. Codex never had the rule and still does not.
+- **Every Bash call inside a subagent was logged as an agent start** (one project: 1109 starts against
+  140 stops). A start is logged only at SubagentStart, and a Bash call no longer prints the contract.
+
+### Changed
+
+- **One process for the PreToolUse checks of a Bash call.** Six hooks started six Node processes per
+  call, each with a five-second limit; on loaded days Claude Code cancelled the late ones, and a
+  cancelled guard does not block. `scripts/hooks/bash-guards.mjs` runs them back to back — the first
+  refusal decides — with a 15-second limit. On `ls -la`, 30 calls: p95 47 → 33 ms idle, 103 → 71 ms
+  under CPU load. The Codex adapter runs the same file once instead of five checks.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.56.0 — 2026-10-07
+
+An agent that ends without a verdict is asked for it on every run, and told where log-verdict is.
+
+### Fixed
+
+- **The completion check asked each agent once, ever.** "Asked before" was keyed by the agent's
+  name and never expired: on one project code-reviewer was asked on 15.09 and never again, and
+  43 of its next 46 runs ended with no verdict and no question. It is now keyed by the run, and
+  markers older than a week are removed.
+- **Another agent's verdict counted for this one.** "A verdict exists" meant any verdict log
+  touched in the last five minutes; with agents in parallel that was usually someone else's. It is
+  now the stopping agent's own log, written at or after its run began.
+- **The remedy pointed at a file that is not there.** Every hint said `bash scripts/log-verdict.sh`,
+  which exists only in the great_cto repository; in a project, calls died with "No such file". The
+  completion check, the pipeline dispatcher and the stop-shape remedy now give the plugin's script
+  by absolute path, and every agent is told at start that `scripts/log-verdict.sh` means that file.
+
+### Added
+
+- Each agent stop records how the run ended — verdict, asked, finished without one, cut off — and
+  **Usage → Agents** shows a **No verdict** column with the reasons on hover.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.55.0 — 2026-10-07
+
+The board shows what each agent concluded, what reviews found, and which guards and hooks fired.
+
+### Added
+
+- **Usage → Agents and reviews**, across every registered project:
+  - per great_cto agent: verdicts in the period — pass, stopped (BLOCKED, REWORK, REJECTED,
+    ESCALATED), failed — its stop rate, and how many times it was dispatched in Claude Code
+    against the verdicts it left. A verdict word no rule classifies is a run, not a pass.
+  - bugs by priority from each project's Beads: P0–P3 filed, open now, median time to close,
+    per project. A project whose Beads cannot be read is listed with bd's reason, never as zero.
+    Counts only — no bug title reaches the page.
+- **Usage → Guards and hooks**, from Claude Code's logs: which guard refused a call, which Stop
+  hook sent the turn back, which hooks failed and which timed out. A refusal is counted only where
+  Claude Code marked the result an error — output that merely quotes one is not a refusal.
+
+### Changed
+
+- The usage index is format v3 (`~/.great_cto/session-usage-index.v3.json`); older-format index
+  files next to it are removed by the collector.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.54.0 — 2026-10-07
+
+The board shows how close Claude Code and Codex are to their plan limits, and when they hit them.
+
+### Added
+
+- **Usage → Limits.** For Codex, from its own readings: every 5-hour and weekly window in the
+  period, how full it got, when it filled and how long before the reset, a line of percent used,
+  and for the open window where the current pace ends — "full by Thu 14:00, 2 days before the
+  reset" or "about 58% by the reset".
+- For Claude Code, which records no plan percentage (so none is drawn): spend in the last
+  5 hours and 7 days at API list price; every refusal filed under the limit that refused it —
+  5-hour session, weekly, monthly spend, per-model, usage credits — with server throttles apart;
+  the spend in the window at each refused hour as an observed ceiling with its count; and the
+  latest refusal in Claude Code's own words, which carry the reset time.
+
+### Fixed
+
+- Codex windows are known by their length: the week moved from `secondary` to `primary`
+  between plans, and a reset that drifts by seconds is one window, not forty.
+- The open Codex window is the one the latest reading belongs to — Codex has reset a week
+  early, and an older window could still look open on paper.
+- The judge key's "retry" link on Harness rendered in the browser's default blue when the live
+  check got no answer; it now uses the design system's colours.
+- The `serve enforces HMAC` gate checks take a free port instead of 3144/3145, where a board
+  already listening answered in place of the server under test.
+
+### Changed
+
+- The usage index is format v2 (hourly buckets, limit kinds, Codex readings) and is named by its
+  version, `~/.great_cto/session-usage-index.v2.json`, so a board still on 3.53.0 does not rebuild
+  the same file in turn. The 3.53.0 file can be deleted.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.53.0 — 2026-10-06
+
+The board shows what Claude Code and Codex actually consumed, side by side.
+
+### Added
+
+- **Usage screen (Tools → Usage)**, read from the hosts' own session logs on this machine
+  (`~/.claude/projects`, `~/.codex/sessions`), for 7 / 30 / 90 days:
+  - tokens per day by kind of work — conversations, subagents, automations, headless runs;
+  - the heaviest conversations with their share, project and subagent part;
+  - models, tools, skills, agents (great_cto's marked), MCP servers, cache share;
+  - Codex's plan window as Codex reports it: percent used, reset time, plan.
+- Claude Code does not record how much of a plan is used, so that figure is **not drawn**;
+  its refusals at the plan limit are, counted apart from server-side throttles.
+- Dollars are the API list-price equivalent from great_cto's price table, priced when read;
+  a model without a price shows n/a, never $0. Not a subscription bill.
+- `node scripts/lib/session-usage.mjs` prints the same summary in a terminal.
+
+### Fixed
+
+- **A response is counted once.** Claude Code writes one response as several lines that
+  repeat its usage; the reader takes it once per message id. Checked against Claude Code's
+  own cost record: equal to the cent on standard sessions. Codex's input is split into fresh
+  and cached, and a forked thread's inherited total is no longer read as usage.
+- Opening Work or History answered 400 into the console: the view counter did not know them.
+- The board E2E sidebar test clicked a tool hidden in the collapsed Tools group and failed on
+  main — unseen while a missing browser made the suite skip.
+
+### Privacy
+
+- The usage index lives in `~/.great_cto/session-usage-index.json`, is served by the board on
+  its own host only, and is not telemetry (`docs/PRIVACY.md`).
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.52.1 — 2026-10-06
+
+The new industry briefs are checked against shipped products, and say what is not.
+
+### Fixed
+
+- **Three of the four 3.52.0 briefs are now compared with a mature product's own data model**,
+  read from its repository, and corrected where they fell short:
+  - *nonprofit* vs CiviCRM — added tribute as a typed soft credit, peer-to-peer pages,
+    reminders per pledge installment, currency and a credit note on refunds, receipt vs
+    thank-you dates, fund → accounting code, the date grant money arrived.
+  - *agrotech* vs farmOS — one claim was wrong: farm platforms do **not** compute
+    pre-harvest, re-entry or withdrawal dates; that rule is now worded as the gap a product
+    fills. Added lot and source on inputs and seed, input stock as adjustments, dated
+    movements, observations and lab tests, plans.
+  - *travel* (small stays) vs QloApps — added ARI, min/max stay by date range, booking
+    window, extras, child ages, tourism-tax collection type.
+- **Each brief ends with a "Checked against" section.** It names the product compared with and
+  what is still unverified: tours, activities and advisors in *travel*, and all of *maritime*,
+  rest on domain knowledge until a live project tests them.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.52.0 — 2026-10-05
+
+Four more industries a product can be specced for without guessing.
+
+### Added
+
+- **Industry briefs for travel, nonprofits, small farms and maritime** — four new files of
+  the `verticals` skill, in the same shape as the existing twelve: the vocabulary, the rules
+  incumbents get right, what a naive build gets wrong, the entities to model, per-product
+  notes and light compliance. The architect and the project manager read the one that applies
+  before writing the spec.
+  - *Travel:* capacity lives on each departure and its resources, with a hold during checkout;
+    times are local to the place; a marketplace booking is not a payment received.
+  - *Nonprofit:* a gift is not an order — the household gives, a pledge is not a payment,
+    restricted money stays on its fund, the receipt is a tax document.
+  - *Farms:* records are made offline; history per field per season is never overwritten;
+    intervals after a spray or a treatment block harvest and sale; the lot code joins field
+    and customer.
+  - *Maritime:* a boat must fit the slip; charters sell in week blocks; maintenance is due by
+    hours or date; a container's free days before port charges are the point of tracking it.
+- Airline ticketing and navigation / safety-of-life features are named in the briefs as out of
+  scope. The briefs were written from domain knowledge and are not yet validated on a live
+  project in each industry.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.51.0 — 2026-10-05
+
+The smart-contract auditor prepares code for an external audit.
+
+### Added
+
+- **`/review --contracts --package`** — prepare mode for code headed to an audit firm.
+  Beside its own findings, `smart-contract-auditor` writes a threat model (actors, assets,
+  each privileged role's worst case, trust boundaries, assumptions), an invariant
+  specification (`INV-xx` with statement, expression, kind, the functions that touch it and
+  the test that checks it — with a checklist for staking pools, liquid staking and
+  oracle-driven rates), and a handler-based Foundry invariant suite that it runs. A handler
+  whose calls mostly revert is reported as "not exercised", a fuzzer's result as "no
+  counterexample in N runs × depth D" — never "proven" — and a counterexample goes through
+  the same four gates as any finding.
+- **The auditors' package** — `docs/security/audit-package-<slug>/`: scope and how to run,
+  architecture, threat model, invariants with results, known issues (open findings included,
+  with status), tool triage, testing, where to look first. Every file opens with "Prepared
+  for audit — not audited · commit <sha>".
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.50.0 — 2026-10-05
+
+The gates waiting on you, in the session you are working in.
+
+### Added
+
+- **Gate pane** — a Claude Code mod that ships inside the plugin (Claude Code 2.1.287+).
+  `/gates` opens a pane of the pending gates of the session's project; the status line counts
+  them, and a new gate raises a toast. A cheap gate is decided with **Approve / Reject** (`1` /
+  `2`); a gate expensive to undo keeps the board's ritual — type its name (`gate:ship`) and
+  press Enter. Every decision goes through the board's own route with the token it issued
+  (ADR-024), so the binding to the tree and the decision log stay in one place; the pane writes
+  nothing itself. A board that is not running, or a project it does not know, is said as such,
+  never as "no gates". See `docs/GATE-PANE.md`.
+  Older Claude Code skips the module and keeps every other hook; Codex reads only
+  `.codex-plugin/hooks.json` — both checked on the real engines.
+
+### Fixed
+
+- **The decision log no longer records a path for a project given by path.** A gate decided for
+  a project named by its absolute path logged `/Users/<name>/…` into `.great_cto/decisions.md`;
+  it now logs the directory's name.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.49.2 — 2026-10-05
+
+What is true of one project stays in that project.
+
+### Fixed
+
+- **The global memory layer no longer carries one project into every other.**
+  `~/.great_cto/{preferences,decisions,lessons}.md` is read into every session of every
+  project. An entry there that names a private project, or declares `project: <name>`, is
+  now dropped at the read door and the operator is warned — without the name. Private names
+  are derived the way `pre-push` derives them (your `~/.great_cto/private-terms` plus your
+  workspace directory names, minus `public-terms` and common words), and a test keeps the
+  two lists equal. 3.49.1 stopped one writer (a learner run in the home directory); this
+  holds whoever writes the file.
+- **If you see `PROJECT SCOPE — <file>: entry at line N dropped`** at session start, move
+  that entry into the `.great_cto/` of the project it is about.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.49.1 — 2026-10-05
+
+Every domain reviewer now says the same two words, and says who has to act.
+
+### Changed
+
+- **The 38 pre-implementation domain reviewers record `APPROVED` or `BLOCKED`, nothing
+  else.** None of them named a verdict line before, so each made one up — and the pipeline
+  dispatcher has rules only for `APPROVED` (advance to senior-dev) and `BLOCKED` (halt). A
+  `PASS` or `CONDITIONAL` stalled the pipeline in silence. Each reviewer's sign-off step now
+  ends with its own `scripts/log-verdict.sh` line carrying `feature=`, the `tm=` path it
+  actually writes, `criticals=`/`highs=`, and on `BLOCKED` `need=decision|implementer` plus
+  `finding=`. The rules live in `agents/_shared/reviewer-verdict.md`, inlined into the bundle.
+  **How far this is verified:** statically — a test checks all 38 lines (word, meta keys,
+  TM path), mutation-checked. No LLM eval has run for these agents yet, so no real reviewer
+  run has been observed writing the new line.
+
+### Fixed
+
+- **A session that ends in your home directory no longer writes lessons into the global
+  layer.** The learner takes its working directory for the project, so a session ending in
+  `~` wrote into `~/.great_cto/lessons.md` — the file injected into every session of every
+  project. Lessons about one project reached all of them, and the injection outgrew its
+  ceiling. The learner now skips the home directory and says why in `.last-auto-learn`. If
+  you have a `~/.great_cto/lessons.md` you did not write, it came from this; its entries
+  belong in the project they name.
+- **The HOL plugin scan reads what a user installs**, not the operator's checkout: a
+  snapshot of `git ls-files`. In a worktree that held `.claude/settings.local.json` it failed
+  on secrets in a file the plugin never ships.
+- **`tests/eval/runner.mjs --dry-run` no longer drops its last line** under a loaded machine:
+  it returns instead of calling `process.exit(0)` while stdout is still draining.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.49.0 — 2026-10-05
+
+Smart contracts get an auditor that works from the code, not the design.
+
+### Added
+
+- **`smart-contract-auditor`** — the 72nd agent. `oracle-reviewer` threat-models a web3
+  design before code exists; nothing audited the contracts once they were written. The
+  auditor runs the analyzers it finds (Slither, Aderyn, Solhint, Foundry; Echidna, Medusa,
+  Halmos, Mythril on demand), reviews twelve vectors, and keeps a finding only when it passes
+  four gates — executed, reachable, triggered by an unprivileged caller, materially harmful —
+  with file:line and a Foundry PoC for Critical/High. Any analyzer that did not run is listed as
+  "not checked", never as "clean". Writes `docs/security/AUDIT-{slug}.md`; FAIL while a
+  Critical/High is open, BLOCKED when nothing compiles or no analyzer ran. On the web3
+  archetype it is a required reviewer, so `gate:ship` waits for its verdict; elsewhere run it
+  with `/review --contracts`. Methodology adapted from pashov/skills (MIT), credited in
+  NOTICE.md.
+
+### Fixed
+
+- **qa-engineer's web3 Slither check never fired** — it tested `ls … | head -1`, whose exit
+  status is `head`'s. It now checks for the evidence file and accepts the auditor's report.
+- **Card numbers are redacted from the session learner's digest** — 13–19 digit runs that pass
+  the Luhn checksum become `[REDACTED card number]`; ids and timestamps that fail it stay.
+- **pre-push refuses commits made as avelikiy under any other address**, so a work address
+  linked to a second GitHub account cannot reach the public contributors list again.
+- **Board:** the project-not-found banner's title now meets WCAG AA contrast in the light theme
+  (5.45:1, was 4.08:1).
+- _Mention test counts and opt-out flags._
+
+---
+
+## v3.48.0 — 2026-10-02
+
+Three commands carry the day, from Claude Code or the terminal, on either host.
+
+### Added
+
+- **`great-cto run "…"`, `great-cto status`, `great-cto resume`** — the three daily entry
+  points from the terminal: they open Claude Code on `/start`, `/inbox`, `/resume`, or with
+  `--host codex` drive the controlled Codex runtime (`--dir`, `--dry-run`). Resume never
+  grants an approval, widens write scope or recovers a failed stage on its own.
+- **The board opens on Work** — your tasks, the decisions waiting on you, and History of
+  what shipped; Ledger, Fleet, Harness and Settings move under **Tools**. Approval and
+  resume are prepared as revision-bound commands you run; the browser executes nothing.
+- **Shared tasks across Claude Code and Codex** — one durable task identity, goal and
+  acceptance criteria per task, explicit run/session links, project leases against
+  concurrent launches, and operator-attested outcomes (docs/WORK-TASK-CONTRACT.md).
+- **Session learner, in windows** (opt-in) — with `learn_every_n` in
+  `~/.great_cto/config.json`, every N tool calls the learner reads the part of the session
+  written since the last window, so a long session is read whole instead of its last 8 MB.
+  Each window is a learner run capped at $0.5. A line at session start says what the
+  learner did last time.
+- **HOL plugin scanner in the local gate** — the exact build the awesome-codex-plugins
+  catalogue judges with (Cisco skill scanner included), with a reviewed false-positive
+  baseline; a new finding fails the gate.
+- A released-host quality benchmark (tests/eval) comparing Codex-only, Claude-only and
+  mixed runs. First result: no difference on two simple tasks — too simple to tell.
+
+### Changed
+
+- **README cut to its first screen** (394 → 120 lines) in all ten languages: what it does,
+  install, the three daily commands, the board, Codex, when it stops you, numbers. The rest
+  moved to docs/DETAILS.md. docs/COMMANDS.md lists three daily commands; `/save` and
+  `/digest` move to When you need it.
+- The session learner now reads what the assistant concluded, not only what the operator
+  typed — the lessons of a long working session were in its conclusions.
+
+### Fixed
+
+- `/inbox` LLM-budget alert read JSON the cost log never held and never fired; it reads the
+  measured spend now (and prints `85%`, not `850f`). Infrastructure-estimate rows are no
+  longer counted as LLM spend.
+- `l3-support` read its Grafana key in a shape scanners flag as a hardcoded secret.
+- The release title is the entry's lead sentence, not its first heading.
+- An empty-state hint on the board rendered at 10.83px, off the type scale.
+
+---
+
+## v3.47.0 — 2026-10-01
+
+One pipeline run can now use Claude Code and Codex side by side.
+
+### Added
+
+- **Mixed-host routing.** `npx great-cto codex-host start … --routes
+  qa-engineer=claude-code,security-officer=codex` assigns independent graph roles to
+  both installed CLIs. The two join roles read one snapshot at the same time; the
+  controller checks their proposals for overlap, applies them one after another, and
+  keeps the existing verifier and human gates. The route map is fixed for the run, both
+  role contracts are preflighted before any write, and an interrupted wave must be
+  inspected rather than restarted. Claude Code must be authenticated. Contract:
+  [docs/HOST-CODEX.md](docs/HOST-CODEX.md).
+
+### Fixed
+
+- Codex read-only stages can no longer write through a hidden shell command, and review
+  feedback survives a rework round with the controller's evidence visible.
+- The local gate builds the CLI as its first step and does not sign the commits its own
+  tests make, so it passes in a fresh worktree and with any signing setup.
+
+### Removed
+
+- The HOL catalogue scanner workflow. It qualified the plugin for a third-party
+  catalogue we decided not to join (74/100, 14 high findings on 2026-09-07, three of
+  them the word "eval"), and GitHub Actions has not run it since June. Removed by
+  decision rather than muted; the remaining findings are tracked for triage on their
+  own merits.
+
+---
+
+## v3.46.2 — 2026-10-01
+
+Spending caps now see what was actually spent, and `/board` starts on a marketplace install.
+
+### Fixed
+
+- **Cost caps compared against $0.** `cost-guard` looked for `cost_usd=N` in
+  `.great_cto/cost-history.log`, a format no writer emits, so `daily_max_usd` and
+  `monthly_max_usd` could never fire. `/start` and `/digest` printed today's and this
+  month's spend with the same pattern and always showed $0.00. One reader,
+  `scripts/lib/cost-history.mjs`, now holds the row rules for all six places that read
+  the log. **If you set `"enforce": "block"`, caps now really block**; the default
+  (`warn`) is unchanged.
+- **Repeat runs of one agent were under-counted** in the run budget, the bench report and
+  handoff packages: every `turns=` row was treated as a session running total, but since
+  2026-09-11 those rows are one agent run each. Legacy running-total rows still count by
+  their increment.
+- **`/board` failed on marketplace installs.** A marketplace install is a git clone
+  without the CLI build, and every auto-update re-clones it; `/board` ran the plugin copy
+  because `index.mjs` existed and died on "dist/main.js not found" before falling back to
+  a global `great-cto`. It now checks for the build.
+- The local gate builds the CLI before the tests that import it, so a fresh worktree (and
+  `--quick`) no longer fails on `ERR_MODULE_NOT_FOUND`.
+
+---
+
+## v3.46.1 — 2026-09-30
+
+### Fixed
+
+- **Where to approve great_cto's hooks in Codex.** The docs said "on the next interactive
+  `codex` start"; in the ChatGPT/Codex app that screen never appears, so an approval there
+  records nothing and every guard stays off. The terminal UI shows it (verified with the
+  app's own codex-cli 0.159.2). README (+ 9 translations), HOST-CODEX, the installer,
+  `great-cto upgrade`, `install-local` and `/doctor` now say: run `codex` in a terminal and
+  choose **Trust all and continue** at "Hooks need review".
+- Also in this release: `docs/COMMANDS.md`, the guide to all 21 commands the README and
+  the landing's /commands page are built from, and a retry with the error shown when
+  `install-local` refreshes Codex.
+
+## v3.46.0 — 2026-09-30
+
+Codex gets great_cto updates, and the Codex review check reads what Codex actually runs.
+
+### Fixed
+
+- **great_cto in Codex never updated.** Codex installs great_cto from a Git marketplace
+  snapshot and never refreshes it on its own; releases updated only the Claude Code
+  plugin. On the maintainer's machine Codex sat at 3.37.0 while 3.45.0 shipped, so none
+  of the Codex guards of 3.42–3.45 had arrived. `codex plugin marketplace upgrade
+  great-cto` refreshes the snapshot and the installed plugin together (measured), and now:
+  - **`great-cto upgrade`** runs it when Codex has the great-cto marketplace;
+    **`great-cto upgrade codex`** runs only that. `codex` is found on PATH, then under
+    `~/.nvm`, then in Codex.app — a shell that did not load nvm could not see it.
+  - `install-local` refreshes Codex after a release has pushed the tag.
+  - README (+ 9 translations) and the Codex installer say Codex does not update itself.
+- **`/doctor` Check 8g read the wrong hooks.** It derived the review keys from the checkout,
+  so an install that ships no hooks (3.37.0) was reported as "hooks not reviewed". It now
+  reads the hooks the installed Codex plugin declares, says "ships no hooks" for such an
+  install, and says when the install is behind the current version.
+
+Tests: `codex-upgrade` (5, with a fake `codex` and a throwaway CODEX_HOME),
+`codex-hook-trust` rewritten for installed-plugin reading (5).
+
+## v3.45.0 — 2026-09-28
+
+Measure the hints before adding more, and say when Codex is running none of the guards.
+
+### Added
+
+- **Hints are recorded and can be counted.** `edit-impact` and `lesson-tripwire` write a
+  `hint` event to `<project>/.great_cto/events.jsonl` — which hook, which file, how long,
+  which host; never what it said — and only where `.great_cto` already exists.
+  `node scripts/lib/hint-report.mjs [--since DATE]` reads them back per hook: fires,
+  fires per session, mean length, the files it fires on most. The board shows them as
+  `hint: <hook> <file>`. Local only; nothing is sent anywhere.
+- **`/doctor` Check 8g: are great_cto's hooks running in Codex?** Codex runs a plugin hook
+  only after you review it once, and until then every great_cto guard there is off with
+  no error. The check reads the review marks Codex writes to `~/.codex/config.toml`
+  (format measured on codex-cli 0.153.4), derives the keys the shipped hooks need, and
+  reports reviewed / partly / not, with the one-step fix. It never reviews for you.
+  (`node scripts/lib/codex-hook-trust.mjs` runs it on its own; exit 3 when not reviewed.)
+
+### Fixed
+
+- **`lesson-tripwire` fired on reads.** A `grep` over a file a lesson names raised that
+  lesson — the first noise it produced. Arguments of commands that only read (`cat`,
+  `grep`, `ls`, `sed -n`, `git log`, …) no longer count; running or writing the file does.
+
+Tests: hint events and the reader filter (3), `hint-report` (2), `codex-hook-trust` (3).
+
+## v3.44.0 — 2026-09-28
+
+The two edit hints reach Codex as well.
+
+### Added
+
+- **`edit-impact` and `lesson-tripwire` run on OpenAI Codex.** Codex relays a PreToolUse
+  `additionalContext` to the model — verified on a probe plugin and then with great_cto
+  itself: an `apply_patch` changing a function's signature came back with
+  "imported by (1): src/job.ts … No test covers it", and Codex quoted it. The Codex
+  adapter now collects what context hooks print and sends it once; a guard's deny still
+  wins over context printed by an earlier hook on the same call. `lesson-tripwire` runs on
+  shell calls, both on `apply_patch`. Like the guards, they run once you have reviewed the
+  great_cto hooks in Codex.
+
+Tests: the adapter's context pass-through, including that a deny is not softened (3 new).
+
+## v3.43.0 — 2026-09-28
+
+A recorded lesson reaches the model at the moment a call touches what it is about.
+
+### Added
+
+- **`lesson-tripwire`** (PreToolUse, Bash and Edit/Write/MultiEdit). Lessons were loaded
+  whole at session start, where forty entries bury the one that matters three hours later.
+  Now a lesson's keys — the files in its Evidence and the paths, flags and identifiers it
+  names in backticks — are matched against each call: the file being edited, the words of
+  the parsed shell command (so a commit message that mentions a path is one word, not the
+  path), or an identifier in the text being written. A key most lessons share points at
+  none of them and is dropped. At most two lessons and 700 characters per call, each lesson
+  once per session; context only, never blocks. Reads the project's `.great_cto/lessons.md`
+  and `~/.great_cto/lessons.md`. Opt out: `GREAT_CTO_DISABLE_LESSON_TRIPWIRES=1`.
+
+Idea from agentlas-ai/Agentlas-OS (Apache-2.0), rebuilt; see NOTICE.md.
+
+Tests: `lesson-tripwire` (6) — parsing the lesson format as written, the shared-key cut,
+matching by file, shell word and identifier, once per session, the two-lesson cap.
+
+## v3.42.0 — 2026-09-28
+
+The safety guards reach Codex, the model sees who depends on a file before it edits
+it, and frozen gates can no longer be changed through the shell.
+
+### Added
+
+- **Six safety guards run on OpenAI Codex as plugin hooks.** Codex does run plugin hooks
+  — verified on codex-cli 0.153.4, first with a probe plugin and then with great_cto
+  itself: `git commit --no-verify`, `rm -rf .git` and an `apply_patch` adding an AWS key
+  were each blocked with our reason relayed, even under `danger-full-access`. The 05.09
+  attempt failed on shape, not on surface: Codex wants `{ hooks: { Event: [...] } }`, and
+  honours a path named in `.codex-plugin/plugin.json`, so the file is
+  `.codex-plugin/hooks.json` — not `hooks/hooks.json`, which Claude Code would load too.
+  Shell calls reach the guards unchanged; `scripts/hooks/codex-adapter.mjs` splits an
+  `apply_patch` into one Edit/Write per file. Guards: shared-tree, gate-bypass,
+  destructive, frozen-gates (shell); secret-scan, frozen-gates, gate-weakening (edits).
+  **Codex runs them only after you review them once**, on the next interactive `codex`
+  start; README, HOST-CODEX and the installer's plan now say so.
+- **`edit-impact`** (PreToolUse, Edit/Write/MultiEdit) — before an existing code file is
+  edited, the model is told which files import it (relative imports resolved exactly,
+  an alias marked as a name match), which tests import it or match its name, and which
+  files git shows are changed in the same commits. Context only, never blocks; once per
+  file per session; ~110 ms; ≤2.5k characters. For the failure where a signature changed,
+  the wrapper a background job called did not, and green tests hid it. Opt out:
+  `GREAT_CTO_DISABLE_EDIT_IMPACT=1`.
+
+### Changed
+
+- **`frozen-gates-guard` sees shell writes.** `sed -i`, `>`/`>>`, `tee`, `cp`/`mv`,
+  `perl -pi`, `rm`, `truncate`, `dd of=` and `git checkout|restore --` into `docs/gates/`
+  were caught only afterwards by the git-diff check; the guard now runs on Bash too and
+  reads the targets from the parsed command, so a commit message that mentions a gate is
+  not a write.
+
+Ideas from agentlas-ai/Agentlas-OS (Apache-2.0), rebuilt; see NOTICE.md.
+
+Tests: `codex-adapter` (7, including the real guards through the adapter),
+`edit-impact` (5, on a throwaway repository), frozen-gates shell writes (3), and the
+Codex manifest test now checks the hooks schema instead of forbidding hooks.
+
+## v3.41.0 — 2026-09-27
+
+A clean way out: `great-cto uninstall` shows what an install wrote and what is yours, and
+removes only the first.
+
+### Added
+
+- **`great-cto uninstall`** — prints a plan and changes nothing; `--yes` carries it out.
+  - **Removes** what an install wrote: plugin versions in `~/.claude/plugins/cache`, the agents
+    and commands marked `great_cto-managed`, the great_cto keys in `settings.json` and
+    `installed_plugins.json` (each file backed up first, every other key kept), the board
+    process and its login service, and the caches in `~/.great_cto` (clones, registries,
+    runtime files).
+  - **Keeps** a plugin version an open Claude Code session loads (and says so), agents and
+    commands without the marker, companion plugins, and your data — `~/.great_cto` with
+    decisions, lessons, verdicts, cost history and `secrets.env`, and each project's `.great_cto/`.
+  - `--purge-data` **moves** `~/.great_cto` to `~/.great_cto.removed-<date>` rather than
+    deleting it: `secrets.env` may hold the only copy of a key. `--projects` also removes the
+    pre-push hook `init` wrote into registered projects.
+  - Host-owned steps are printed, not taken: `claude plugin uninstall`, `claude plugin
+    marketplace remove`, `codex plugin remove`, `npm uninstall -g great-cto`.
+
+### Changed
+
+- The FAQ's uninstall answer ("`rm -rf` clears everything") left the plugin registered, its
+  agents and commands installed and the board service loaded; it now describes the command.
+
+Tests: `packages/cli/tests/uninstall.test.mjs` (8) — built against a temporary HOME, including
+that an unmarked command, `secrets.env`, another plugin's cache and unrelated settings keys
+survive `--yes`.
+
+## v3.40.1 — 2026-09-27
+
+A lighter skill list and a release script that cannot push the wrong branch.
+
+### Changed
+
+- **Twelve domain briefs are files of one `verticals` skill** (−3.0k tokens in every
+  session: 44 skills / ~9.0k tokens of descriptions → 33 / ~6.0k). The eleven `vertical-*`
+  industry skills and `local-seo` were read by architect as files, never through the Skill
+  tool, yet each description sat in every session's skill list. They now live in
+  `skills/verticals/`, beside a SKILL.md whose one short description maps a product to its
+  file — so Codex, where skills are the whole surface, still finds them. `vertical-onboarding`
+  stays a skill (migration-import-engineer preloads it).
+- **`local-seo` has a caller.** It was the one skill nothing read; architect now reads it for
+  public pages that must rank, and the orphan cap drops from 1 to 0.
+- `skill-usage` counts a read of any file in a skill's directory as that skill.
+
+### Fixed
+
+- **`release.sh` refuses a branch other than `main`** instead of asking "continue anyway?".
+  It pushes the local `main` ref, not HEAD: answering yes on a release branch tagged that
+  branch and pushed a stale `main`; without a terminal the question waited forever.
+
+## v3.40.0 — 2026-09-27
+
+Twenty-one commands instead of forty-three. Each job now has one command, and a mode of it
+where two used to overlap; the README, `/help` and the landing page describe them by the
+moment you reach for them, not as a feature list. Old names map in the table below and in
+`/help renamed`.
+
+### Changed behaviour — read before upgrading
+
+| Old | Now |
+|---|---|
+| `/audit` | `/start audit` — and `/start` in a repo with code but no great_cto config takes the audit path itself. `/audit` stays as an alias. |
+| `/discover` · `/prd` | `/spec discover` · `/spec prd` (`/spec <description>` still builds the spec) |
+| `/migrate [--dry-run]` | `/doctor --fix` (plain `/doctor` shows the preview) |
+| `/promote <slug>` | `/poc promote <slug>` |
+| `/oncall <action>` | `/ownership oncall <action>` |
+| `/learn [focus]` | `/crystallize learn [focus]` |
+| `/ccr <id>` | `/recall ccr:<id>` |
+| `/cost …` · `/cost sessions` | `/digest cost …` · `/digest sessions` |
+| `/burn [service]` | `/digest slo [service]` |
+| `/gov-metrics …` | `/digest gov …` |
+| `/agent-review` · `/gen-evals` · `/prompt-evolve` · `/agent-retire` | `/agent review` · `/agent evals` · `/agent evolve` · `/agent retire` |
+| `/tax-review` · `/upl-check` · `/aedt-bias-audit` · `/api-contract-review` · `/close-review` · `/coding-audit` · `/msp-review` · `/procurement-review` · `/voice-compliance` | `/review --domain tax` · `legal` · `hr-ai` · `api` · `accounting` · `rcm` · `msp` · `procurement` · `voice` (old names accepted as aliases of the domain) |
+| `/review trace <id>` | `/trace <id>` |
+
+- Removed command files leave `~/.claude/commands` at the next session start (managed copies
+  only; a file you wrote yourself is kept).
+- **Model per command.** `/agent` runs on sonnet for all four modes; three of the old commands
+  ran on haiku, so a review or an eval generation costs more per run. `/crystallize learn`
+  runs on sonnet where `/learn` ran on haiku.
+- **`/digest` modes are user-invoked only** (`disable-model-invocation`), like `/digest`
+  itself; the model could previously call `/cost` and `/burn` on its own.
+- The CLI's hint for `great-cto learn`, `burn` and `migrate` quotes the new command.
+
+### Changed
+
+- **README, translations, `/help` and the landing page** open with "a day with great_cto":
+  five commands by moment — `/start`, `/save`, `/resume`, `/inbox`, `/digest` — and the
+  rest by when you need them. Command descriptions lead with when to run and what you get.
+- **The default is three decisions, and the docs now say so everywhere.** `/start`'s
+  description, the `/help` card ("the one gate … `gate:plan`") and the FAQ ("two decisions")
+  disagreed with `approval-level.mjs`, which stops at `gate:product`, `gate:arch` and
+  `gate:ship` by default.
+
+### Fixed
+
+- **Three board status colours were under WCAG AA on the light theme**, measured on the
+  surfaces they sit on: in-progress / rework ink 4.45:1 on the harness panel, the backlog
+  pill 4.17:1, the done pill (green ink on a blue bed) 4.26:1. Now 5.08, 4.99 and 4.94; the
+  done pill's bed is green, matching its ink.
+
+Tests: four new command-surface suites (`review-domains`, `command-subcommands-b|c|d`).
+
+## v3.39.0 — 2026-09-27
+
+See where your sessions spend, with 1-hour cache writes priced correctly; reviewers can no
+longer invent a quote; `/save` and `/resume` carry the proof and the state; one command,
+`/crystallize`, for turning experience into knowledge.
+
+### Changed behaviour — read before upgrading
+
+- **`/skillify` is now `/crystallize skill [name]`.** One command turns repeated experience
+  into reusable knowledge: `review`/`approve` promote what incidents taught into patterns and
+  agent changes, `skill` captures a procedure you keep walking agents through. The old
+  command file is removed from `~/.claude/commands` at the next session start.
+
+### Added
+
+- **`/cost sessions [days]`** (`scripts/lib/session-shape.mjs`) — how your own sessions spend,
+  not only your agents: turns, active hours, cache rebuilds, main-thread vs subagent models,
+  a traffic-light table with stated thresholds, and the three habits worth most to change.
+  Local and read-only; projects are anonymised and message text is never read. On the
+  measuring machine (30 days): 98% of spend in 15 sessions over 300 turns or 4 active hours,
+  and ~$6.2k of cache rebuilds that a fresh session or `/compact` would have avoided.
+- **Quote verification** (`scripts/lib/quote-verify.mjs`) — a passage a reviewer quotes must
+  exist in the file it cites (exact, then normalised). `finding-evidence` rejects a finding
+  with an invented quote; domain reviewers and code-reviewer check a quote first or mark it
+  as a paraphrase.
+- **`/save` records where the work stands and how to prove it** — branch@sha, dirty files,
+  stash count, running dev servers, a `Verify:` command for each done item, and the next
+  step as the first action. **`/resume` says at the top when the note is stale** (commits
+  since, branch changed) and re-runs only cheap read-only proofs before acting.
+- **skill-lint SK-007** — an unquoted frontmatter value that strict YAML reads differently is
+  an error; agents and commands are held to the same rule.
+
+### Fixed
+
+- **1-hour cache writes were priced at the 5-minute rate.** They bill at 2× the input price,
+  not 1.25×; `cost-meter` now prices each TTL from `usage.cache_creation`. Main Claude Code
+  sessions write the 1-hour cache, so their cost was understated (measured: $27.1k → $29.7k
+  over 30 days on the measuring machine); subagents write the 5-minute cache and are unchanged.
+
+Ideas from techwolf-ai/ai-first-toolkit (MIT): token-doctor, kb-verify, the handoff skill
+and preflight's strict frontmatter check — each rebuilt on great_cto's own libraries.
+
+
+## v3.38.0 — 2026-09-26
+
+Two hooks that looked like protection never ran — the destructive-command check and the write
+log both read the wrong field of the hook payload. Both are fixed, and a test now runs every
+inline hook against the payload Claude Code sends. With them: a guard against weakened
+lint and type checks, a contract that fetched text is data, injection screening of memory,
+a `ci-resolver` agent, duplicate-finding merge in `/review`, a loop detector, opt-in
+typecheck at Stop, a GitHub Actions checker, and skill measurement.
+
+### Fixed
+
+- **The inline "Dangerous command" check never blocked anything.** It read `command` from the
+  top of the hook payload; Claude Code sends `tool_input.command`, so `rm -rf ~`, force pushes
+  and `DROP TABLE` all passed. It is replaced by `scripts/hooks/destructive-guard.mjs`, which
+  parses the command and refuses only what cannot be undone — `rm -rf node_modules` passes,
+  `rm -rf ~` does not — and names a safe alternative. A signed `destructive-command`
+  exception is the sanctioned bypass.
+- **The write log never wrote a line.** The same mistake (`file_path` read from the top) meant
+  `.great_cto/agent-writes.log` was never created in any project. A new test runs every inline
+  hook against the payload shape Claude Code sends.
+
+### Changed behaviour — read before upgrading
+
+- **Destructive commands are refused** (see Fixed) — this is new behaviour for every session,
+  because the old check never ran.
+- **gate-weakening-guard also refuses added lint/type suppressions and weakened configs:**
+  `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`, `eslint-disable*`, `noqa`, `type: ignore`,
+  `pylint: disable`, `#[allow(`, `//nolint`, `@SuppressWarnings`; `"strict": false`,
+  `skipLibCheck: true`, an ESLint rule set to `"off"`, more Python-lint ignores. Moving a
+  suppression nets zero and passes; edits are checked against the whole file.
+
+### Added
+
+- **`ci-resolver` agent** — owns a red pipeline: names each red check's cause (real
+  regression, false test, broken gate, flaky) with evidence, lands one minimal fix per cause
+  and proves green. It never skips a test, marks a check allow-failure or uses `--no-verify`.
+  71 agents.
+- **Fetched text is data** (`agents/_shared/untrusted-content.md`): all 65 agents with
+  WebFetch/WebSearch now treat web pages, issue/PR text, logs and third-party files as data,
+  never instructions, and report injection attempts. Lint rule SEC-001 enforces the pointer.
+- **Memory and shipped prompts are screened for injection.** Global memory entries carrying
+  invisible Unicode, instructions hidden in HTML comments or injection phrases are dropped
+  before they reach a session (one notice, never the text); `agent-shield` blocks invisible
+  Unicode in agents, skills, commands and hook commands.
+- **`/review` merges duplicate findings before triage** (`scripts/lib/findings-dedupe.mjs`):
+  each bug is verified once, with every angle that found it listed.
+- **`loop-detector`** — an agent repeating the same call 5× or churning one file against red
+  tests gets one nudge to change approach or report BLOCKED.
+- **Typecheck at Stop (opt-in)** — the files edited this turn are typechecked once with the
+  project's own `tsc` (or pyright/mypy); errors send the model back. 60 s budget, process-group
+  kill. Enable with `GREAT_CTO_TYPECHECK_AT_STOP=1` or `typecheck_at_stop: true`.
+- **`workflow-security`** — security-officer checks a project's GitHub Actions (pwn-request
+  checkouts, script injection in `run:`, broad permissions, mutable action refs) with file:line;
+  any HIGH blocks gate:ship.
+- **Skills are measured and checked like agents.** `scripts/lib/skill-usage.mjs` counts from
+  local transcripts how often each skill is invoked, preloaded or read (16 of 44 were not seen
+  in 30 days on the measuring machine); `scripts/skill-lint.mjs` checks every SKILL.md and runs
+  in the gate.
+
+Ideas from a component-by-component comparison with affaan-m/ECC (MIT); every mechanism is
+rebuilt on great_cto's own parser, exceptions and hooks. Plan: `docs/plans/PLAN-2026-09-26-ecc-hardening.md`.
+
+
+## v3.37.1 — 2026-09-25
+
+Every main session starts about 4.6k tokens lighter.
+
+### Changed
+
+- **Each main session starts ~4.6k tokens lighter.** Every agent is registered twice — as
+  `senior-dev` (the installed copy, 96% of dispatches) and as `great-cto:senior-dev` (the
+  plugin's). Both keep their full prompts; the plugin's copy now lists a one-line description
+  instead of repeating the full one. Measured on the first turn of a main session: 108.0k /
+  109.8k → 102.9k / 105.7k tokens. ADR-027, amended with option E.
+
+
+## v3.37.0 — 2026-09-25
+
+Three guards turn rules the agents were told into refusals the tools enforce: no destroying
+another session's uncommitted work, no skipping the git hooks, no switching a check off to
+make it green. The two gate guards yield to a signed, expiring exception; the tree guard to an
+opt-out for a tree nobody else works in.
+
+### Changed behaviour — read before upgrading
+
+- **Skipping the git hooks is refused** (`scripts/hooks/gate-bypass-guard.mjs`, PreToolUse on
+  Bash): `--no-verify`, `git commit -n`, `git -c core.hooksPath=…`, setting or unsetting
+  `core.hooksPath`, `HUSKY=0` and `SKIP=` before git. pre-push is what keeps private names out
+  of a public push, and its own advice named the flag that switched it off. A bypass the
+  operator agrees to is a signed, expiring exception for gate `git-hooks` (`/exception`).
+- **An edit that switches a check off is refused** (`scripts/hooks/gate-weakening-guard.mjs`,
+  PreToolUse on Edit/Write/MultiEdit): an added test skip (`.skip`, `.only`, `xit`,
+  `@pytest.mark.skip`, `t.Skip`, `#[ignore]`, Dart `skip:`) or CI allow-failure
+  (`continue-on-error: true`, `allow_failure: true`, `*SKIP*: 1`). Existing skips and
+  removals pass; a quarantine goes through an exception for gate `gate-weakening`.
+- **Commands that destroy uncommitted work are refused** (`scripts/hooks/shared-tree-guard.mjs`,
+  PreToolUse on Bash): `git stash` (all but `list`/`show`), `git checkout -- <path>` / `.` /
+  `-f`, `git restore <path>` (unstaging with `--staged` stays allowed), `git reset --hard`,
+  `git clean -f`. Several sessions often share one working tree, and another session's
+  uncommitted edits are in neither the index nor the history. The refusal tells the agent
+  the safe route: a patch (`git diff > /tmp/x.patch`) or a separate `git worktree`. The
+  command is parsed, not grepped — a commit message that mentions `git stash` passes;
+  `a && git stash -u`, `$(…)`, `bash -c` and `eval` are seen. Measured cause: at effort
+  MEDIUM, senior-dev ran `git stash -u && npm test; git stash pop` in 2 of 3 runs. It also
+  refuses `git reset --hard` inside an agent's own isolated worktree; in a tree nobody else
+  uses, set `GREAT_CTO_DISABLE_SHARED_TREE_GUARD=1`.
+
+### Fixed
+
+- **Locating the installed plugin could pick a stale version.** Every lookup sorted the whole
+  path with `sort -V`, so with two marketplaces installed `cache/local/…/3.36.0` beat
+  `cache/great-cto/…/3.37.0` ("l" > "g"). Lookups now sort by the version segment, and a test
+  refuses any lookup written the old way.
+- **The README's Fleet screenshot showed an empty fleet since 3.28** — the capture fixture had
+  no installed agents. It installs them now, and the capture refuses to photograph an empty
+  panel.
+
+## v3.36.1 — 2026-09-25
+
+architect, pm and product-owner start 13k tokens lighter on every turn.
+
+### Changed
+
+- **architect, pm and product-owner no longer carry the Skill tool.** The tool puts the name
+  and description of every installed skill into the agent's prompt on every turn. Measured
+  as a dispatched subagent, architect's first-turn prompt fell 78.4k → 65.5k tokens (−16.5%)
+  — on Opus, every turn. The skills they loaded on demand (the `vertical-*` industries,
+  `outcome-roadmap`, `product-economics`, `opportunity-solution-tree`) are now read as files
+  from the installed plugin when they apply. The tool had shipped in 3.32 but only reached
+  sessions with 3.36, when the stubbed local plugin was fixed — no run had used it.
+
+## v3.36.0 — 2026-09-25
+
+The proposal you approve with one word now says how the work counts as done, a bug is
+reproduced before it is fixed, and there is a tool to see whether that lowered the rate at
+which you correct the work. senior-dev also starts a third lighter.
+
+### Added
+
+- **A task brief before the first edit** (`agents/_shared/task-brief.md`, operating rule 6).
+  The proposal an operator approves with one word now carries `Done when:` — a check the
+  agent runs itself on what ships — with guesses marked `[A1]` and at most three questions,
+  each with a recommended answer. A bug is reproduced before it is fixed, and is done when
+  that repro passes where the operator saw it. senior-dev, devops and l3-support follow it;
+  the coordinator's Worker Contract takes its acceptance criterion from it. Sized: a tiny
+  task gets one line.
+- **`scripts/lib/request-quality.mjs`** — how often requests get corrected, from your own
+  session logs; local, read-only, numbers only. Baseline on the measuring machine: 7.0% of
+  requests corrected within three turns, 83 "it doesn't work" reports in 60 days, 0 of 965
+  approvals of a proposal that said when it would be done.
+
+### Changed
+
+- **senior-dev starts a third lighter.** It no longer preloads `ui-ux-pro-max` (46 KB — UI
+  choices come from the DESIGN doc, written with that skill) or
+  `superpowers:subagent-driven-development` (29 KB — senior-dev dispatches no subagents).
+  Measured as a dispatched subagent: first-turn prompt 83.4k → 55.5k tokens, median run
+  5.4 → 4.6 min, cost $1.87 → $1.63, same results. The sentence naming
+  `web-artifacts-builder` and `theme-factory` is gone — neither skill ships or was installed.
+- **`prompt-size` counts preloaded skills**, which Claude Code injects in full into every
+  run of the agent. Skills from other plugins are listed, not sized.
+
+
+
+
+
+
+
+
+## v3.35.0 — 2026-09-25
+
+The review stage runs side by side, orchestrators hand out independent work in one message,
+and agent speed can be measured. A benchmark also showed that the plugin most machines
+registered from the local marketplace never loaded at all — see *Fixed*.
+
+### Changed behaviour — read before upgrading
+
+- **Review fans out.** After senior-dev, code-reviewer, qa-engineer and security-officer are
+  dispatched together, and each waits for the other two before devops (`shared/pipeline.toml`
+  `join`). The stage takes as long as the slowest reviewer instead of their sum — by the
+  measured medians, 8.3 → 5.7 min. code-reviewer's edge now carries `gate:ship` too, so
+  whichever reviewer finishes last cannot reach devops without the ship decision. If one
+  reviewer blocks and the code changes, the others' verdicts predate the change and
+  `gate:ship` refuses them — a fan-out cannot ship a stale pass.
+- **coordinator dispatches disjoint packets in one message; pm plans in waves.**
+
+### Added
+
+- **`scripts/lib/agent-speed.mjs`** — per agent: median and p90 minutes, tool calls, the
+  share of turns that carried more than one tool call, and the share of time spent in the
+  model, from Claude Code's own subagent transcripts. `--since` / `--until` compare windows.
+- **`scripts/lib/affected-tests.mjs`** — the test command for the files you changed (JS/TS,
+  Rust, Dart/Flutter, Python, Go), or `full` when nothing maps.
+- **`agents/_shared/work-fast.md`** in 14 working agents: batch independent calls, never poll,
+  targeted tests while iterating and the full suite once. **Measured and not effective yet:**
+  in a controlled benchmark (one TDD task, three runs per prompt) the rules did not change how
+  often senior-dev batched calls or re-ran the full suite. They are shipped as harmless;
+  making them hold will take enforcement, not a sentence.
+
+### Fixed
+
+- **`great_cto@local` never loaded.** The `local` marketplace entry `install-local.sh` feeds
+  gave `source` as an absolute path, which Claude Code rejects and replaces with a stub that
+  has no hooks. Machines with both registrations ran the GitHub marketplace one — on the
+  measuring machine, 3.29.1's hook list — so hooks added in 3.30–3.34 never registered there,
+  and `shared/*.toml` kept being copied into projects. `install-local.sh` now also updates
+  `great_cto@great-cto`. To check yours: `claude plugin list`; one great_cto enabled, current
+  version. `claude -p ok --debug hooks` then `~/.claude/debug/latest` shows what loads.
+
+
+## v3.34.0 — 2026-09-23
+
+great_cto stops leaving its own state in your repository's history, reads its pipeline
+contracts from the plugin instead of re-copying them into every project, and writes at
+the project root however far a session wanders into subdirectories.
+
+### Changed behaviour — read before upgrading
+
+- **SessionStart no longer copies `shared/pipeline.toml` and `shared/orchestrator.toml`
+  into your project.** Hooks read the plugin's contract. A project file is used only when
+  its first lines say `great_cto: project override`; an unmarked `shared/*.toml` — what
+  every earlier version copied in — is ignored, so it cannot pin your project to an old
+  contract. If you had edited one deliberately, add that line. Otherwise the copies can be
+  deleted.
+- **Every hook starts in the project root** — the nearest directory with
+  `.great_cto/PROJECT.md` — so `.great_cto/` directories stop appearing inside `backend/`,
+  `docs/`, `infra/` and other subdirectories a session `cd`s into.
+- **`.great_cto/.gitignore` is written at session start** with a managed block of
+  great_cto's machine-local state: turn markers, event and cost logs, the per-session copy
+  of the plugin's `SKILL.md`, `env.sh`, session stubs, `status/`, `cache/`. Lines you add
+  outside the block are kept; your root `.gitignore` is not touched. Project records stay in
+  git: `PROJECT.md`, `verdicts/`, `brain.md`, `FLOW.md`, `CODEBASE.md`, `lessons.md`,
+  `decisions.md`, and the logs `/save` writes. Files you already committed stay tracked
+  until you untrack them (`git rm --cached`).
+
+### Fixed
+
+- **senior-dev's autonomy rule overrode "ask before proceeding".** The 3.31 paragraph ended
+  with a sentence that cancelled the ask-first list above it (a lint rule to disable, an
+  "unrelated" failing test, an empty TEST-SPEC). Found by the fleet re-measure; tuning fell
+  to 4/5, and is 5/5 again with the list restored.
+
+### Measured
+
+Fleet re-measured on 3.33/3.34 — see docs/plans/PLAN-2026-09-16-agent-quality.md.
+
+
+## v3.33.0 — 2026-09-23
+
+Parallel work merges only after a check that touches nothing, orchestrators wait on the
+project instead of polling it, a re-review reads what changed, and a session with nothing
+to learn from no longer starts a paid learner.
+
+### Changed behaviour — read before upgrading
+
+- **Auto-learn skips a session it cannot learn from.** With `"auto_learn": true`, every
+  ended session started a paid learner — including a one-shot `claude -p` from a script,
+  which has no transcript at all. The runner now skips, without calling the model, when
+  there is no transcript or the operator wrote fewer than two messages, and
+  `.great_cto/.last-auto-learn` says which: `skipped: no transcript`,
+  `skipped: 1 operator message(s)`.
+
+### Added
+
+- **`merge-preflight`: a lane's branch merges only after a check that touches nothing.**
+  `clean` / `conflict` (with the files named) / `nothing-to-merge` / `refused-dirty` /
+  `refused-not-on-base` / `not-checked`, from `git merge-tree --write-tree`. It changes no
+  tree, index, ref or stash — stashing or switching branches to make a merge possible takes
+  another session's uncommitted work with it, and that work is in no commit. An empty lane
+  branch is a finding, not a success: the work is somewhere else. coordinator runs it before
+  merging a lane.
+- **`board-watch`: one blocking wait instead of a polling loop.** It returns when an agent
+  writes a verdict (negative ones first) or a session stops on a permission prompt, with a
+  cursor so nothing between calls is missed, and it reads the project's own files — the
+  board need not be running. coordinator's MONITOR phase uses it; under Codex it is the new
+  MCP tool `wait_for_board_change`. 69 agent runs ended at their turn cap on the projects
+  measured, most of them waiting by listing.
+- **`review-range`: a re-review reads what changed since the last one.** code-reviewer
+  reviews `marker..HEAD` plus uncommitted files, says `nothing-new` when nothing changed,
+  and falls back to a full review — with the reason — when the marked commit was rebased
+  away. It ended 6 of 28 runs at its turn cap re-reading whole features after a fix.
+
+All three are mechanisms from [fynnfluegge/agtx](https://github.com/fynnfluegge/agtx)
+(Apache-2.0), written for this project; no code was copied.
+
+
+## v3.32.0 — 2026-09-22
+
+Skills now reach the agents that need them, the board says which session is waiting for
+you, and a verdict written before the code it is supposed to cover no longer counts.
+
+### Changed behaviour — read before upgrading
+
+- **`gate:ship` also refuses when security-officer's verdict predates the last code
+  change**, as it already did for QA. A verdict is evidence about the code it saw.
+- **Agent `skills:` lists were cleaned of names that load nothing.** Measured across
+  1,987 subagent transcripts: a listed skill is preloaded into the agent at start by
+  bare name, and a name that resolves to nothing is dropped silently. `beads` sat in 39
+  agents and loaded zero times; so did `anthropic-skills:*`,
+  `product-management:brainstorm`, and five names from another toolkit (`ship`,
+  `canary`, `land-and-deploy`, `investigate`, `cso`). All removed; a test now fails on
+  any listed name that is not shipped here or `superpowers:*`. If you had added your own
+  names to a great_cto agent, check them.
+- **architect, pm and product-owner have the `Skill` tool.** They load the matching
+  `vertical-<industry>`, `product-economics`, `opportunity-solution-tree` and
+  `outcome-roadmap` on demand. architect was told to "apply the matching vertical skill"
+  and had no way to reach one: no tool, no preload, no path inside a user's project.
+
+### Added
+
+- **Sessions that wait for you, on the board's Decisions screen.** A new hook on
+  Notification / Stop / UserPromptSubmit / SessionEnd writes
+  `.great_cto/status/<session>.json`, and the screen shows a session stopped on a
+  permission prompt — with the prompt's own text — above everything else; sessions that
+  only finished a turn are one muted count. A granted prompt fires no event, so the
+  reader checks the session transcript: written after the blocked moment means the
+  session moved on. Idea from fynnfluegge/agtx (Apache-2.0); the code is this project's.
+- **Three skills from what went wrong on real projects:**
+  - `deploy-landed` — a deploy is done when the served revision is the commit you meant,
+    its configuration is in the running process (read from PID 1, not `docker exec`), the
+    product does its job, and the new revision logged no startup errors. With the traps
+    that produced a green exit over a stale product: a failed `git pull` the build ignored,
+    `nohup` exiting 0 twice, `sed -i` replacing a bind-mounted file's inode, a prod behind
+    SSO answering 401 to every path.
+  - `secrets-rotation` — an exposed key is spent; deleting the message does not un-expose
+    it. One tracked task with an escalation instead of a reminder carried through seven
+    session logs, and it is done when a call with the old value is refused.
+  - `signing-preflight` — a bounded test signature before the first commit, and one
+    question if the key is locked. Never `--no-gpg-sign` silently, never re-sign history
+    unasked. (121 commits were re-signed after the fact on one project.)
+
+  They are preloaded into devops, l3-support, infra-provisioner, security-officer,
+  senior-dev and mobile-app-builder, and named in the session operating rules so the main
+  session loads them too.
+
+### Fixed
+
+- **A verdict log line `2026-07-12 15:47:00 PASS`** — a date and time separated by a
+  space — read the time as the verdict, so a passing QA read as no verdict at all.
+
+
+## v3.31.0 — 2026-09-21
+
+What 28 real projects taught the pipeline. The session-end learner now actually runs
+and says what it did. `gate:ship` reads what verdicts say, not only that they exist.
+Every session is told to take reversible steps instead of offering them, and to call
+work done only on what the user receives.
+
+### Changed behaviour — read before upgrading
+
+- **`gate:ship` refuses over an open finding or a stale QA verdict.** It now also
+  refuses when:
+  - any agent's **latest** verdict is BLOCKED, FAIL, REJECTED or REWORK, or is an
+    approval that names deferred criticals, and no later verdict from that agent
+    closes it;
+  - qa-engineer or security-officer has no passing verdict;
+  - QA's verdict is older than the last commit that changed code (docs, `*.md` and
+    `.great_cto/` do not count).
+
+  Each is waived only by a signed exception:
+  `/exception create --gate gate:ship --scope reviewer:<agent>`. Measured on the
+  machine this came from: 16 of 17 projects with verdicts would be refused, each for a
+  reason their logs support. So expect a refusal, and read what it names. Agent names
+  in verdict logs are normalised (`great-cto:x`, `great_cto:x`, `qa`, `security`). An
+  agent checking before writing its own verdict passes `--as <agent>`; security-officer
+  does.
+- **Every session prints four operating rules** (`scripts/hooks/operating-rules.md`,
+  about 900 characters):
+  - reversible steps inside the task are taken, not offered;
+  - ask only for what is expensive to undo;
+  - "done" is checked on the artifact the user gets;
+  - an agent's finding is a claim until checked.
+
+  senior-dev now fixes a defect it found inside the task and reports it, instead of
+  ending with "fix them?".
+- **Higher turn caps**, where the session logs showed runs dying: senior-dev 50→80,
+  code-reviewer 40→60, db-migration-reviewer 20→40, devops 25→40. A run can now cost
+  more before it stops.
+
+### Added
+
+- **Auto-learn can be switched on in a file.** Add `"auto_learn": true` to
+  `~/.great_cto/config.json`. `GREAT_CTO_AUTO_LEARN=1` still works, and `=0` wins over
+  the file. The env var alone never reached sessions the desktop app starts. Still off
+  by default, because each run is a paid call, capped at $0.50.
+- **verify-by-running rule 5**, also referenced by senior-dev, devops and
+  mobile-app-builder. A shipped change's report names the live revision, build or
+  version and a check run against it. A skipped suite (`E2E_SKIP`, `SKIP_*`) is
+  INVALID. A health endpoint shows the process is up, not that the product works. A
+  deploy command's exit code does not show the deploy landed.
+- **Board E2E covers Fleet:** real dispatches and required reviewers, checked in the
+  browser.
+
+### Fixed
+
+- **continuous-learner never ran.** SessionEnd started `claude --agent
+  continuous-learner` with no prompt and no `-p`. The CLI exits 1 without a prompt,
+  and the hook had already written `ran` to `.great_cto/.last-auto-learn`, so
+  `lessons.md` stayed empty in every project. `scripts/lib/run-learner.mjs` now runs
+  the learner in print mode and gives it a redacted digest of the ended session: the
+  operator's messages, agent dispatches and failed tool calls, taken from the
+  transcript Claude Code names. The digest is deleted after the run. The marker is
+  rewritten with the outcome, `done: lessons+N` or `failed: exit=… <first error
+  line>`. The learner's own session cannot start another learner. Checked against the
+  real CLI: three lessons written in 2 m 27 s.
+- **A legacy verdict line `2026-07-12 15:47:00 PASS`** read the time as the verdict, so
+  a passing QA read as no verdict at all.
+
+
+## v3.30.0 — 2026-09-21
+
+The domain reviewers a project's archetype implies are now required before
+`gate:ship`, not just suggested. The board shows how often each agent is really
+dispatched, read from the session logs, and which reviewers this project still owes.
+Agents installed on your machine now carry the shared contracts they point at, and
+every agent has an eval of its own role.
+
+### Changed behaviour — read before upgrading
+
+- **`gate:ship` requires every domain reviewer your project implies.** The archetype
+  (`primary:` / `archetype:` in `.great_cto/PROJECT.md`), a pack in `packs:` that
+  brings a reviewer, and a compliance token (`pci`, `hipaa`, `tcpa`, `gdpr`,
+  `ccpa`/`cpra`/`us-privacy`, `dpdpa`, `cmmc`) each name reviewers, and `gate-check
+  gate:ship` now refuses while one of them has no verdict in
+  `.great_cto/verdicts/<agent>.log`. Run the reviewer, or sign
+  `/exception create --gate gate:ship --scope reviewer:<agent>`. `secondary:`
+  archetypes are not required. On the machine this was measured on, 15 of 22
+  registered projects require at least one domain reviewer, and none of the 15 had a
+  verdict from one — so expect your first `gate:ship` after upgrading to be refused.
+  `pipeline-state` names the missing reviewers and exits 3, as it does for QA and
+  security. The reviewer check runs without Beads; a missing `bd` now skips only the
+  task check instead of passing the whole gate.
+- **A P1 finding from security-officer blocks `gate:ship`** unless a signed
+  `/exception` covers it — the rule code-reviewer already applied. The prompt used to
+  name P0 in one place and "Critical" in two others.
+- **continuous-learner records a pattern the first time it sees it.** It used to drop
+  first sightings, so no pattern could ever reach the promotion count. Promotion to
+  `~/.great_cto/decisions.md` is at three distinct projects, as the merge script
+  always counted — the prompt said three occurrences.
+- **Agents installed into `~/.claude/agents` are larger.** The 41 agents that point
+  at `agents/_shared/` fragments (verdict format, handoff, evidence discipline) now
+  carry them inline: +37% bytes, paid per dispatch, not per session. The relative
+  path they pointed at exists only inside this repository.
+
+### Added
+
+- **Board Fleet: real dispatches from the session logs.** `scripts/lib/agent-usage.mjs`
+  counts `Agent` tool calls per great_cto agent in Claude Code's own logs
+  (`~/.claude/projects`): dispatches, last run, distinct projects. Rows that said
+  "never observed" now say "dispatched N× · no verdict" or "never dispatched", and the
+  *Never observed* view means no verdict and no dispatch. Read-only on the logs; the
+  index lives in `~/.great_cto/usage-index.json`; paths never leave the module; no
+  logs reads as "unavailable", never as zero. The first scan of a large history runs
+  in the background (47 s over 4.1 GB here; 2.4 s from the index). Idea from
+  migsilva89/loadout (MIT). `node scripts/lib/agent-usage.mjs` prints the table.
+- **Board Fleet: required reviewers.** "✓ required" or "⚠ required · not run", with
+  the reason on hover; a required reviewer with no verdict is in *Needs attention*.
+- **Every agent has an eval of its own role.** Eight new sets (app-scaffolder,
+  connector-builder, geo-routing-engineer, growth-engineer, knowledge-extractor,
+  media-pipeline-engineer, voice-ai-reviewer, api-platform-reviewer), each with
+  tuning and holdout cases.
+- **design-advisor flags UI clutter.** Chips and badges that mean nothing, and
+  placeholder or broken stock imagery, are defects (`anti-patterns` U-1, U-2; from
+  Google AI Studio's guide to polishing generated interfaces).
+- **README opens on a real run** — a recording of the public proof run, above the
+  install command.
+
+### Fixed
+
+- **The plugin no longer registers 14 fragments as agents.** Without an `agents`
+  list in `plugin.json`, Claude Code scanned `agents/` and listed every file in
+  `agents/_shared/` as an agent (`great-cto:_shared:phase-task`, …) in every session.
+- **Both registrations of an agent carry the same text (ADR-027).** An agent reaches a
+  session as `great-cto:<name>` from the plugin and as `<name>` from the copy
+  SessionStart installs. The plugin copy now points at generated full-text files
+  (`agents-full/`), so the 4% of dispatches that use the prefixed name no longer get
+  an agent without its shared contracts. Dropping the plugin registration to save
+  ~7k tokens per session was measured and refused: an agent installed during
+  SessionStart is only available from the next session.
+- **SessionStart cache cleanup keeps any version a live session runs from.** It
+  deleted every cached plugin version but the newest three with no live-session
+  check; it now uses the same check as `install-local --prune`.
+- **`marketplace.json` follows the version.** It said 3.27.3 since 2026-09-07;
+  `bump-version.sh` now updates it and a test ties it to `plugin.json`.
+- **Evals measure the agent, not the harness.** An empty, refused or truncated actor
+  answer is dropout, no longer judged (41 of 123 failing cases had been empty); a run
+  counts as evidence for an agent only when it ran that agent; a dual tuning/holdout
+  threshold is judged per split; cases now carry the inputs their agent's contract
+  requires. product-owner now writes "no wedge" as a finding and the decisive reason
+  for DON'T BUILD instead of inventing one.
+- **The "Live demo" link in all ten READMEs led to an expired report.** Removed.
+
+
+## v3.29.1 — 2026-09-15
+
+A Codex install that has only the plugin can now run the controlled host. Projects
+you start appear on the board by themselves, the board tells you whether your judge
+key actually works, and architecture can be drafted by more than one model before you
+approve it. Parallel agents are checked against the files they claimed, every agent
+says whether its work needs your sign-off, and `/recall` points at the section that
+answers you — and says plainly what nothing in your documents covers.
+
+### Changed behaviour — read before upgrading
+
+- **Every project with a `.great_cto/PROJECT.md` is added to the board's project list**
+  at session start and at the end of each turn (`~/.great_cto/projects.json`). Temp
+  directories and agent worktrees are skipped. Turn it off with
+  `GREAT_CTO_NO_AUTO_REGISTER=1`.
+- **Controlled Codex stages read earlier results from a file.** They used to receive
+  every previous stage result inline in the prompt; they now get a path and a SHA-256
+  under `~/.great_cto/codex-runs/<run-id>/context/`, bounded at 64 KiB. The worker's
+  read-only sandbox reads it there (checked with codex-cli 0.153.4).
+- **In this repository, a commit that edits `docs/INVARIANTS.md` must carry
+  `INVARIANT-CHANGE(INV-NNN)`**, or the pre-push hook refuses the push.
+
+### Added
+
+- **Architecture council, opt-in (ADR-025).** With `council: arch` in PROJECT.md,
+  before the architect writes, other models draft the same architecture
+  independently from the brief and PROJECT.md — never from each other's drafts.
+  `scripts/lib/council.mjs` writes each draft and a `council.json` under
+  `docs/architecture/council/<feature>/`; the architect merges them into one ARCH doc
+  with a `## Council` section naming where the drafts diverged, and one set of open
+  questions at gate:arch. Every member ends `drafted`, `failed`, `skipped` or
+  `unavailable`; a run with no draft reads `council: degraded`, never as agreement.
+  OpenRouter members are estimated first and skipped above `council-max-usd`
+  (default $2) or when unpriced; Codex runs on the subscription and its cost is
+  recorded as unverifiable, never $0. Nothing is sent without the declaration — see
+  PRIVACY.md.
+- **What a Codex stage knew (ADR-026).** Every previous stage result used to ride
+  each worker's prompt inline, growing with the run and recorded nowhere. The
+  controlled host now writes that evidence to `<run store>/<run-id>/context/<attempt>.md`
+  and the prompt names its path and SHA-256; past 64 KiB the oldest results are
+  reduced to verdict and summary, the newest kept whole, and the cut is listed. Each
+  attempt records `context: { mode, path, sha256, bytes, results, truncated }` —
+  `fresh`, `packet`, or `inline` for a caller with no store; `native_resume` is never
+  claimed. A context file changed before dispatch blocks the stage.
+
+- **A builder's actual diff is checked against the write zone it claimed.**
+  `scripts/lib/wpl.mjs` proved a Work Packet List was disjoint before a fan-out, but
+  nothing proved the work stayed inside it: a packet could claim `src/auth/*.ts`, also
+  edit a file another packet owned, and be committed. `scripts/lib/lane-diff.mjs` reads a
+  packet's changed files (including untracked files and both sides of a rename) and
+  answers `inside`, `empty`, `stray`, `unknown-lane`, `absent` or `malformed`; a stray
+  file names the packet that owns it, so a race is told apart from drift. The
+  coordinator runs it after each builder returns and before committing. Exit 3 means
+  "not checked" and is never a pass. (Method from headcount's `agent-guard diff`, MIT.)
+- **Every agent declares whether its work may land without a decision.** A new
+  `authority:` frontmatter field — `autonomous` (take the result), `proposes` (show the
+  diff before it lands), `escalates` (do not dispatch unasked) — on all 70 agents: 47
+  autonomous, 21 proposes (product builders, the three stages a human gate decides, and
+  agents that write state other projects read), 2 escalates (devops, infra-provisioner).
+  The agent linter's FM-005 requires it, refuses to gate an agent with no write tools,
+  and pins the value for the agents whose work is expensive to undo (ADR-009), so it
+  cannot be relaxed in a frontmatter edit. The coordinator reads it before committing.
+- **`docs/INVARIANTS.md` — the rules that must not quietly stop being true.**
+  Thirteen numbered invariants (privacy, secrets, honest states, gates, parallel work),
+  each with a `verify:` line naming the test or hook that proves it; where no check
+  exists yet the file says so and why. A test fails when a `verify:` names a missing
+  file, and the pre-push hook refuses a commit that edits the file without
+  `INVARIANT-CHANGE(INV-NNN)` in its message — rewording and weakening a rule look the
+  same in a diff. (Format from claudexor's `CLAUDEXOR_BIBLE.md`, MIT.)
+- **`/recall` says where to open a document, and what nothing answers.** A docs hit
+  now reads `file:line  § section` — the best-matching section inside the document —
+  and each result lists the query words it matched. Words no document contains are
+  printed as `not in any docs document: …`, and /recall states that gap instead of
+  filling it in. Document ranking is unchanged: ranking by section instead was
+  measured on a golden question set (`tests/fixtures/recall-golden.json`) and found the
+  answer less often, so it did not ship; a test pins that the pointer never reorders
+  results.
+
+### Fixed
+
+- **A plugin-only Codex install can run the controlled host (#149).**
+  `great-cto codex-host doctor` exited 127 after installing only the Codex plugin:
+  plugin installation does not put an npm binary on `PATH`. The shipped `codex-host`
+  skill, the README and every translated README now use a version-pinned
+  `npx --yes great-cto@<version>` entrypoint, pinned to the shipped CLI version by a test.
+- **The HOL plugin scanner passes: score 94, grade A, highest severity medium.** With
+  GitHub Actions locked it had not run in CI; run locally with the workflow's exact
+  pinned setup, both `main` and v3.29.0 failed at score 80 with high findings. Two were
+  comments that matched the eval pattern, seven were token-shaped test fixtures (now
+  assembled at runtime), and five were board tests compiling the page's own functions
+  with the Function constructor (now `vm.compileFunction` — the same operation, on this
+  repository's own page, never untrusted input).
+- **A project started with `/start` now appears on the board.** The board lists only
+  projects in `~/.great_cto/projects.json`, and nothing but `great-cto register` wrote
+  there — so a project initialised the normal way stayed invisible. The SessionStart
+  and Stop hooks now register any directory with a `.great_cto/PROJECT.md`. Temp
+  directories and agent worktrees are skipped; `GREAT_CTO_NO_AUTO_REGISTER=1` turns it
+  off. A registry that cannot be parsed is left untouched and reported, never rewritten.
+- **The board checks the judge key instead of always saying "not verified".** It
+  asks OpenRouter once (`GET /api/v1/key`, free) and shows `verified`, `rejected by
+  OpenRouter — replace it`, or `could not check` with a retry. A check that fails to
+  connect never reports the key as bad. The request goes only to OpenRouter, is
+  started from the board page (`POST /api/router-key/verify`, origin-checked), and
+  the answer is kept for that key only — a replaced key is checked again.
+- **`great-cto register` no longer wipes the registry.** Given an unparseable
+  `projects.json`, it replaced it with a file holding only the current project; it now
+  refuses and exits 1.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## v3.29.0 — 2026-09-15
+
+The board shows what agents are doing while they run, what each turn changed, and
+Codex runs alongside Claude Code. It is also safe to leave open: another web page
+can no longer read it or approve a gate through it.
+
+### Changed behaviour — read before upgrading
+
+- **The board answers only names it knows.** Every request — reads, the event
+  stream, state changes — is refused with 403 unless its `Host` is `localhost`,
+  `127.0.0.1` or `[::1]` on the board's port, the concrete address it is bound to,
+  or a name listed in `GREAT_CTO_ALLOWED_HOSTS`. Before, a page on a DNS-rebinding
+  domain could read the board and pass its cross-origin check, gate approvals
+  included. **A console reached through a tunnel or a LAN address stops answering
+  until you set `GREAT_CTO_ALLOWED_HOSTS=<host[:port]>`.** Started on `0.0.0.0`
+  with nothing listed, the board says which variable to set.
+
+- **A gate decision through the API needs its token.** `POST /api/gates/<id>` now
+  requires the `token` that `/api/inbox` issues for that pending gate — single use,
+  valid 24 hours, bound to the project as it was when the gate was listed — and,
+  to approve an expensive or unclassified gate, `confirm` with its typed name. It
+  answers 403 without them and 409, naming the files, if the project changed since.
+  The board's own page sends both; scripts that approved gates directly must read
+  the token first. See `docs/BOARD-API.md` and ADR-024.
+
+- **Each agent turn is snapshotted locally, on by default.** At the end of every
+  turn a commit of the project's files is stored under `refs/great-cto/turns/` in
+  the project's own `.git` — the same content the working tree already holds,
+  nothing uploaded. A normal push and a clone do not carry these refs, and the
+  pre-push hook refuses a push that would. The newest 50 turns per session are
+  kept; sessions idle 14 days are removed. Turn it off with
+  `GREAT_CTO_DISABLE_TURNS=1`. See `docs/PRIVACY.md` and ADR-023.
+
+### Added
+
+- **A live feed of agent events on the board** (ADR-021). The hooks append one
+  line per agent start, stop, tool call and pipeline outcome to
+  `.great_cto/events.jsonl` — facts only, never command text, file content,
+  prompts or output — and the board streams it. A pipeline stage that did not
+  chain is called out while it happens. `GREAT_CTO_DISABLE_EVENTS=1` turns it off.
+
+- **The stream resumes after a dropped connection.** Every frame carries a cursor;
+  a reconnecting page receives the events it missed, and nothing twice. A cursor
+  that no longer points into the file (rotation, truncation) gets a fresh snapshot
+  instead of a read from the wrong place.
+
+- **Codex runs appear in the same feed.** The controlled Codex host records each
+  stage as `codex-<role>`, its verifier as `codex-verifier`, and each tool call
+  from the exec stream — facts only, as for Claude Code.
+
+- **The controlled Codex host lifecycle** (`great-cto codex-host`): attempts and
+  bounded verifier rework, cross-role repair, safe recovery, offline Docker checks,
+  and local and GitHub artifact releases bound to approval and verified after
+  publication.
+
+- **What each agent turn changed, on the board** (ADR-023). A Turns panel lists a
+  project's sessions and opens any turn's diff and changed files.
+  `GET /api/turns` and `GET /api/turns/diff`.
+
+### Fixed
+
+- **Review receipts no longer drift by themselves.** A receipt counted the agent
+  events log and the beads interactions log, neither of which `init` or current
+  `bd init` ignores, so one tool call or one `bd update` made reviewed code read as
+  changed after approval.
+
+- **A beads-backed approval no longer makes the next gate stale** — found by the
+  end-to-end pipeline test while binding approvals to the project state.
+
+---
+
+## v3.28.9 — 2026-09-14
+
+A live run of the pipeline with real agents found that it did not chain for agents
+spawned under the plugin name, and that independent verification both judged the
+wrong change and was ignored when it failed. Those are fixed, and each fix was
+replayed on the run that exposed it.
+
+### Fixed
+
+- **An agent spawned as `great-cto:<name>` now reaches its pipeline rule.** The
+  dispatcher stripped only the `great_cto-` prefix of the installed copy. The
+  plugin spawns agents under its namespace, so the dispatcher looked up
+  `great-cto:qa-engineer`, found no rule, and the pipeline did not chain. Three
+  projects' journals held 19 such runs since 2026-09-06.
+
+- **Independent verification judges the change the stage actually made.** A
+  verdict's receipt measured the change against merge-base-or-HEAD; on the
+  default branch or with no upstream that is HEAD, so work committed before the
+  verdict — as senior-dev is told to — was not in it. The judge was shown logs
+  and a report instead of the code and sent a correct fix back. The change now
+  starts at the commit the previous stage recorded; `receipt.base_from` says which
+  base was used.
+
+- **A failed verification sends the stage back instead of forward.** Any recorded
+  score let the next stage dispatch, including `rework`. It now re-spawns the
+  agent with the verifier's findings, and after three rework scores stops for the
+  CTO. Waiting for verification is journalled as a hold, not a stop.
+
+- **A test count is not a claim that tests were added.** `tests=2` was asked as
+  "the change adds or updates automated tests" even when the fix was to code whose
+  failing test already existed. It is asked only when the change contains a test
+  file.
+
+- **Tests remove the temp directories they create.** About 28,000 had built up
+  from ten test files. A guard test fails any new test file that creates temp
+  directories and removes none; 38 older files are listed and the list only
+  shrinks.
+
+Replayed on the live project after the fixes: senior-dev's receipt includes the
+fixed file, independent verification returns VERIFIED, and the hook dispatches
+code-reviewer.
+
+---
+
+## v3.28.8 — 2026-09-14
+
+A reviewer's blocking finding that the author can fix now goes back to the author
+instead of stopping for the CTO, and the time a decision waits at a gate is
+measured for the first time.
+
+### Added
+
+- **`need` on halting verdicts.** `qa-engineer` (FAIL), `security-officer` and
+  `code-reviewer` (BLOCKED) write `need=implementer|decision` and `finding=<id>`.
+  Absent is **undeclared**, and undeclared is never routed — it halts exactly as
+  BLOCKED always has. An unknown value is refused by `log-verdict.sh` when the
+  verdict is written, and read as undeclared when it is already on disk, so no
+  recorded verdict is lost. Defined once in `agents/_shared/verdict-format.md`.
+
+- **The dispatcher routes `need=implementer` back to the owner.** The owner is the
+  latest verdict of an agent the pipeline map sends on to code-reviewer
+  (`senior-dev`, `mobile-app-builder`), matched by `task`, else `feature`.
+  `PIPELINE-ROUTE` re-spawns it with the finding verbatim and spawns nothing
+  downstream. The ceiling is the existing three passes, shared with REWORK; the
+  same finding reported again before the owner answers is held, not re-spawned.
+  `need=decision`, undeclared, or no owner found: halt, with the reason named.
+  Checked with the real `log-verdict.sh` and the real hook: `need=implementer`
+  routes to senior-dev, `need=decision` halts.
+
+- **How long a gate waits** — `scripts/lib/flow-metrics.mjs`. Closed gates:
+  `closed_at − created_at`, listed rather than summarised under five; open gates:
+  the oldest, and those past 24h as stale. Beads that could not be read are
+  `not measured`, never zero. `/inbox` shows it as `## GATE_WAIT`.
+
+- **Docs are part of done.** senior-dev searches the docs for the old name or
+  value before closing and records `docs: updated`, `docs: none describe it` or
+  `docs: not checked`. code-reviewer treats a doc still describing the old
+  behaviour as a P2 finding citing both lines.
+
+### Fixed
+
+- **`/inbox` printed none of the sections it told the agent to read.** Since the
+  helper was written, every block's output ran into the next; `## BLOCKED` was
+  promised and nothing produced it. Every line now sits under a `## NAME`
+  heading, a section appears only when it has content, `## BLOCKED` lists
+  blocked tasks, and bd's `No issues found.` no longer turns an empty list into
+  a heading. The command's table and the helper are checked against each other
+  in both directions.
+
+- **`/inbox` never reported a stale gate.** The check read `bd list`'s status
+  symbol `○` as the task id and grepped `created:` where bd prints `Created:`.
+  A gate open about 65 days had never been reported.
+
+- **The board's rework count skipped REWORK**, the token work is actually sent
+  back with, and counted every halt as rework. It now returns
+  `rework_rounds`, `decisions` and `undeclared_blocks`; the verdict reader
+  keeps `meta`, which it had been dropping.
+
+- **The pipeline journal recorded REWORK as the chain stopping.** Send-backs are
+  now `dispatch`, a held repeat is `hold`.
+
+- The REWORK loop and its three-pass ceiling had no test; they do now.
+
+---
+
+## v3.28.7 — 2026-09-14
+
+The agents carry one copy of each rule, and the eval scores now measure the
+agents instead of the harness that ran them.
+
+### Changed
+
+- **The pattern lookup is a tool, not five copies of a shell loop.**
+  `scripts/lib/pattern-lookup.mjs --role implement|deploy|incident|review`
+  replaces the inline loop in `senior-dev`, `devops`, `l3-support`, `qa-engineer`
+  and `security-officer`. 123 lines leave the prompts, and the behaviour has
+  tests for the first time — 6, including the empty-instruction case the old
+  copies' own comments worried about.
+
+- **Every shared fragment has a reader.** `argument-quality.md` is now read by
+  the three gate-bearing agents (`qa-engineer`, `security-officer`, `devops`)
+  and `devops` no longer restates it inline; `artifact-summary-contract.md` by
+  five agents; `sandbox-cwd-policy.md` by `coordinator`. `memory-filter-prompt.md`
+  was a template, not an agent instruction, and moved to `docs/reference/`.
+
+- **`pm` carries no price table.** It had `$5/$25` in a table and `$15/$75` in
+  the report line below it, both for models no longer routed. It now points at
+  `scripts/lib/cost-meter.mjs`, which is what runs are billed against.
+  `tests/lib/agent-dedup.test.mjs` fails on an unread fragment or a per-model
+  price table in any agent.
+
+  Not a saving: `prompt-size` counts a pointed-at fragment in full, and the
+  effective prompt of four agents grew (e.g. `qa-engineer` 17 068 → 18 019),
+  because two fragments had cost nothing by being read by nobody. The trade is
+  in `docs/plans/PLAN-2026-09-12-agent-duplication.md`.
+
+### Fixed — the eval harness
+
+Three defects made agent pass rates a measurement of the runner:
+
+- **OpenRouter runs used `sonnet-4` as both actor and judge.** The defaults are
+  now `claude-sonnet-5` (actor) and `claude-opus-5` (judge), the same pair as the
+  direct path; a test fails if the two paths disagree or the judge is the actor.
+
+- **The actor had 2 500 tokens,** which an agent spends before its answer. Now
+  6 000.
+
+- **A judge that spent its budget reasoning was reported as a call that never
+  reached the provider.** Over OpenRouter the opus-5 judge reasons first and the
+  reasoning is billed against `max_tokens`: at 64 and at 256 the reply was empty
+  with stop reason `length`. Judges are now called with `reasoning:
+  {enabled:false}` (the actor is not — its reasoning is what is measured), and
+  every unjudged case records why: `refused`, `truncated`, `empty`,
+  `unparseable`, `no-leaf` or `call-failed`.
+
+Re-measured on the eight pipeline agents: 1 of 50 cases unjudged (`call-failed`),
+$2.29. `l3-support` 8/8, `devops` 6/6, `pm`, `senior-dev` and `security-officer`
+4/5, `product-owner` 6/10, `architect` 3/5, `qa-engineer` 2/5 — with five cases
+the 95% interval spans 50–60 points, so none of these is a verdict on its own;
+`qa-engineer` is the one worth a closer look.
+
+### Fixed
+
+- The v3.28.6 entry below said `OpenSRE 3` where it meant OpenSSL 3.
+
+---
+
+## v3.28.6 — 2026-09-12
+
+A session start could delete every agent and command great_cto had installed. It
+did, twice.
+
+### Fixed
+
+- **An install no longer wipes `~/.claude/agents` and `~/.claude/commands`.**
+  `install-local --prune` deletes old cached versions; open sessions keep running
+  hooks from the version they started on. On 2026-09-11 the next SessionStart in
+  one of six such sessions resolved its plugin directory to the deleted path and
+  pruned every managed file whose source was "absent" under it — 38 of 44
+  commands at 11:45:14, all 70 agents one second later — then copied them back
+  from the directory that was gone.
+
+  `scripts/lib/sync-managed.mjs` replaces that inline loop. A source directory
+  that is missing, unreadable or empty deletes nothing; every `agents/*.md` and
+  `commands/*.md` is installed, so the hand-kept list of 55 agent names (which
+  had been missing the 15 newest since they were added) is gone; a file is
+  retired only if it carries the marker and its source is gone; a file that is
+  not ours is kept. `scripts/lib/prune-versions.mjs` keeps any version a live
+  process names in `CLAUDE_PLUGIN_ROOT`, and removes nothing when the processes
+  cannot be read. 13 tests; four mutations killed.
+
+- **The HMAC pipeline check signs with the digest.** It read field 2 of
+  `openssl dgst`, which is the hex under OpenSSL 3 and empty under LibreSSL —
+  the check went red the day PATH put macOS's `/usr/bin/openssl` first.
+
+### Added
+
+- **`agents/_shared/evidence-discipline.md`, referenced by `devops` and
+  `l3-support`.** An empty tool result is `unknown` until a control proves the
+  query works; a check that did not run produces no finding; every number comes
+  from a tool result; `ok` is one result among ten, and `unknown`, `partial`,
+  `stale`, `mismatched`, `conflicting`, `unauthorized`, `unreviewed`, `blocked`
+  and `error` are not success. (Vocabulary: Agent-Ops v0.4.0, CC BY 4.0.)
+
+- **`l3-support`: a runbook is evidence, not an instruction.** Load by exact
+  identity, never by resemblance; two candidates is a question; a runbook that
+  did not load was not followed; a step inside the document approves no mutation
+  and justifies no credential; the report separates advice, observation and
+  skipped steps, citing URL and revision. Remediation names the address that
+  survives a failover rather than the host that is primary now.
+
+- **`devops`: two records, and the second names the first.** An admission before
+  a step that is expensive to undo (what, who, exact target, expiry), an outcome
+  citing it; an outcome with no admission is reported as an unapproved change. A
+  post-deploy verification that cannot say what it skipped is `partial`, never
+  `ok`. Volume-safe container upgrades.
+
+### Not verified
+
+- Whether the agents follow the new rules. Seven eval cases were added for them;
+  running an eval costs model tokens and was not done.
+
+
+## v3.28.5 — 2026-09-11
+
+Each agent run is measured again — against the agent that ran, with the model that served it.
+
+### Fixed
+
+- **SubagentStop measured the session, so no agent run had a measured cost.** Claude Code
+  hands the hook two paths: `agent_transcript_path` for the subagent that stopped and
+  `transcript_path` for the whole session. The hook read the second. Every stop measured
+  ~10k turns, the 400-turn guard set the figure aside as `(unattributed)`, and September held
+  no per-agent cost at all — a board that looked unmeasured rather than broken. The hook now
+  measures the agent's own transcript, attributes it by `agent_type`, and keys it to that
+  agent's own verdict minute rather than whichever verdict file is newest. Cut-off detection
+  read the same wrong path and is fixed with it. Hosts that send only `transcript_path` keep
+  the old guard.
+- **A timed-out Codex review left what it started running.** `codex-exec` killed only the CLI;
+  a child it had started held stdout open, and the result arrived when that child ended on
+  its own — 60 s for an 800 ms timeout. The CLI now leads its own process group, a timeout
+  kills the group, the result carries `timedOut`, and a verdict printed before the clock ran
+  out is `unreadable`, not `ok`.
+- **`ci-local.sh` printed ALL GATES GREEN when tests were skipped.** `node --test` exits 0 on
+  a skip, so a board e2e that could not launch a browser printed ✓. Each step now counts its
+  skipped tests; with no failures and N skips the gate prints
+  `GREEN, N TEST(S) SKIPPED — NOT CHECKED` and lists the steps. Exit codes are unchanged.
+
+### Added
+
+- **A model check on every measured run.** Each `cost-history.log` line ends with
+  `model=match|substituted|unverifiable`, `asked=` and `served=`, in trailing fields the
+  existing readers ignore. An alias (`sonnet`) matches its family; an exact id matches its
+  dated alias and not another number; the agent's `advisor-model` is allowed. A substitution
+  is written to stderr and never blocks a stop.
+
+### Not verified
+
+- A live SubagentStop writing an agent-attributed line. The hook was run on real subagent
+  transcripts (`great-cto:senior-dev` → `match asked=sonnet served=claude-sonnet-5`), not yet
+  from a session running this version.
+- The model check is only meaningful at stop time: replayed over an old transcript it
+  compares against today's frontmatter.
+- `count-skips` does not read `test-pipeline.sh`'s own `– N skipped` summary.
+
+---
+
+## v3.28.4 — 2026-09-10
+
+The agent panel under the prompt now names the great_cto stage that is running.
+
+### Added
+
+- **A great_cto row in Claude Code's agent panel.** The plugin now ships
+  `subagentStatusLine` from `settings.json` — one of the only two keys a plugin
+  may set there; the main `statusLine` is not one of them, and hooks cannot
+  change a status line at all.
+
+  ```
+  ◆ senior-dev   opus-5 · 4m12s · 38k/1M · implement pipeline-position lib
+  ◆ qa-engineer  sonnet-5 · 1m01s · 0/1M · completed · verify rework loop
+  ```
+
+  In one real session the default row hid two things: one agent answered to two
+  names (`senior-dev` and `great-cto:senior-dev`), and forty `general-purpose`
+  subagents looked exactly like pipeline stages. The row fixes both, and what it
+  refuses to do is most of the design: only a name found in `agents/*.md` gets
+  the ◆ row, while any other subagent keeps the host's default; a value that was
+  not reported — model, start time, tokens — is left out, never printed as
+  `undefined` or `0k`, while a reported zero is shown; unreadable input produces
+  no overrides and exit 0. 16 tests; removing the prefix normalisation, giving a
+  non-stage the ◆ row, or printing unmeasured tokens each turns them red.
+
+### Fixed
+
+- **`docs/reference/architecture-map.md` regenerated** (603 files, 126 libs). The
+  first gate after the statusline merged failed on it. A later `--check` passed
+  only because a PostToolUse hook had rewritten the file on disk in the
+  meantime — green because the checked file changed, not because anyone fixed
+  it. The regenerated counts are now committed.
+
+### Not verified
+
+- How the row renders in a live agent panel. That needs a real session after
+  installing this version.
+
+---
+
+## v3.28.3 — 2026-09-09
+
+The README spent 239 words defending the product before showing it. A reader who
+had not yet raised an objection was being answered — sixteen times on the first
+screen.
+
+### Changed
+
+- **The README leads with the product.** The first screen now opens on the line
+  the landing page has used since the story rewrite was approved at
+  `gate:product`: *"Your coding agent ships code. This is what checks it."* The
+  README had ignored that decision. Honesty is claiming only what can be shown;
+  it is not hedging every sentence, and the first screen was confusing the two.
+
+  | | before | after |
+  |---|---|---|
+  | words before the diagram | 239 | **94** |
+  | hedges on the first screen | 16 | **3** |
+  | words overall | 2582 | **2383** |
+
+- **Nothing was deleted — three claims moved to where their reader looks.** The
+  proof-by-subtraction (v3.27.0 and v3.27.1 deleting this project's own
+  favourable numbers) now sits under the "Four things it refuses to say" table,
+  where it is evidence for the rule instead of an unprompted confession. Codex's
+  status and the four-line review log open the two-harness section. "Not a
+  hosted app builder" is the first bullet of Limitations.
+- **All nine translations updated**, each verified to carry the three
+  relocations exactly once, with section and table-row counts matching English.
+
+### Fixed
+
+- **The parity check was green at the only moment it mattered.** It read git
+  history alone, so *edit README.md → run the gate → green → commit* was a legal
+  sequence, and the drift appeared one commit later. Uncommitted English edits
+  now count as ahead of every translation. A guard that goes red only after the
+  gate has said yes is decoration.
+
+### Recorded
+
+Two checks run during this work were wrong the same way: translations were
+reported as missing content while the agents were still writing the files.
+**"Modified" is not "finished"** — the same defect v3.28.0's dispatcher fix was
+about, rebuilt in a shell loop two hours later by the person who wrote that fix.
+
+---
+
+## v3.28.2 — 2026-09-09
+
+v3.28.1 shipped with a red check inside a step that could not fail. Both halves
+of that sentence were defects, and both were introduced the same day as the
+check itself.
+
+### Fixed
+
+- **The docs step can fail again.** `scripts/ci-local.sh` ran the docs tests as
+  `node --test tests/docs/*.test.mjs 2>/dev/null || true`. The README parity
+  check was red inside it on v3.28.1 while the gate printed ALL GATES GREEN and
+  the release went out. **A guard wired into a step that cannot fail is declared
+  and never consumed** — the shape this repository exists to find. The empty
+  directory that `|| true` was covering is now handled by asking whether the
+  files exist, not by discarding the exit code.
+- **The parity check asks about currency, not about a version string.** It
+  required each translation's stamp to name the CURRENT package version, so a
+  patch bump turned nine files stale even when the English text had not moved.
+  That is exactly what went red: the translations were generated from the
+  current English and stamped v3.28.0 minutes before the bump to v3.28.1. A
+  check that cries on a release where there is nothing to do is a check somebody
+  deletes. It now asks history — *is the translation behind the English?* — and
+  fails only when the last commit touching a translation precedes the last
+  commit touching `README.md`. The stamp is still required to exist, because it
+  is what tells a reader what they are looking at; it is no longer required to
+  match.
+
+### Under it
+
+- Both probes were run in throwaway worktrees, after the first attempt used
+  `git reset --hard` in the working tree and destroyed the very edit it was
+  testing. Nothing belonging to another session was touched; the rule against
+  that exists because the next time it might be.
+- Witness entry for the un-swallowed step: restoring `|| true` is a
+  one-character edit after which every test still passes.
+
+### Found by
+
+Rebasing `codex/host-lifecycle-v2` onto this release — not by the gate, which is
+the point of the first bullet.
+
+---
+
+## v3.28.1 — 2026-09-09
+
+Nine translated READMEs told nine languages this tool ships 69 agents. It ships
+70, and has for weeks. They were not lying — each carried a stamp naming the
+version it translated — but a reader who arrives from a search result reads the
+composition, not the stamp.
+
+### Fixed
+
+- **The nine translations say what the English README says again.** They were
+  160 lines shorter and 40 days behind. Missing from all nine: the
+  `approval-level` table, and therefore `ship-only` — the level the English
+  README calls the minimum that is still honest; the Codex second-opinion
+  section; the Limitations entry on per-agent cost attribution. Regenerated from
+  the current English, one agent per language, 317-374 lines against the English
+  335.
+- **The console screen is in the language the console prints it in.** All nine
+  translators independently reached the same question — the ASCII pipeline
+  diagram and the `ABOUT TO BUILD` screen sit in code fences — and all nine
+  reported it rather than deciding quietly. Eight left the screen in English;
+  one rendered it in Spanish, and that is reverted. The diagram is illustrative
+  and stays in each language's voice.
+
+### Added
+
+- **`tests/docs/readme-parity.test.mjs`** — 55 checks, and the reason this does
+  not recur: same section count, same table-row count, state tokens present and
+  untranslated, the agent count read FROM the English file rather than
+  hardcoded, and a stamp naming the shipped version. Deliberately mechanical:
+  asking whether a translation is *faithful* cannot be automated, and a rule
+  nobody can run is not a rule.
+
+### English README
+
+- The four refusals — `unavailable` not *off*, `unverifiable` not *pass*,
+  `unmeasured` not `$0.00`, `null` not *0* — were the last clause of four
+  paragraphs spread over 140 lines. They are now one table. The pattern is the
+  product and a first-time reader could not see it.
+- The `$171` median carries `measured 2026-07-10` beside the number.
+- "What makes it different" drops from 48 lines to 33, no claim removed.
+
+### Not done, and why
+
+- The brief asked for the long bullets' detail to move behind existing links.
+  `docs/` holds no page for `agent-budgets` or `pipeline-runs.jsonl`, and
+  `docs/SECOND-OPINION.md` covers two judges disagreeing, not the
+  acceptance-criteria chain — it contains neither `unverifiable` nor
+  `ACCEPTANCE`. A link to evidence that is not there is worse than a long
+  bullet, so two claims kept their prose. **Two README claims have no
+  reader-facing documentation at all**; that is now a known gap rather than a
+  silent one.
+- RDME-R6, a recording of a gate pausing, is a recording and not an edit.
+
+---
+
+## v3.28.0 — 2026-09-09
+
+Four places where this project broke its own rule — a thing that did not happen
+looked like a thing that did — found by reading other people's code and by
+measuring our own.
+
+### Fixed
+
+- **A cross-model review we could not read was recorded as a pass.**
+  `parseFindings` answered `PASS` whenever the model wrote no `VERDICT:` line and
+  no P0 was parsed. Measured, four answers: an empty body, `I cannot review this
+  diff.`, and a correct finding in the wrong format all came back **PASS**; only
+  a truncated line came back BLOCK. Three ways of not getting a review read as a
+  review that passed, and that value fed the cross-review Stop hook — whose own
+  header states the rule it was breaking. The line drawn: **a derivation that
+  BLOCKS costs a second look, a derivation that PASSES spends the guarantee.** A
+  P0 with no verdict line still blocks; nothing else becomes a verdict. The CLI
+  now logs `state: unreadable` and exits SKIPPED, the reader reports it as its
+  own state, and the gate passes only on an explicit `PASS`. This reverses a
+  decision a test had pinned — the charitable parse covered the dishonest cases
+  too, and the replacement test says why.
+- **A backgrounded agent that was launched was reported as finished.**
+  `PostToolUse:Agent` fires when the tool returns, which for a background agent
+  is the launch. The dispatcher printed "finished but recorded no verdict line"
+  twice in one session while the agent was still working — and the directive
+  that follows asks for a verdict, so obeying it writes a verdict about work that
+  has not happened. Read from 83 real Agent results, which carry exactly two
+  shapes: `status="async_launched"` with no content or usage (67), and
+  `status="completed"` with both (16). The detector fails **closed** — anything
+  it cannot positively identify as a launch keeps the old behaviour — and the
+  silence is journalled as `outcome=launched`, so a decision not to speak is a
+  record rather than an absence.
+
+### Added
+
+- **A lesson's support is now computed, not claimed.** `confidence:` in
+  `lessons.md` is written by continuous-learner about its own extraction; it
+  could only rise, it decided which three lessons survived a session, and it
+  rendered beside `occurrences:` and `projects:` — independent facts — with
+  nothing marking which was which. There are two axes now and only one is
+  earned: **`support:`** (`unsupported` → `self-asserted` → `corroborated` →
+  `cross-project`) is computed by `lessons-write.mjs` from sightings and
+  evidence and overwrites whatever the entry claimed, so a lesson cannot vouch
+  for itself. `confidence:` stays, explicitly non-authoritative — harmless once
+  it carries no authority. Promotion to `decisions.md` was never keyed on it and
+  still is not.
+- **`verification/witness.json` — a fix with no test of its own keeps a marker.**
+  Three regressions in 3.27.x passed every unit test on the broken commit,
+  because the load-bearing line sat in a file tested at a different altitude.
+  Each entry names one file and one literal substring that must still be in it;
+  `tests/witness.test.mjs` fails when one disappears, and refuses a marker under
+  20 characters, one matching more than one site, or a `why` under 40. Eight
+  entries, each verified to have no guard today and each probed by deletion. It
+  proves a line was **not deleted**, never that a fix still works — a test is the
+  stronger instrument and belongs wherever it fits (`verification/README.md`,
+  `CONTRIBUTING.md` §7).
+
+### Under it
+
+- ADR-002 is unchanged. `docs/plans/PLAN-2026-09-09-openrouter-routing.md` asks
+  the next question — what leaves Claude Code at all — and answers it against
+  measurement rather than intuition. Recorded there and worth stating here: on a
+  real session, **69% of the token cost is re-reading the conversation's own
+  history**, at an average of 533k tokens per call across 21,778 calls. Moving
+  agents to a metered API converts plan quota into cash without touching that.
+- `BRIEF-readme-craft-2026-09` (product-owner, four personas across three
+  models, one substitution declared). The nine translated READMEs lag the
+  English one by 160 lines and say 69 agents where there are 70 — but each
+  declares the version it translates, so they are stale-and-self-declaring
+  rather than false. The decision they need is whether to keep or remove them.
+
+### Not fixed, and why
+
+- Of 67 backgrounded agent launches in that transcript, only 16 completions
+  carry usage. Where the rest are recorded is **not established**, so per-agent
+  cost stays `unmeasured` — not zero. Said here rather than left to look like a
+  measurement nobody took.
+
+---
+
+## v3.27.6 — 2026-09-07
+
+Three issues described the gate flaking; one recorded that an earlier one had
+been "closed too early". Each time the fix was the test that happened to fail.
+This release fixes the cause, and it was not in any of those tests.
+
+### Fixed
+
+- **The gate flake was 93 leaked daemons.** Measured: 93 orphaned `node`
+  processes on the development machine, every one the stand-in CLI from
+  `tests/helpers/board-start.test.mjs`, the oldest alive for two days and six
+  hours. One leaked per gate run. That test's fake CLI *daemonises* — spawns
+  itself with `detached: true` and exits 0 — so the grandchild leads a process
+  group of its own, and the cleanup's `process.kill(-proc.pid)` reaped the
+  parent's group and never reached it. It looked correct and leaked every time.
+  The load floor rose run by run until tests with a time budget started missing
+  it; the machine sat at load 13–21 on ten cores before a single test ran.
+  The test now records the grandchild's pid and reaps both. **Five consecutive
+  full gates: zero failures, zero orphans after each.**
+- **Every README screenshot opened on a red error.** The board derived the
+  current project's slug from the first task id's *prefix* — bd ids are short,
+  so a project registered as `acme-storefront` whose tasks read `acme-6f`
+  yielded `acme`, which is not a project, and the board reported a healthy setup
+  as broken. A prefix is a heuristic; the registry is a fact, and is preferred.
+  `capture-screenshots` now refuses to photograph a page showing any degraded
+  banner.
+- **No shell between us and the tools we call.** `auto-attach-reviewers` runs on
+  every tool use and built its git commands as strings; `seed-demo` interpolated
+  task titles and bd-supplied ids into `cd $ROOT && bd …` behind hand-rolled
+  escaping that covered double quotes and nothing else; `record-demo` passed
+  paths to ffmpeg through a shell. All three pass argument arrays now.
+- The last in-process dynamic execution is gone: `inbox-context` compiled the
+  board's own source to extract two functions, and imports a temp module
+  instead — the shipped bytes still run, nothing is compiled from a string.
+
+### Under it
+
+- `kill-without-reap` gains a guard: a test that spawns a detached grandchild
+  from a fixture must record how to kill it. Proved by deletion. Its first
+  version was vacuous — an exempting substring still matched — which was caught
+  rather than accepted as a pass.
+- The HOL plugin scanner reads this repository at **88/100**, up from 64, with
+  high findings down from 50 to 4 and "no hardcoded secrets" green.
+
+### Still not fixed, and why
+
+Two files remain flagged as dynamic execution: `scripts/lib/quality.mjs` and
+`tests/eval/runner.mjs`. An exhaustive search of both for `eval(`, `new
+Function`, `Function(`, `import(`, `vm.` and `require(` returns **nothing**.
+They are flagged for the word *eval* in an import path, in `evaluateGate` and in
+`evalResults`. Clearing them means renaming an exported function and a module
+six files import, because a matcher cannot tell a domain from a call. It is not
+worth a core concept, and the catalogue listing it blocks is filed, not silenced.
+
+---
+
+## v3.27.5 — 2026-09-07
+
+A plugin's CI is a supply chain its installers inherit. Ours had an action on
+`@master`, a test that compiled the board's own source to see whether it parsed,
+and fixtures carrying live-looking vendor key prefixes. None of it was exploited;
+all of it was avoidable.
+
+### Fixed
+
+- **Every third-party GitHub Action is pinned to a commit SHA**, tag in a
+  trailing comment — twelve of them across ten workflow files.
+  `nearform-actions/github-action-notify-twitter` was on `@master`: an unreviewed
+  moving target inside a workflow that posts on our behalf.
+- **`board-script-blocks` no longer executes what it reads.** It compiled each of
+  the board's inline scripts with `new Function` to find out whether they parse.
+  It runs `node --check` instead: parses, never executes a line, and names the
+  offending line, which `new Function` did not.
+- **Fixtures stop impersonating credentials.** `tests/fixtures/…/.env.example`
+  and a fixture `render.yaml` carried live vendor key prefixes.
+  They exist to be detected as PROJECTS; nothing asserted on those values.
+- **Test keys are assembled from parts rather than written**, including AWS's own
+  published example key in `test-pipeline.sh` — the hook under test still
+  receives the exact string.
+- A token passthrough of the form `NAME="$OTHER"` is not a literal, but it has
+  the shape; hoisted so it no longer does. `runEval()` read as a call to `eval`;
+  it is `runEvaluation()`. A variable named `secret` held a client NAME.
+
+### Added
+
+- **`.github/workflows/hol-plugin-scanner.yml`** — the HOL AI Plugin Scanner
+  reads this repository the way a stranger installing the plugin would: manifest,
+  permissions, MCP commands, unpinned actions, credential-shaped strings. That is
+  a question the rest of the gate does not ask.
+- `.github/dependabot.yml` for the two automation surfaces, `.codexignore` for
+  local artefacts a Codex host should not read, and `assets/icon.svg` with the
+  board's own tokens.
+
+### Not fixed, and why
+
+The scanner still reports 14 high findings across seven files and scores 74/100.
+Three of them are flagged for the word **eval** in a subsystem that is about
+evals — `scripts/lib/quality.mjs` and `tests/eval/runner.mjs` contain no `eval(`,
+no `new Function` and no dynamic import. Clearing them would mean renaming
+`tests/eval/`, `product-eval.mjs`, forty `EVAL-*.md` files and the `/gen-evals`
+command: a core domain concept, renamed to satisfy a string matcher.
+
+Three more are real and worth doing on their own merit — `exec` with a built
+string in `record-demo.mjs`, `seed-demo.mjs` and `auto-attach-reviewers.mjs`.
+They are filed, not silenced. A suppression file would have shown 85 and proved
+nothing, and this project exists to refuse exactly that trade.
+
+---
+
+## v3.27.4 — 2026-09-07
+
+Installed any way but one, this plugin did nothing and said nothing.
+
+Every hook, agent, command and script located the plugin by globbing
+`~/.claude/plugins/cache/local/great_cto/*/` — a path that exists only for the
+directory marketplace the CLI's own installer writes. Installed from a GitHub
+marketplace the plugin lands under `cache/<marketplace>/`, that glob matches
+nothing, and all 21 hooks then run as `node "/scripts/hooks/…"` behind
+`2>/dev/null || true`: the session starts, the plugin looks installed, and not
+one hook fires. Silently, which is the failure this project exists to make
+impossible.
+
+### Fixed
+
+- **71 files ask `${CLAUDE_PLUGIN_ROOT}` first**, and fall back across *every*
+  marketplace rather than assuming `local`. Both paths are exercised: without the
+  variable the fallback resolves a real plugin directory; with it, the host's
+  answer wins. `install-local.sh` and `canary.sh` keep the local path on
+  purpose — one writes that copy, the other asserts it in a throwaway HOME — and
+  say so where the guard can read it.
+- **Stale copies are found by a rule, not by a roster.** The session hook carried
+  two hand-written kill lists (`for STALE in triage gates dora …`,
+  `for STALE_AGENT in tech-lead`), so a command or agent dropped from the plugin
+  kept working at the user level until somebody remembered to add its name.
+  Now: a file great_cto wrote whose source no longer ships is stale, by
+  definition. Files it did not write are never touched.
+
+### Added
+
+- **`.claude-plugin/marketplace.json`** — `/plugin marketplace add avelikiy/great_cto`.
+  Held back until the paths above were fixed, because publishing it earlier would
+  have invited installs that silently did nothing. Auto-update stays off by
+  default for third-party marketplaces, and an update applies to the next session,
+  never the running one.
+- **`tests/lib/plugin-root-resolution.test.mjs`** — four guards: nothing shipped
+  may hardcode the `local` path, every resolving hook must ask the host first,
+  at least one must report an unresolvable plugin out loud, and the kill lists may
+  not come back. A deliberate exception is allowed only where the three lines
+  above it explain itself.
+
+### Under it
+
+- The blanket rewrite put `*/` inside a block comment in `install-drift.mjs`,
+  which closes it — the file stopped parsing. Caught by the full run (2,369 pass,
+  that one fail), and the comment now names the path without spelling the glob.
+
+---
+
+## v3.27.3 — 2026-09-07
+
+The cross-model review has worked since the day it was written, and it ran when
+somebody remembered to run it. That is a shape this pipeline has measured before:
+an instruction depending on the model remembering held at 18%, and removing the
+remembering took it to 92%. The second opinion was still an instruction.
+
+### Added
+
+- **`scripts/hooks/cross-review-gate.mjs` — a Stop hook that will not end the
+  turn on a diff no second model has read.** It reads `.great_cto/cross-review.log`
+  and joins a line to the current `HEAD` by the `sha` added at
+  `gate:evidence-schema` for exactly this purpose. Four outcomes, and an absence
+  is never one of the passes: a joined `PASS` ends the turn; a joined `BLOCK`
+  holds it and names the findings and the P0 count; **no** line holds it once
+  and says nothing has read this diff; lines that cannot be joined hold it once
+  and say they predate the join key. A project that declared
+  `second_opinion: none` is not nagged — declaring none is a decision.
+- **It is off unless you turn it on:** `GREAT_CTO_CROSS_REVIEW_GATE=1`. A gate
+  that runs a second model at the end of every turn spends the user's money
+  without being asked and can loop one model against the other until a limit
+  stops it; OpenAI's own Codex plugin ships the same idea and warns about that in
+  its README. It also holds a given diff **once** — a hook that can refuse to end
+  the turn forever is a hang, not a guardrail. It does not run the review itself:
+  a Stop hook holds the turn open while it works, and a Codex run takes minutes.
+
+### Changed
+
+- **`secondOpinionForTree` moved to `scripts/lib/second-opinion-for-tree.mjs`**,
+  and `packages/board/lib/routes.mjs` re-exports it. The gate asks the board's
+  question and must not import a server to do it. One reader, because two would
+  drift and then disagree about whether a diff had been reviewed.
+
+### Under it
+
+- Nine cases on the decision function, written before it existed, including the
+  one this whole design turns on: "not reviewed" and "reviewed and objected"
+  never collapse into the same message or the same kind. The cross-model CLI
+  learned that the expensive way — `EXIT.SKIPPED` exists because PASS/BLOCK-only
+  made a review that never happened indistinguishable from one that objected.
+
+---
+
+## v3.27.2 — 2026-09-06
+
+A blocked task could be opened on the board, read, and not decided. The
+endpoint that changes a task's status had existed since the kanban; the button
+had not. Every gate was green — three CSS checks read the source, the layout
+snapshot compares what rendered, and none of them had ever clicked anything.
+
+### Added
+
+- **A task carries its decision on the board.** The drawer offers **Unblock ·
+  Start · Block · Close** on any task that is not a gate and not already
+  closed, and a blocked row carries **Unblock** in the row itself, where it is
+  visible without opening anything. All of it goes to the
+  `POST /api/tasks/:id/status` endpoint that was already there. Closing asks
+  once — it is the only transition that removes the row from every list; the
+  rest are visible and reversible from the same drawer.
+- **`tests/e2e/board.e2e.test.mjs` — the board, driven in a real browser.**
+  Seven cases, each starting its own board over the screenshot fixture on a
+  free port: every screen paints its own content with no console error and no
+  sideways scroll; the sidebar moves by mouse and by keyboard; a blocked task
+  is unblocked from the row and from the drawer, and the request is checked for
+  method, path and status; a gate is approved through its ritual and a
+  *dismissed* ritual approves nothing; ⌘K opens and Escape closes it; at 375
+  every visible control clears 44px. It SKIPS, loudly, when Playwright or the
+  browser binary is absent — "not checked" is not "checked and fine".
+  Wired into `scripts/ci-local.sh`, so every release runs it.
+
+### Changed
+
+- **The period chips move to the top of Ledger**, into the title row. They
+  govern every figure below them, so they sit where the figures start rather
+  than under the stuck list.
+
+### Under it
+
+- The suite was proved by deletion: with both decision affordances removed it
+  goes red on exactly that case and stays green everywhere else. The first
+  version of it did NOT — it opened the first row, which is a gate, and passed
+  through the gate path without ever touching the one it was written for.
+
+---
+
+## v3.27.1 — 2026-09-06
+
+3.27.0 shipped the redesign's structure with the old stylesheet's density
+under it: 52px metric numerals over an accent bar, a greeting in display type,
+two-line agent cards with no column headers, and a cost panel the brief had
+refused. Held against the design canvas it did not match. This release is the
+fidelity pass — CSS and shell markup only; no logic, no API, no data shape
+changed.
+
+### Fixed
+
+- **Decisions** opens on its name and its count (`Decisions · 3 waiting`,
+  `nothing waiting`); the stalled sentence stays, one line, muted. A stalled
+  task is one row — id · reason · title · agent · age — with the re-run button
+  at its right instead of on a second line under it.
+- **Ledger** loses the old cost panel: four tiles (`vs human team`, a projected
+  month, a daily burn, an empty chart) and the caps prose. A forecast and a
+  human-team comparison are two of the brief's refusals, and the head already
+  carries spend with its provenance. Metric cards are 30px numerals in 14px of
+  padding, no accent bar; the caps table drops its description column.
+- **Fleet** is a table: a header row (AGENT · POSTURE · LAST VERDICT · RUNS ·
+  PASS · 30D $), one 36px line per agent, posture chips inline, the budget chip
+  under the spend figure inside its column. Filter and sort sit on one line
+  under the title; the hint text and the controls box are gone. At phone width
+  the row wraps to three lines (124px, was 172) and the page still does not
+  scroll sideways.
+- `tests/baselines/board-layout.json` re-recorded; the only diff is the two
+  anchors of the deleted cost panel. The budget chip's 10px is on the ramp as
+  `--fs-eyebrow`, which is what `css-type-scale` caught. Screenshots re-shot at
+  this version.
+
+---
+
+## v3.27.0 — 2026-09-06
+
+The board is rebuilt. Eight tabs become four screens, each answering one
+question an operator actually asks, and nothing on it renders an absence as
+a pass.
+
+### The four screens
+
+- **Decisions** — every waiting gate as one row: a chip that says what
+  undoing would cost (solid for expensive, outline for routine, dashed for
+  unclassified — treated as expensive, because nobody judged it cheap), the
+  pipeline's own reviewer and the second opinion side by side, and the wait.
+  Rows sort by cost of undo. Approving an expensive or unclassified gate means
+  typing the gate's name; the consequence text names the cost-of-undo
+  categories. The Codex cell has four states and none of the three absences —
+  `not run`, `unmeasured`, `unreadable` — renders like a verdict or is
+  counted.
+- **Ledger** — spend with its provenance (`measured`, `estimated`, or
+  unmeasured; `no cap` when none is set, never `$0`), what is running now,
+  the stage strip from `shared/pipeline.toml`, the stuck list — a task whose
+  age cannot be read is counted as `+N?`, not dropped — and the caps table.
+  The old Metrics tab folds in here: its three-way figures (a zero is a
+  count, an absence names its kind) came with it; its vanity tiles did not.
+- **Fleet** — opens on *Needs attention*, not the roster: failing, an
+  unjudged posture, a grant scoped in name only, or spend past its cap. Five
+  saved views with live counts in the sidebar. Rows group by domain — one
+  taxonomy, the server's — and an agent row says what the agent may do:
+  `▲ code.destructive`, `· routine`, `? not classified`, `⚠ node:*` for a
+  Bash grant that is a full shell. `never observed`, never `0 runs`.
+  Agent detail carries the grant, the pinned model (or why there is none),
+  spend, tier and evals (`none` when measured and empty, `not measured`
+  when no tier was read), stand-downs, the last approval's receipt, and the
+  runs with their cost. `#/fleet/<slug>` deep-links it.
+- **Harness** — Claude Code and Codex as status, not switches (the board
+  cannot install Codex). The second opinion as declared → resolved here,
+  four options each carrying what it would resolve to *before* Save, and
+  the evidence table where a skipped or unreadable row is dimmed, carries no
+  verdict and no cost, and the summary counts runs, reviewed, skipped,
+  unreadable and blocked as five figures. The judge key says
+  `stored · not verified` — a stored key is not a working key.
+- **Settings** (behind the gear) — every write named by its file:
+  PROJECT.md (cap, second opinion, gate tiering, share), `~/.great_cto`
+  (judge key, Codex binary, telemetry — off, opt-in, read-only), the project
+  registry with a register form that names the HOME rule, and the alerts
+  the deleted tabs used to hold.
+- **⌘K** — one palette, extended: agents by slug, docs and sessions
+  searched server-side, memory layers and the decision log.
+
+### Gone, on purpose
+
+The kanban tab (the `#/kanban` deep link stays — revisited on 2026-09-20
+against a local per-view counter), the notifications and share tabs, the
+Metrics tab, and the tiles "Cost savings vs FTE", "Rework rounds", "Open
+security blocks", "Retire candidates", "Installed agents": fleet-wide
+aggregates over unmeasured inputs, one of them a green zero for a scan that
+never ran.
+
+### Under it
+
+- **Every cross-review log line carries `sha` and `dirty`** — the join key
+  the Decisions row needs. Additive only; absent → `null`, never omitted.
+  Approved at `gate:evidence-schema`. A line written before the field reads
+  as `unreadable`, never as a verdict — which today is every line, and the
+  board says so.
+- **`/api/inbox` resolves the second opinion for the tree at HEAD** once;
+  `/api/harnesses` classifies parsed-but-unpaired lines and counts them
+  apart from lines that did not parse.
+- **A local per-view counter** (`.great_cto/view-counter.log`, no network,
+  not telemetry) so the redesign's kill criteria are measured, not assumed.
+- Three widths: a 56px icon rail between 768 and 1199 (labels leave the
+  screen, not the element), a 44px floor under touch, no sideways scroll at
+  375; the expensive gate's buttons stack, the routine one's may not.
+  Motion only for what the operator caused; reduced motion collapses every
+  transition to 1ms.
+- Guards: seven cells that must never render an absence as a pass, the
+  typed-name ritual, the harness counts, the icon rail, and a new one —
+  every `<script>` block closed — written after the sweep cut one and the
+  old check could not see it.
+
+### Not fixed
+
+- `/api/receipt` takes ~8s (it hashes the tree) and holds a browser
+  connection; the agent drawer paints its profile first and streams the
+  receipt in, but the underlying cost is filed, not fixed.
+- The bottom portfolio band covers the lower half at phone width; it
+  predates the redesign and is out of its scope.
+- `codex-pipeline`'s verifier `rework` verdict is terminal — the live run of
+  2026-09-06 blocked at its first stage on a gate-name mismatch. Filed.
+
+---
+
+## v3.26.4 — 2026-09-06
+
+**3.26.3 never reached npm.** Its tag and GitHub Release exist; its publish was
+refused by the dirty-tree guard because the controller fix below was being
+written while the publish ran. This release carries everything 3.26.3 carried,
+plus that fix. Install from npm and you get 3.26.4; the 3.26.3 tag carries the
+bug described here.
+
+### Fixed
+
+- **`codex-pipeline`'s `gate:ship` could never be approved on the shipped
+  graph.** The controller (written by Codex itself, shipped undocumented in
+  3.26.3 — see below) compared the working tree at approval against the receipt
+  taken at the **end of the role's stage**. On a join those are different
+  moments: `qa-engineer` finishes, its gate waits for `security-officer`,
+  `security-officer` legitimately writes its report, and only then is
+  `qa-engineer`'s gate raised — so the partner's own file read as *"working tree
+  changed since gate was raised"*. The receipt is now taken **when the gate is
+  raised**, in `advance()`, and stored on the pending record; `approve()`
+  compares against that. A pending record from before this fix, with no
+  receipt, is refused rather than approved on a guess.
+  - Found by walking the real `shared/pipeline.toml` end to end. The shipped
+    two-role fixture has no join and could not see it. That walk is a test now:
+    product-owner → architect → pm → senior-dev → code-reviewer →
+    qa-engineer ∥ security-officer → **gate:ship approved** → devops.
+  - **`manual-action` is the honest terminal state on the shipped graph, not
+    `done`.** devops deploys and publishes; a step with side effects is not a
+    file proposal, and the controller hands it off by design (ADR-009 in code).
+    A driver that treats only `done|blocked` as terminal re-dispatches devops
+    forever — the first version of the test did exactly that, 70 times.
+
+- **`release.sh` no longer sweeps the working tree into the version commit.**
+  It ran `git add -A`, and on 2026-09-06 that put unrelated work into two
+  version commits in one day: a reverted contract in the morning, and in the
+  afternoon an entire untracked feature plus two design documents — none in the
+  release notes, all public the moment the tag was pushed. It now stages the
+  eight files `bump-version.sh` writes (plus re-shot screenshots) **by name**,
+  and **refuses** with a list if anything else is dirty. A shape test pins it:
+  no `add -A`, an explicit list, a refusal branch — and the list must cover every
+  path the bump writes, so a new version file cannot become the next stray.
+
+### About `codex-pipeline`, which 3.26.3 shipped without saying so
+
+`scripts/codex-pipeline.mjs` and `scripts/lib/codex-pipeline.mjs` were written
+by the owner's **Codex session**, not by this project's agents: Codex
+implemented the controlled host it had itself audited as missing. Roles come
+from `agents/<role>.md`, transitions from `shared/pipeline.toml`; a worker runs
+read-only and returns JSON file proposals; the controller checks paths and
+secrets before writing, verifies with a second Codex process, and stops on
+gates. State lives in `~/.great_cto/codex-runs/<uuid>.json` under an exclusive
+lock. It is not in the npm package (`scripts/` is not shipped); it runs from a
+checkout or the plugin cache. See `docs/HOST-CODEX.md`.
+
+It reached the 3.26.3 tag through `release.sh`'s `git add -A`, which swept
+untracked work into the version commit — the second time that day. The
+release notes for 3.26.3 do not mention it; these do.
+
+**Verified:** the controller, deterministically, on the real graph (12 tests).
+**Not yet verified:** a full live run against Codex — one real stage
+(`architect` → verify → `gate:arch`) was run by Codex before its quota ran out.
+The quota returns today; the live run is prepared and will be reported as a
+fact when it has happened, not before.
+
+---
+
+## v3.26.3 — 2026-09-06
+
+The agent's own configuration is now scanned as an attack surface, and the two
+halves of a Codex install can no longer be different versions of this product.
+
+### What's new
+
+- **`agent-shield` — the config read as an attack surface.** `agent-posture`
+  (3.24.0) says what a tool grant *permits*; this says what is actually *in* the
+  files. A hook is a shell command that runs on every session of every user who
+  installs the plugin; an MCP server is a binary it starts; an agent's
+  frontmatter is text that reaches the model. Nothing was reading any of them.
+  - **Blocks:** a hook or MCP command that downloads and pipes into an
+    interpreter; a secret written literally into a hook, an MCP `env`, or an
+    agent's frontmatter. The last one is not hypothetical here — a key in a
+    context file once reached 605 transcripts, and revocation was the only fix.
+  - **Warns:** a hook ending in `|| true`, which cannot fail and therefore
+    cannot block; an MCP command outside the known interpreters — reported as
+    **"unrecognised, not forbidden"**, because a guard that calls the unfamiliar
+    malicious teaches people to ignore it.
+  - **Three states, three exit codes:** `ok` 0, `blocked` 1, **`unscannable` 2**.
+    A section that could not be read is never reported as a section that was read
+    and found clean, and one unreadable section cannot make the rest say `ok`.
+  - It reuses the shipped `secret-patterns` rather than a second copy — a second
+    list is a list that drifts, and that one has already learned that `\b` before
+    `secret_access_key` cannot match `aws_secret_access_key`.
+  - On this repository: 27 hooks, 1 MCP server, 70 agents scanned; **0 blocking,
+    0 unscannable**, 8 advisory `|| true` hooks that are deliberate and are now
+    at least visible. Asserted as a test, because a guard that is not true of us
+    is not a guard.
+  - Shape borrowed from ECC's AgentShield (MIT, as here); the rules are ours.
+
+### Fixed — the board answered questions it had never asked
+
+Mapping the board against its own API turned up seven places where a value that
+was never measured rendered as a measured one. Each is the same defect in a
+different costume, and the first is the one that matters:
+
+- **A security scan that never ran displayed as a passing scan, in green.**
+  `m.security?.blocked ?? 0` with `cls: … ? 'red' : 'green'` meant a project with
+  no security data showed **"Open security blocks: 0"** in the colour that means
+  safe. The tile one line above it goes out of its way to avoid exactly this.
+  Now `n/a` with no colour and the reason on hover — *"no security scan has run
+  — this is not a clean result"*. Green claims safe, red claims unsafe; neither
+  was known.
+- **"Rework rounds: 0"**, same shape, same fix.
+- **The live indicator shipped asserting a sync that had not happened.** The
+  markup said `live · synced just now` before any connection existed, and stayed
+  that way forever if neither SSE handler fired. It ships as `connecting…` now,
+  with a third CSS state of its own.
+- **`/api/agents-installed` never read `tools:`.** `agent-posture.mjs` has
+  classified tool grants since 3.24.0 — code.destructive, credential.read,
+  communication.external.send, payments — and the board had nowhere to get them.
+  Every agent row now carries a posture in **five** states: `expensive`,
+  `routine`, `unclassified`, `undeclared`, `unreadable`.
+- **An agent that pinned no model was reported as pinned to sonnet.**
+  `model: modelM?.[1] || 'sonnet'` collapsed "pinned to sonnet", "declares no
+  model" and "the file could not be read" into one string. `model` is `null`
+  when unpinned now, beside a `model_state` that says which of the three it is.
+- **`/api/heartbeat.stuck` was always empty, and always had been.** It read
+  `t.startedAt`, a field no code path in this repository produces, so every row
+  got `age_h: null` and the filter removed all of them — the panel reported
+  "nothing is stuck" about a question it never asked. It reads `updated_at` now,
+  and a task whose age cannot be determined is **counted**, not dropped. There
+  were seven in-progress tasks here when this was found.
+- **`savings_x` per agent was 500 by construction** — both sides of the ratio are
+  a run count times the same constant, so it was the rate ratio for every agent
+  that ran at all. `metrics.mjs` nulls its equivalent for that reason; the fleet
+  shipped it as a per-agent measurement. Labelled `savings_source: 'ratio'`.
+
+### Fixed — a timeout below its own measured runtime
+
+`layout-snapshot`'s browser test was capped at 240s and takes **148s on a quiet
+machine** — a 38% margin, which a full gate eats. Nine gate runs on 2026-09-06
+produced four reds and this was among them; in isolation it passes 8/8. Raised
+to 600s, with the measurement written into the file.
+
+This is the same defect the bd timeout caps had, and the same fix: a cap set
+below the measured worst case turns a busy dependency into a broken one.
+
+### Fixed
+
+- **A Codex install could run two different versions of this product.**
+  `.codex-plugin/mcp.json` started the MCP server with `npx great-cto@latest`,
+  which is not a version at all: a user on plugin 3.26.0 would get the MCP server
+  from whatever npm had published since, and during any release window the two
+  halves disagree by construction. It is pinned to the plugin's own version now,
+  `bump-version.sh` keeps them in lockstep, and a missing manifest there is fatal
+  rather than skipped. A test fails if `@latest` ever comes back.
+  - Found by asking Codex to audit its own support here — the third real defect
+    that audit has produced, after the README overclaim and the `adapt` generator
+    writing a hooks file nothing reads.
+
+---
+
+## v3.26.2 — 2026-09-06
+
+Three things that were being thrown away in silence: two CSS rules the parser
+discarded, and every document under a two-letter directory.
+
+Most of this release was found and written by a **second Claude Code session**
+working in its own worktree, reviewing the board while this one shipped 3.26.1.
+Two agents on one repository, correcting each other — including several times in
+both directions.
+
+### Fixed
+
+- **Two CSS rules were not unstyled — they never parsed.** A stray `}` at the
+  top level of a stylesheet is not an error CSS reports: it *opens* a qualified
+  rule whose prelude runs to the next `{`, swallowing the comment and selector
+  after it and dropping the rule that follows. There were two, both confirmed
+  against the browser's own engine:
+  - **`.icon-btn`** — a brace left behind when `.leash-chip` was deleted ate the
+    base rule (30×30, inline-flex centring). The icon buttons have been rendering
+    at the browser's default size, beside an `.icon-btn:hover` that still worked.
+  - **`.budgets-table`** — a commit normalising font weights overwrote the
+    selector `.budgets-table th` with a bare `.` and left a duplicate
+    `id var(--border);` fragment. The invalid prelude reached forward and took
+    `td`'s block with it, so the budgets table has had **no header styling and no
+    cell padding or borders**. `th[title] { cursor: help }` survived one rule
+    further down, so the headers still changed the cursor on hover and the table
+    read as styled — which is most of why nobody caught it.
+- **No guard could see either.** `css-tokens` checks `var()` tokens;
+  class-parity checks classes. A rule that never parses declares no class, so
+  every check agreed the file was fine. `scripts/lib/css-classes.mjs` now reads
+  classes out of selector **preludes** — `.a.b:hover` and `.x .y` count as
+  declarations, and `url(logo.png)` no longer silently exempts a real `.png` —
+  and reads `className =` and `classList.*` as well as `class="…"`: 411 classes
+  seen where scanning markup alone saw 400. It checks for stray braces directly.
+  Twelve classes were undeclared, not the fourteen first counted — four are
+  declared as compound selectors, and `.why-` was never a class at all: it is a
+  comment quoting `class="why why-"` to explain that very bug.
+- **`docs/qa/` was being dropped as a translation.** `IS_TRANSLATION` matched any
+  two-letter directory, so `docs/qa/`, `docs/ai/`, `docs/ci/`, `docs/ux/` and
+  `docs/db/` read as language codes and their documents vanished from the board's
+  docs tab and from the link graph — silently, because a dropped document
+  declares nothing that could go missing. A translation is now recognised
+  **structurally**: a file under a two-letter directory whose *name* also exists
+  outside every such directory. No whitelist to rot, and it self-corrects when a
+  language is added.
+  - **Visible consequence, stated because it hides inside a regex fix:**
+    `docs/qa/` drafts now appear on the board's docs tab. That is the intended
+    direction — the board is a local tool and should show drafts.
+- **The orphan ratchet counted the machine, not the repository.** `listDocs`
+  walks docs/ on disk, so gitignored local files counted: one checkout reported
+  55 of 164 where a clean one reported 49 of 157. The filter went into the
+  **test**, not the reader — making the reader git-aware would have fixed the
+  count by breaking the board's docs tab. Verified in two checkouts, converging
+  on the same number in each.
+
+### Three changes you will see
+
+Repairing classes that were declared nowhere means the elements using them stop
+rendering as browser defaults. All three are intended, and all three were
+measured in a real browser rather than reasoned about:
+
+| | before | after |
+|---|---|---|
+| **`.btn` ×3** — "Replace"/"Connect" in the judge-status form, "Try again" in the budgets failure card | bare user-agent button | the house solid pill (`.btn-black`) |
+| **`#session-q`** — the Sessions search box | user-agent input, 147px | house input, 202px |
+| **`.sr-only`** | inline `left:-10000px` | `clip-path: inset(50%)` — nothing visible either way, but an off-screen box still counts as layout and widened the page in RTL |
+
+The search box sits flush to the right edge at 375px. That is pre-existing and
+symmetric — `.panel` has `padding: 0` at that width and the heading is equally
+flush at left 0 — confirmed by disabling the new rule at runtime and
+re-measuring: the input still ends at 375, page `scrollWidth` equals
+`clientWidth`, no horizontal scroll.
+
+### Known, and not fixed here
+
+`tests/board-gate.test.mjs` flakes roughly one run in two under a full gate,
+including after the Beads schema migration on an idle machine — nine full runs,
+four reds, a different test each time. The cause is now known and is in a test
+helper, not in the product: `spawnSync` returns `status: null` when it cannot
+run or reap the child, `null !== 0` fires the failure branch, and bd's own
+success banner gets printed under the words "bd init failed". The test cannot
+tell "bd said no" from "we could not run bd", and the `bd show` site returns
+`null` for both — so a could-not-spawn reads as "the task does not exist".
+
+Not fixed in this release because it touches no shipped code and the repair
+needs a measured rate rather than two green runs to be worth believing.
+
+### A test assertion changed, deliberately
+
+`doc-links.test.mjs` asserted that *no* file under a two-letter directory is a
+document — the buggy rule, written down as a guarantee. It now asserts the real
+property: real translations are excluded, topic directories are not. The reason
+is in the test, so the next reader does not mistake it for a weakened check.
+
+---
+
+## v3.26.1 — 2026-09-06
+
+A review that did not happen told the reader to fix the wrong thing.
+
+### Fixed
+
+- **The skipped-review reason named advisory noise instead of the cause.** When
+  Codex declined a cross-model review because the plan's usage limit was spent,
+  the line printed was *"Skill descriptions were shortened to fit the skills
+  context budget"* — the first message Codex emitted, and irrelevant. The
+  sentence that named the cause **and the date it returns** sat second and was
+  cut off by a 300-character truncation. Someone reading it goes and disables
+  skills over a problem that fixes itself.
+  - `principalError` now ranks what a human is shown: terminal beats advisory,
+    and among equals the earliest wins. The other messages are counted, not
+    hidden — *"(1 other message(s) from codex, not the cause)"*.
+- **A spent plan quota is its own kind.** `classifyProviderError` gained
+  `quota`, and it is neither of the two it used to be mistaken for: not
+  `credits` (a balance somebody tops up), not `rate-limit` (seconds). Nobody has
+  to act, and it comes back **on a date the message names** — so the date is
+  extracted rather than described, and `resets_at` reaches the review log
+  beside `error_kind`. Read as a rate limit it earns a retry loop that cannot
+  succeed for a month; read as credits it sends someone to a billing page they
+  do not need.
+
+### Held up under a failure it was not designed for
+
+The bug was found by the feature meeting a real outage rather than a fixture:
+the Codex plan hit its limit mid-session. The property the four states exist for
+survived it — the reviewer returned SKIPPED with `verdict: null` and
+`cost: null`, never a silent PASS. What failed was only the sentence explaining
+why, which is the part a person acts on.
+
+---
+
+## v3.26.0 — 2026-09-06
+
+Claude Code and OpenAI Codex now work on the same task at the same time — and
+the switch is on the board.
+
+### What's new
+
+- **Codex reviews beside the Claude reviewer.** For high-stakes changes the
+  cross-model red-team and `independent-verify`'s second judge can run through
+  **`codex exec`** — a read-only sandbox, `--ephemeral`, authenticated by your
+  Codex login, **no API key**. Codex runs *in parallel* with the Claude reviewer
+  on the same diff; findings merge; a P0 from either side blocks; disagreement
+  escalates to the human at the gate. That rule was already right — it just had
+  one model family on both sides.
+- **One decision, read by everyone.** `capabilities: second_opinion: codex |
+  openrouter | none` in `PROJECT.md`. The reviewer, the verifier and the board
+  read the same line, so they cannot disagree about it. **Four states**:
+  `declared`, `none`, `undeclared`, and `unavailable` — declared Codex, no
+  working Codex here — which is never folded into `none`. An absent reviewer
+  must not read as a decision not to review.
+- **Harnesses card on the dashboard.** Claude Code as host; Codex *detected* in
+  three states (absent / not logged in / available, with version, auth mode and
+  the model it will run); the switch; and beside it the tail of
+  `.great_cto/cross-review.log` — what the second opinion **did**, not what it
+  is set to. Choosing Codex on a machine without one succeeds as a declaration
+  and answers `unavailable` at the click. `GET /api/harnesses`,
+  `POST /api/harnesses/second-opinion`.
+- **The feature reviewed itself, and found two bugs.** The first real Codex
+  review — of the commit that wired Codex in — reported a P1: `second_opinion:
+  none` still fell through to the router judge, an opt-out that opted back in.
+  The same run logged `cost: 0` for an unpriced model. Both fixed before this
+  release; the second review of the fix returned zero findings and
+  `cost unpriced`. Both runs are on the card, oldest included.
+
+### Fixed
+
+- **`cross-model-review` exited 1 for a missing key — the BLOCK code.** "The
+  review blocked this" and "the review did not happen" were one number. SKIPPED
+  is exit **3** now, and `code-reviewer` is told to read the code, not the prose:
+  never write PASS for a review that did not happen.
+- **The capability key regex dropped every key with an underscore** as
+  `undeclared` — the state that means "nobody said".
+- **`GREAT_CTO_CODEX_BIN`** is the one lever for the Codex binary across the
+  reviewer, the verifier and the board's detector.
+
+### Not built, on purpose
+
+Dual-run of implementation (Codex in a worktree on the same task — doubles every
+task's cost, needs a merge policy) and routing pipeline stages to Codex (a
+harness with no role agents). Hooks, slash commands and role agents on Codex
+remain an upstream limitation.
+
+---
+
+## v3.25.0 — 2026-09-05
+
+Every model the plugin chooses is now a current one. Nothing else changed in
+what the agents do; what changed is which generation answers when they ask.
+
+### What's new
+
+- **The whole fleet moved to the Claude 5 family.** Fifty-seven of seventy
+  agents pinned their advisor — the one-shot second opinion — to
+  `claude-opus-4-8` or `claude-sonnet-4-6` by exact id, and six pinned their
+  main model the same way. Those ids still resolved, so nothing broke; but a
+  plugin that says it is built for Claude Fable 5.1 while every advisor asks the
+  previous generation is making a claim about the harness, not about itself.
+  Advisors now name `claude-opus-5` / `claude-sonnet-5`; main-model pins moved
+  the same way; `claude-haiku-4-5` stays, because Haiku 4.5 is the current Haiku.
+  Same price as 4.8 at the Opus tier, cheaper at the Sonnet tier.
+- **The same move everywhere a model is chosen rather than priced:** the
+  frontier judge default, the eval runner's actor and judge, the product-owner's
+  four-model debate panel, `/review` and `/digest`, the pm-planning default —
+  and `archetype-review-base/reviewer-template.md`, which stamps every new
+  reviewer; left alone, the next reviewer would have been born on 4.8. Price
+  tables keep their 4.x rows: a cost meter must price what ran last month, not
+  only what runs now.
+- **Agent postures, from 3.24.0, now reach the reference docs** — the regenerated
+  agent table carries the current models.
+
+### Cost meter
+
+- `claude-fable-5-1` prices by family prefix (`source: prefix`), and an OpenAI
+  model id prices as `null` with `source: none` — unpriced, not free. Neither
+  state pretends to be the other.
+
+---
+
+## v3.24.1 — 2026-09-05
+
+`adapt` was telling Codex users their hooks were active. They were not, and six
+passing tests had been guarding the file that said so.
+
+### Fixed
+
+- **`great-cto adapt` wrote a Codex hooks file nothing reads.** On a project with
+  `ai_tools: [codex]` it produced `.codex/hooks.json`, set `[features] hooks =
+  true`, pointed `CODEX_SKILL_DIR` at `~/.codex/skills/great_cto` — a directory a
+  working Codex install does not have — listed six role agents above a comment
+  claiming "full 57-agent routing" (we ship seventy; Codex routes none), and then
+  printed **"Then restart Codex to activate hooks and MCP server."** Half of that
+  sentence was true. Someone who followed it believed the gate chain and
+  secret-scan were guarding their Codex session.
+  - Hooks load only from the config layer, and a plugin cannot carry them at all
+    — [openai/codex#16430](https://github.com/openai/codex/issues/16430),
+    [#39895](https://github.com/openai/codex/issues/39895), where the field is
+    read by nothing "with no warning, error, or log line". `.codex/hooks.json`,
+    project-scoped, was never even the config layer.
+  - **Six tests covered that generator and all six passed.** They checked the
+    shape of the JSON carefully — that the blocking guard was not wrapped in
+    `|| true`, that the matchers reached `apply_patch` — and none asked whether
+    anything reads the file. So the generator is deleted rather than corrected,
+    and the tests with it.
+  - What remains is the one section Codex actually starts,
+    `[mcp_servers.great_cto]`. The rest of the fragment now says what does **not**
+    come with it, in `codexInstallPlan`'s own words, verbatim — a test fails if
+    the installer and the adapter drift apart again, which is how they drifted.
+  - A stale `.codex/hooks.json` from an older version is reported, not silently
+    left and not silently deleted: it sits in the user's project and may be
+    theirs now.
+- **"Your config is live"** was printed after writing a fragment the user still
+  has to merge into `~/.codex/config.toml` by hand. A line that says a thing is
+  live is exactly how an unmerged file passes for a working one.
+
+Found by asking Codex to audit its own support here a second time. `3.24.0`
+corrected the README; this corrects the code that contradicted it.
+
+---
+
+## v3.24.0 — 2026-09-05
+
+Two things this release is honest about that it was not before: what runs on
+Codex, and what an agent is actually allowed to do.
+
+### What's new
+
+- **Codex support, stated as it is.** `great_cto` installs into OpenAI Codex
+  through a plugin manifest (`.codex-plugin/plugin.json`) and a marketplace entry
+  — verified by installing it, not by reading a schema. **Forty skills and the
+  MCP router carry over. Hooks, slash commands and the sixty-nine role agents do
+  not**, because Codex's plugin format has no surface for them (upstream
+  [#16430](https://github.com/openai/codex/issues/16430),
+  [#39895](https://github.com/openai/codex/issues/39895)). The README used to
+  offer `--host codex` and, two lines later, `/start` — a command that does not
+  exist there. A test now fails if a future edit promises more than the harness
+  delivers.
+- **A Codex arm for the evals.** `tests/eval/arm-codex.mjs` runs the same case
+  against the Codex CLI, so a comparison of harnesses measures harnesses instead
+  of a shim. Its stream parser has three states — `ok`, `empty`, `unreadable` —
+  and reports token usage as `null` when the stream never said, rather than `0`.
+- **A circuit breaker on the dispatcher.** Five consecutive runs that produced
+  nothing — no verdict, an unreadable one, no rule, no map — and the pipeline
+  stops instead of spending another turn. `hold` and a blocked budget are
+  deliberately not failures: waiting is not the same as getting nowhere. Any run
+  that moves the board resets it, and a threshold of zero turns it off.
+- **Agent postures — ADR-009's question, asked of every tool grant.** The ADR
+  asks "is this expensive to undo?"; an agent file answers "which tools". Those
+  are different questions and reviewing the second never answered the first.
+  `scripts/lib/agent-posture.mjs` names a grant in the language of the decision —
+  `code.destructive`, `credential.read`, `communication.external.send`,
+  `payments` — reusing the ADR's own cost categories rather than inventing a
+  second vocabulary. `/agent-review` prints it for the agent under review.
+  - **`Bash(node:*)` is `node -e '<anything>'`.** So are `Bash(python3:*)`,
+    `Bash(xargs:*)`, `Bash(awk:*)` and `Bash(find:*)`. **Twenty-eight of seventy
+    agents advertised a scoped shell and held a full one** — almost all of them
+    the `*-reviewer` agents, whose narrow tool lists were the visible evidence of
+    their care. **Forty-four of those grants were never used by the agent holding
+    them and are gone.** No reviewer had ever invoked `find`. The thirteen that
+    remain are used, and each is now written down with the reason.
+  - A tool the table has never heard of is **`unknown`, never harmless** — a new
+    MCP server on an agent's line fails the guard until somebody judges it.
+- **A locked account is not a blip.** `provider-exhaustion` gained a terminal
+  `billing` kind, separate from `credits`: a suspended account was being retried
+  like a rate limit.
+- **Subagents are told they may batch.** The orchestrator contract now says
+  outright that independent tool calls go in one message. Guidance that lives
+  only in the parent never reaches the agent doing the work.
+
+### Fixed
+
+- **The session refresh was overwriting this repository's own contracts.**
+  `shared/orchestrator.toml` reverted to the installed plugin's copy nine times
+  in one day, and once rode into a commit as a deletion of two contract rules
+  while the tests asserting them stayed. The SessionStart hook copies
+  `shared/*.toml` into a consumer project and skips it when the directory IS the
+  plugin — detected by grepping the manifest for `"name": "great_cto"`. The
+  plugin was renamed to kebab-case, the grep stopped matching, and the repository
+  began reading as a consumer of itself. **The guard for exactly this passed the
+  whole time**, because it built its fixture with the literal old name.
+- **secret-scan missed the two AWS spellings people actually write.** A `\b`
+  before `secret_access_key` cannot match `aws_secret_access_key = …` or
+  `AWS_SECRET_ACCESS_KEY=…`, because `_` is a word character. The rule caught
+  only the bare form and reported CLEAN on the common ones.
+- **Which a new fixture table found, minutes after it existed** and seventeen
+  code-level tests had not. Rules and expected verdicts now live as data
+  (`tests/fixtures/secret-scan-verdicts.json`); every shipped pattern must have a
+  deny row, and a row naming a rule that no longer exists fails too. Rows are
+  templates assembled at test time, so nothing key-shaped sits in the tree.
+- **Four tests failed because the calendar moved, not the code.** A frozen ISO
+  date compared against a 30-day freshness limit is a bomb with no commit to
+  blame. `tests/lib/no-calendar-bombs.test.mjs` fails on the next one, with a
+  ratchet for the dates that are fixtures rather than comparands.
+- **A `hooks.json` Codex reads and rejects** was printing a parse error on every
+  turn for every user with the plugin installed. Renamed to `.disabled`, guarded.
+- **`bump-version.sh` had never heard of the Codex manifest**, so the first
+  release after it landed would have published a plugin advertising the previous
+  version. A missing manifest is now fatal there, not skipped.
+
+---
+
+## v3.23.0 — 2026-09-04
+
+The pipeline could carry a product all the way to a live URL without ever asking
+whether it makes money. It asks now, before it decides to build.
+
+### What's new
+
+- **`product-economics` — the question no gate was asking.** Every stage of this
+  pipeline answers "can this be built safely": architecture reviewed, tests
+  green, security signed off, deployed. None of them answered "should this be
+  built at all, at a price someone will pay" — and silence there read as
+  approval. The skill puts three numbers into the brief, **before** the
+  recommendation that rests on them:
+  - **contribution margin** — price minus the variable cost of serving ONE user.
+    For anything LLM-backed the token line decides it, computed at p95 usage
+    rather than the mean: flat-rate plans are priced by the tail, and the tail
+    is what arrives. A negative margin cannot be fixed by volume.
+  - **the price's basis** — cost-plus, competitor-anchored (named, with the date
+    it was checked), or value-based. One of them: the one that actually decided.
+  - **reachable buyers, bottom-up** — enumerated, at a realistic price, times a
+    fraction with a NAMED channel. A slice of someone else's market report is
+    arithmetic, not evidence.
+
+  It reuses the brief's own `[source: …]` / `[assumption]` markers rather than
+  inventing a second vocabulary, because arithmetic launders provenance: two
+  assumptions multiplied together produce a margin that reads like a
+  measurement. A number nobody knows does not become an assumption — it becomes
+  a kill-criterion with a threshold and the cheapest test that resolves it.
+
+  Building at a loss stays allowed. Discovering it in month four does not.
+
+### Fixed
+
+- **A `--json` report that stopped at 8,192 bytes looked like a report that
+  finished.** `agent-prompt-lint` and `coverage-gate` printed their reports and
+  then called `process.exit()`, which does not wait for a pipe to drain. The
+  reports sat just under the pipe buffer for months; one added skill pushed one
+  of them over, and four unrelated agent tests began failing with
+  `Unterminated string in JSON` — pointing anywhere but at the cause. Both now
+  set `process.exitCode`, and a test pins it.
+
+---
+
+## v3.22.0 — 2026-09-03
+
+Two things the machinery had always claimed but never measured: how much of the
+pipeline actually runs in parallel, and whether `bd` was given long enough to
+answer. Both were reporting confidently on questions nobody had asked.
+
+### What's new
+
+- **Parallelism is measured, not only declared.** `shared/orchestrator.toml` has
+  capped `max_parallel_streams` since it was written, and nothing ever recorded
+  how many streams a run used — a serial pipeline and a five-way one left
+  identical journals, the serial one only slower. The dispatch journal now
+  records when each agent run BEGAN as well as when it ended, and the contract
+  print at SubagentStart shows the measured peak beside the declared ceiling.
+  Three states, and the third is the point: `parallel`, `serial`, and
+  `unmeasured` for runs nobody timed — reporting the last as "serial" would be a
+  measurement the code never took.
+- **The Work Packet List can be checked mechanically.** `scripts/lib/wpl.mjs`
+  reads the decomposition matrix straight from its markdown table and runs the
+  lane-overlap check on it. The overlap checker already existed; between it and
+  the table sat a hand-built `lanes.json`, which is the step people skip.
+- **The board's design direction ①** — zero radius, no decorative shadow, one
+  voice — with the light theme's ink ladder corrected and every rendered colour
+  tied to the stylesheet by test rather than by eye.
+- **CircleCI runs the checks a laptop cannot**, on a schedule: the cold-install
+  canary across macOS and Linux, and the weekly eval-drift run. GitHub Actions
+  stays the publish path (provenance signs only there) and returns the moment
+  the account's billing lock is lifted.
+
+### Fixed
+
+- **A busy `bd` was reported as a broken one.** Every timeout cap around beads
+  sat BELOW what beads had been measured to take — 5s and 8s against 8.7s under
+  the parallelism the test suite creates for itself — so ordinary load returned
+  HTTP 500, identical to a malformed request. Caps are now above the
+  measurement, a timeout answers 503 with `Retry-After`, and a test walks every
+  shipping file to keep it that way. Four more calls had no timeout at all,
+  including one in a hook and one on the board's async refresh path, where a
+  hung beads left the cache serving stale tasks with no error anywhere.
+- **A gate that could not be read reported as a gate that was never raised.**
+  The direction was always safe — unreadable is not approved, so the pipeline
+  waits — but the sentence sent readers off to raise a second gate bead for a
+  gate that may already exist and be approved. It now says `unreadable`.
+- **Seven copies of "spawn a board and hope".** One fell out of its wait loop
+  silently and carried on against a board that never came up; none retried a
+  port taken between `freePort()` and the child's bind, though the helper had
+  promised that retry for months; and all of them threw one message for three
+  causes. Now one helper, which watches the child's stderr and says which of the
+  three it was.
+- **Lane overlap compared strings**, so `src/auth/*.ts` and `src/auth/login.ts`
+  were judged disjoint and two agents could be dispatched onto the same file.
+  Globs are expanded before comparison.
+- **An OpenRouter key was named as an OpenAI key** by the secret scanner,
+  because `sk-` matches both rules and the first match wins. Sending someone to
+  revoke the wrong credential is worse than not naming one at all.
+
+---
+
+## v3.21.0 — 2026-09-01
+
+The file that every session reads is now checked before it is read, and the cost
+log records where the money went rather than only how much.
+
+### What's new
+
+- **Global memory is scanned before it reaches a session.** `~/.great_cto/`
+  preferences, decisions and lessons are read into every session in every
+  project — that is what they are for. Now they are checked for credentials
+  first, and a file with one in it is **not loaded**: the warning names the file,
+  the pattern and the line, never the value, and goes to stderr so it reaches you
+  without becoming part of what the model reads.
+- **A file that cannot be read is withheld too.** Not treated as clean. Emitting
+  an unscanned file would report "I could not check" as "checked and clean", in
+  the one place where being wrong cannot be undone — a context is copied into a
+  transcript, and transcripts are not edited afterwards.
+- **The cost log separates input from output.** It recorded what a run cost and
+  never which half it went on, so every question about context size was a guess
+  about direction. Four trailing fields now carry input, output and both cache
+  counts; absent counts read as unknown rather than zero.
+- **Session learning has a triviality guard.** The learner is opt-in and, once
+  on, used to spawn a paid agent at every session end — including the one that
+  answered a question in thirty seconds. It now skips sessions that changed
+  nothing, and records which happened and why either way.
+
+---
+
+### Two halves that worked, and the gap between them
+
+A credential sat in a global memory file and reached the context of every session
+in every project. From that one line: 29 transcripts, 102 occurrences.
+
+Neither half of the system had failed. The secret scanner is a PreToolUse hook on
+Edit | Write | MultiEdit and guards those tools correctly — it cannot see a shell
+redirect, a hand edit, or another editor. And the memory file is read into every
+session because that is its entire purpose; it was not spread by accident, it was
+delivered as designed.
+
+The missing question sat between them: *is a secret already in the file I am
+about to hand to a model?* Nothing asked it, so a credential arriving by any path
+outside those three tools travelled silently and permanently.
+
+Both checks now share one set of patterns, so the at-rest check cannot drift from
+the at-write one.
+
+If a credential has been in that file, it has been in context for as long as it
+has been there. Revocation is the control. Deleting transcripts is not — it
+destroys the record and protects nothing.
+
+---
+
+## v3.20.0 — 2026-08-31
+
+A quantitative research agent that refuses to certify a result whose validity
+conditions failed, an unattended nightly run that goes looking for stalled work
+instead of only draining the queue it was in, and a money ceiling on that run.
+
+### What's new
+
+- **A quant research agent.** `quant-researcher` forms hypotheses, runs
+  backtests, and reports what the test supports — with seven conditions a result
+  has to satisfy before it counts as evidence: purged cross-validation with an
+  embargo, stationarity that keeps its memory, sample uniqueness under
+  overlapping labels, costs and slippage, a trials count, a never-touched
+  holdout, and a label that describes an outcome that could actually have
+  happened. Research only: it never places an order, holds an execution
+  credential, or sizes a position.
+- **The methods behind those refusals.** `quant-validation` states the mechanism
+  for each — how purging and the embargo work, what triple-barrier labelling
+  replaces, why an integer first difference is stationary and useless. Refusing
+  without being able to say what would fix it is half a job.
+- **The nightly run goes looking.** It read the handoff and continued that
+  thread; it now scans first for work that has stopped, and may switch — saying
+  which it chose and why. A gate waiting on a person is reported and never taken:
+  an unattended agent that "handles" a gate has approved its own work.
+- **A ceiling on what one unattended run may spend.** `LOOP_BUDGET_USD`, $8 by
+  default overnight. An unmeasurable spend against a set ceiling stops the run,
+  because a budget that cannot fire is not a budget.
+- **The console says when it is reading a stale plugin.** Editing this repository
+  does not change what a running session loads until it is reinstalled; the
+  session now says so, comparing bytes rather than versions.
+
+---
+
+### The agent's value is what it declines to certify
+
+Its eval is seventeen cases and eleven of them are refusals — of a reused
+holdout, of an order on a testnet, of a period chosen after seeing its result, of
+a headline Sharpe printed beside its own invalidation.
+
+Running it changed it four times. The first run scored 14/14 and meant nothing:
+all fourteen cases asked "what is wrong with this", which measures recognition.
+Three cases asking it to CONSTRUCT — choose the splitting scheme, fix the
+features, replace the label — dropped it to 14/17 and showed the real gap: the
+agent recognised every failure and could not produce a valid design. A
+researcher who can only reject is a researcher who blocks.
+
+The last gap was structural rather than verbal. Asked to label outcomes, it
+answered about sample uniqueness — reasonable, and wrong, because the contract
+had six conditions and none of them was about labels. The knowledge was in the
+skill; the hook that would make it reach for it was not. With the seventh
+condition the runner reports PASS for the first time.
+
+### A flaky test, and three wrong answers before the right one
+
+`pipeline-contracts` failed intermittently under load, a different case each run,
+passing 19/19 in isolation. Three hypotheses were tested and discarded: a port
+race (150 ports across six processes, zero collisions), too few cleanup retries
+(all twenty sites had them), surviving grandchildren (the reaper already kills
+the group and waits).
+
+Then: rmSync failing means the directory survives, so every past failure was
+still on disk — each holding exactly one file, `update-check.json`. The CLI
+spawns a detached, unref'd process that queries the npm registry and writes it,
+outside the board's process group and therefore invisible to teardown. Under load
+the network call outlives the cleanup.
+
+The switch already existed and the tests never set it. Verified by three
+consecutive full runs: green, and zero leftover directories where there had been
+one per failure.
+
+Read what a failure leaves behind before theorising about what caused it.
+
+---
+
+## v3.19.0 — 2026-08-31
+
+The pipeline can now stop you once instead of three times, alerts about a waiting
+decision no longer fall silent after 72 hours, and ten domain knowledge packs
+that shipped to every user became selectable for the first time.
+
+### What's new
+
+- **One gate, if you want one.** `approval-level: ship-only` stops you at the
+  deploy — the only decision whose consequence leaves your machine. What gets
+  built arrives as a one-screen console briefing instead: printed once,
+  non-blocking, silence is consent, and the screen says so. If the brief cannot
+  be read the gate comes back, because "I could not show you" is not "you were
+  shown and said nothing".
+- **Ten industries became selectable.** Accounting, tax, medical billing,
+  government, edtech, legal-tech, MSP, procurement, adtech-privacy and US
+  AI-governance packs were written, complete, and named by nothing that could
+  load them. They now route on a signal in `PROJECT.md`, each paired with the
+  reviewer it already had.
+- **A waiting decision keeps saying so.** Reminders about a pending gate used to
+  stop after 72 hours and fire once per gate for its entire life. They now repeat
+  daily while the wait is under a week and weekly after that — quieter, never
+  silent — and the console and the board read the same source, so they cannot
+  disagree about the same gate.
+- **Alerts say whether this has happened before.** "First time for this project"
+  and "the fifty-third time in thirty days" are different situations and used to
+  produce the same sentence.
+- **Agents offer options and take a pick.** Every agent that reports to you now
+  gives two or three real options with what each costs, says which it would take
+  and why, and names what would make its pick wrong.
+- **The architecture maps are in the documentation.** Both diagrams were computed
+  for months and drawn only for the board; they are now generated into
+  `docs/reference/architecture-map.md`, and CI regenerates and compares them, so
+  a diagram that disagrees with the code fails the build.
+- **An unattended nightly run, on a branch you can delete.** `nightly-loop.sh`
+  runs the loop in a git worktree, never on your branch, never pushing, and
+  leaves a branch and a summary for the morning.
+- **Design documents declare three dials.** `DESIGN_VARIANCE`,
+  `MOTION_INTENSITY` and `VISUAL_DENSITY`, 1–10, each with one line of why — a
+  bare number cannot be reviewed.
+
+---
+
+### The gate that could not be answered, and the reminder that stopped
+
+An operator reported that the tool stops and stands still: if he does not
+remember a pending decision, nothing happens. It was not a bug. It was the sum of
+three reasonable decisions.
+
+`gate.stale` alerted between two hours and seven days, skipped anything marked
+`blocked`, and deduped on the gate id — one alert per gate, ever. `gate-expiry`
+marks a gate `blocked` at 72 hours, which silenced the first rule for exactly the
+gates that had waited longest. And the session-start hook treated anything past
+24 hours as history rather than work waiting.
+
+Measured before the change: six `gate.stale` alerts in the tool's lifetime, the
+most recent 41 days old, across a period that contained a gate open for 29 days.
+
+Age is now the reason to speak rather than the reason to stop. A decision nobody
+has made does not get less urgent by ageing; every stage behind it is still
+stopped. Noise is handled by ranking and a decaying cadence, not by going quiet.
+
+### Ten packs, and the check that was missing
+
+Looking for somewhere to put a set of design rules turned up ten of twenty-six
+knowledge packs named by nothing that could load them — shipped to every user,
+selectable by none. Each already had a matching reviewer agent; only the routing
+was absent.
+
+That was the fourth instance of one shape in a week: a router declared by
+nineteen agents and invoked by none, a verifier whose only caller was its own
+test, an agent for scoring alternatives with zero verdicts since May, and now ten
+packs. Four is not bad luck — it is a missing class of check. Nothing asked
+whether a declared capability was reachable. Now something does, for packs and
+for skills, frozen at zero and verified by making it fail.
+
+---
+
+## v3.18.0 — 2026-08-29
+
+The board's documents screen now says how often each document is cited, the
+request classes have one definition instead of four partial copies, and the
+screenshots in the README are taken from a seeded sample project and carry the
+version they were taken at.
+
+### What's new
+
+- **The Docs screen counts citations.** Each document shows how many others link
+  to it, and the list sorts by that — so the question a reader arrives with,
+  "where would I find X", has an answer on the page. Machine-written summaries
+  and translated copies are no longer counted as documents.
+- **The eight request classes have one definition.** `shared/routing.toml` is the
+  source; the table in the project instructions is held to it by a test, so the
+  two cannot drift apart quietly.
+- **Screenshots are taken, not made.** A seeded sample project is built, the
+  board is photographed against it, and each image carries the version it was
+  shot at inside the PNG. A picture from an older feature release now fails the
+  build instead of sitting in the README looking current.
+- **A terminal recording, from a tape.** `docs/tapes/` holds the script; the GIF
+  is built from it against the same sample project, so it can be re-rendered
+  rather than re-performed.
+- **Alerts say whether this has happened before.** A gate going stale for the
+  first time in a project and the fifty-third in a month no longer read the same.
+- **Design documents declare three dials.** Variance, motion and density, each
+  1–10 with a reason, so the arguable part of a design is stated before
+  implementation rather than after.
+- **A domain pack for money on a phone.** Wallets, signing, transaction
+  lifecycle, verification states and offline reconciliation — the part a client
+  gets wrong even when the server is right.
+- **The mobile builder has an eval**, and a performance invariant that requires a
+  measurement before a change and another one after it.
+
+---
+
+### The screenshots, and the rule they are taken under
+
+Two rules, both learned from defects in this repository.
+
+**Never the operator's own board.** It lists every project on the machine and
+prints paths that begin with a home directory and a username. The capture runs
+against a seeded fixture with `HOME` redirected, so there is nothing else to find
+and nothing personal to print.
+
+**Every image carries its version.** A board screenshot from v2.73.1 sat in
+eleven READMEs while the board shipped 3.16.0 — two months and one redesign out
+of date, and nothing in the repository could tell. The version now travels in a
+`tEXt` chunk inside the PNG, which cannot be separated from the image the way a
+sidecar manifest can. Three states, not two: current, stale, and unstamped — an
+image that was never stamped is not an image that passed.
+
+It fired on the first release after it was built, naming all six files.
+
+### A running total added to itself
+
+`cost-history.log` holds two kinds of row: one run, and the session's running
+total after a subagent stopped. The benchmark collector added the running totals
+together, which counted the same dollars once per snapshot — $90,026 from a
+series whose largest single reading is $3,912. A running total contributes its
+increment; a reading below the one before it is a new session, not a refund. The
+same log now reads $7,420.
+
+The handoff package had the other half of it: it looked for a field name the file
+has never used, matched nothing, and reported "Cost: not recorded" on every
+package ever produced — which is a different statement from "I could not read
+this file", and the one a reader believes.
+
+---
+
+## v3.17.0 — 2026-08-28
+
+The board now starts itself, opens on one ranked queue instead of six blocks of
+status, and tells you whether the project is moving — with an empty state that
+distinguishes work finished from a machine that stopped.
+
+### What's new
+
+- **The board starts on its own.** Installing or updating the package brings it
+  up; if it is already running on its port, nothing is spawned on top of it. Set
+  `GREAT_CTO_NO_BOARD=1` to opt out.
+- **One queue, ranked, with the reason on the row.** The Inbox opens on a single
+  list ordered by what needs you first, and each row carries the reason it is
+  there — instead of four headed lists whose headings held the reason.
+- **The headline says whether the project is alive.** It reports the last time
+  anything moved, so a project that has not advanced in eleven days no longer
+  greets you as though it had.
+- **An empty queue says which kind of empty it is.** Nothing to do and nothing
+  being read are different states, and the board now names which one you are
+  looking at.
+- **Project status is a disclosure, not a wall.** The per-project detail is one
+  keystroke away rather than occupying the top of the page.
+- **Every skill has a reference page.** `docs/reference/skills.md` is generated
+  from the skills themselves, so the one thing this project ships was no longer
+  the one thing it did not document.
+
+---
+
+### The board answers while it warms up
+
+Two paths held the event loop for the length of a `bd list`: the boot warm-up,
+and the alert cron's five-minute sweep, which paid that cost once per project it
+had not read yet. The port was open and the page answered nothing — the shape of
+failure this project is built to refuse, a thing that had not happened looking
+exactly like a thing that had.
+
+Both now yield. The sweep reads what is already cached and declines to block on
+what is not; the cold read happens off the request path. A four-hundred-second
+measurement across the five-minute tick records no unanswered request.
+
+The narrower fix matters as much as the fix. Making every cold read
+non-blocking also made a just-approved gate read as no gate at all — the same
+defect class, one layer down. The change is scoped to the sweep alone.
+
+### A gate you could see and could not answer
+
+The hook that flags a neglected gate marked it blocked, which moved it to a
+bucket that renders no buttons. The board showed you a decision waiting and
+removed the way to make it. Gates past their expiry are now surfaced as needing
+you, with their controls intact — and `pending` and `blocked` are counted as the
+different things they are.
+
+---
+
+## v3.16.0 — 2026-08-28
+
+Three new checks that open the page, read its colours, and hold the project's
+own decision records where everything can find them — plus a migration pattern
+that cannot report a half-finished run as a finished one.
+
+### What's new
+
+- **Colour contrast is checked in CI.** Every text token is measured against
+  every surface it can land on, to the WCAG AA floor. Arithmetic over the
+  declared tokens — no browser, milliseconds.
+- **The rendered board is checked against its own design system.** A real
+  browser opens the page and every font size and colour it paints must be one
+  the stylesheet declares. Catches what source-level checks cannot see: the
+  cascade, the media queries, the JavaScript.
+- **Migrations record where they stopped.** A backup before the first change,
+  atomic writes, per-unit progress that survives a crash, and a completion
+  marker written only once every unit verifies — so a partial run can never
+  read as a finished one.
+- **Every ADR is where the tooling looks for it.** Eighteen decision records
+  lived in two directories while twenty-nine files searched a third; `/resume`,
+  `/audit`, `/doctor`, architect and senior-dev now all find them.
+- **The Inbox agrees with itself.** The tile and the pipeline rail no longer
+  give different answers about the same gate, empty stat tiles are not drawn,
+  and nothing is listed twice.
+- **The board's palette is complete.** Twenty-nine colours that bypassed the
+  token system are tokens, so the contrast audit can see all of them.
+
+---
+
+### Colour contrast, and the defect it was built from
+
+A stylesheet in this project used a colour token in 61 places and defined it in
+none. Every use fell through to a light-theme fallback and the densest block on
+the page rendered at 2.62:1 against a 4.5:1 floor. A person found it months
+later, by looking.
+
+`scripts/lib/contrast.mjs` reports the worst surface for each text token rather
+than guessing which background it lands on. Translucent colours are composited
+over the page first, because that is what the eye receives. A colour it cannot
+parse is `unknown` and yields no verdict, rather than a confident ratio for
+something nobody measured.
+
+Measured on the shipped board: all fifteen tokens pass, thinnest margin
+`--status-backlog` at 3.14:1 against the 3:1 floor for UI boundaries.
+
+### The rendered board, and the check that had to be rebuilt
+
+The first version recorded what happened to render and failed when the next run
+differed. It went red within the hour on a 36px that is `--fs-num-l`, a declared
+step of the ramp drawn only when a metric tile is on screen — a false accusation
+on correct behaviour, which is how a check gets switched off.
+
+The rule is a subset, not a match: every rendered value must be one the
+stylesheet declares. Data-independent, and still catches a raw `17px` by name.
+Colours moved to a source-level check, because the browser sees one only when
+its element is on screen — a true finding arriving as a flake.
+
+### Twenty-nine colours nothing could measure
+
+Frozen by a ratchet first, then tokenised, values carried across unchanged. Not
+asserted — shown: the rendered-layout check compared the colours the page paints
+before and after and found them identical.
+
+### The Inbox contradicted itself
+
+The tile read **0 pending decisions** while the rail beside it announced **1 gate
+awaiting signature**. Both were computed correctly; they answered different
+questions under the same label. Nobody can sign a blocked gate, so the rail says
+`1 gate blocked` — and still shows it, because a gate stuck for 29 days is what
+the rail is for.
+
+Three cuts alongside it: stat tiles that read zero are not drawn, the resume card
+no longer repeats the stale list below it, and the receipt-drift notice keeps its
+four file paths one click away instead of wrapping onto three lines.
+
+### Decision records had three addresses
+
+Eighteen ADRs in `docs/adr/` and `docs/architecture/`; twenty-nine files pointing
+at `docs/decisions/`, which held one unrelated file. `/resume` printed an empty
+"Latest ADR" every session, and an agent asked what the project had decided
+opened an empty directory and concluded nothing had been — including ADR-009,
+which CLAUDE.md builds the whole gate philosophy on. One home now, with three
+tests keeping it closed.
+
+### Positioning
+
+The README opened with an outcome and met its prerequisite at the install line.
+Both surfaces now lead with the same thing — the coding agent you already run —
+and say plainly what this is not: not a hosted app builder, and no substitute for
+your agent. The nine translations were realigned with it.
+
+### Tests
+
+10 for the migration pattern, 7 for contrast, 6 for the rendered layout, 3 for
+the ADR home, 2 more for the Inbox gate. Full local CI: 34 steps green.
+
+---
+
+## v3.15.0 — 2026-08-27
+
+Every stage of the pipeline can now be checked against something, the check
+reads the contracts of the project it is checking, and what it concluded is
+visible on the board instead of scrolling past in a terminal.
+
+### What's new
+
+- **Every pipeline stage is now verifiable.** Each stage declares what it
+  produces — a document, a set of documents, or a receipt of the files it
+  touched — and a run is checked against that declaration.
+- **A stage can declare a set, not just a file.** `briefs=docs/impl-briefs/`
+  names a directory, judged by its contents, for stages that write one document
+  per task.
+- **Verification reads your project's contracts**, not great_cto's, when it runs
+  inside your project.
+- **A split judge is reported as split.** Where three samples disagree, a second
+  model settles it; where nothing settles it, the result says so instead of
+  presenting a coin flip as a conclusion.
+- **The board shows verification results.** State, scorer and findings for every
+  run, on the Budgets page.
+- **`npm i -g` tells you when the plugin is behind the CLI.** The two ship
+  separately and are deliberately different sizes; the difference is no longer
+  silent.
+
+---
+
+### Two stages could not be verified at all
+
+`senior-dev` and `code-reviewer` declared no output contract, so their runs came
+back `unverifiable` — honest, and useless. Measured across the verdict logs:
+neither has ever written a document path into its meta, and both DO carry a
+receipt (head, base, and every touched file with its hash). They now declare
+`produces = ["receipt"]`, and a contract can be satisfied by the receipt block
+as well as by a document path. Inventing a document key for them would have made
+verification reject correct work.
+
+### The verifier read the wrong project's contracts
+
+`verifyAgentOutput` never passed `root` down to the contract lookup, so the
+contract was always read from **great_cto's own** `shared/pipeline.toml`
+regardless of which project was being verified. In any other project the
+verifier was enforcing our stage contracts against their stages. Found because
+six hermetic tests started failing and the fixture map was being ignored.
+
+### A stage that produces a SET could not name it
+
+`pm` writes one implementation brief per task, and its contract asked for
+`brief=<path>` — singular. No run that wrote four briefs can satisfy that
+honestly, so pm sat on REWORK for a reason that was the map's fault rather than
+the agent's. A trailing slash now marks a directory claim (`briefs=docs/impl-briefs/`),
+judged by its **contents**: absent, empty, only-placeholders and real are four
+distinct outcomes, so `mkdir -p` with nothing written still fails.
+
+`qa-engineer` had the opposite problem — its own post-condition already required
+a QA report to exist, but the verdict never named it, so nothing downstream could
+check. It does now, and refuses to log a verdict without one. `project-auditor`
+entered the map for its contract alone, with `next = []`: it is where a project
+with no pipeline history starts, and it was the stage most likely to run against
+an unfamiliar codebase and the one nothing could check.
+
+### A tie is not a majority
+
+Three judge samples resolved a 1-yes/1-no tie straight to `no`. That contradicted
+the module's own economics — a second model is consulted **only** on `no`,
+because a wrong `no` is the expensive answer — and made a coin flip read exactly
+like three judges out of three saying no.
+
+A tie now goes to the second model, and the second model decides it. This is not
+a widening of "never overrule": on a tie there is nothing to overrule, because
+the first judge did not reach an answer. Where it did, its answer stands and a
+dissenting second model is still only reported.
+
+Where nothing settles the tie the work still comes back — falling toward rework
+is right when verifying, since a wrong pass defeats the point — but it is now
+reported as *split and unresolved*, not as a requirement found wanting. Measured
+before deciding: 5/5 unanimous on the same real question, 1 tie in 6 runs, and
+— the deciding fact — with layer 3 undecided the stage comes back VERIFIED, so
+resolving ties to "unclear" would have turned a coin flip into a clean pass.
+
+### A rejected claim read like a confirmed one
+
+An unverified requirement and a refuted one printed the same way. They are
+different facts and now say so.
+
+### The board shows what the verifier concluded
+
+`/api/scores` had existed with **zero** front-end callers: every verification —
+its state, its scorer, its findings — was written to `.great_cto/scores.jsonl`
+and never displayed. A run's assessment is now visible where the run is.
+
+### `npm i -g` no longer leaves the plugin behind
+
+`postinstall.mjs` was a five-line no-op, so installing a new CLI moved the CLI
+and silently left the **plugin** — agents, skills, commands under
+`~/.claude/plugins` — at whatever version it was. It now reports the mismatch
+rather than pretending the two distributions are one. They are deliberately
+different sizes; what is fixed is that the difference is no longer silent.
+
+### Tests
+
+20 in the verifier suite, 12 in artefact claims, 7 in pipeline contracts, plus a
+new suite for postinstall. Full local CI: 32 steps green.
+
+---
+
+## v3.14.0 — 2026-08-27
+
+### A plugin older than the CLI does not get to answer for it
+
+`npm i -g great-cto@NEW` installed a new CLI carrying a new bundled board, and
+`great-cto board` then launched the **old** board out of the plugin cache —
+because `findBoardServerPath` put the cache ahead of the bundle unconditionally
+and a plugin directory existed. The CLI reported the new version, the screen
+served the old one, and nothing said so.
+
+The list is still the list; what changed is that a **stale** plugin no longer
+beats the bundle. When the newest installed plugin is older than the running CLI,
+the bundled board wins — it ships inside that CLI and is therefore exactly as
+new. An equal or newer plugin still wins, because a plugin install is the richer
+one: it carries agents, skills and commands the npm package does not.
+
+A version that cannot be read arrives as `undefined`, never as the string
+`"unknown"` — board-path treats absence as *behave as before*, while the literal
+word would make the semver comparison parse `NaN` and answer nonsense.
+
+⚠️ **What this does not fix, said plainly:** `postinstall.mjs` is still a
+five-line no-op, so `npm i -g` does not update the **plugin** — the agents,
+skills and commands under `~/.claude/plugins`. Those come from the Claude Code
+marketplace, and the two distributions are deliberately different sizes. What is
+fixed is the symptom: a new CLI will no longer serve an old board.
+
+### Also in this release
+
+**The inbox stopped printing wire format.** One P0 card had no prose at all —
+all 140 visible characters were `## Context [archetype:...] [compliance:[...]]`,
+the format the pipeline passes between stages, printed verbatim to a person.
+Parsed now. The receipt notice moved out of the way of the decisions, age became
+a column with the oldest first, and the pipeline strip stopped wrapping: 5 of 10
+labels broke to two lines before, 0 of 10 now, and the track is 39% shorter.
+
+**The docs screen stopped shrugging at 91% of itself.** `unknown` was returned
+both when a file could not be read and when it simply declared no `stale_after` —
+and 0 of 1634 markdown files in one project declare one. Four states now, with
+"not declared" as `null` so a caller drops the badge without learning a
+vocabulary; the 19 genuinely-judged documents stopped drowning in 198 badges
+about nothing. Classification read one signal, the directory, and put **165 of
+217** documents in "Other". It reads six now, and a leading filename token beats
+the directory: `Other` fell to **8% · 14% · 6%** across three projects, with the
+totals unchanged — nothing dropped to make the number look better.
+
+---
+
+## v3.13.0 — 2026-08-26
+
+### Verification stopped being advisory, and the judge got 48× cheaper
+
+The judge ran on a third of the work. Measured here: **31 agent runs, 10 scores**
+— and most of those ten were run by hand, not by the pipeline. The dispatcher
+never verified anything; it printed a sentence, *"VERIFY FIRST: run …"*, and a
+sentence is followed when the reader chooses to.
+
+Part of why it stayed optional is that it was expensive. So the model changed
+first. `ox-alpha` is a stealth codename and is not on OpenRouter; the Z.ai GLM
+family is:
+
+| | context | in / out per M | one stage | 8-stage pipeline |
+|---|---|---|---|---|
+| `kimi-k3` *(was)* | 1.0M | $3.00 / $15.00 | $0.0252 | $0.201 |
+| **`glm-5.3-flash`** | **1.31M** | **$0.075 / $0.25** | **$0.0005** | **$0.004** |
+
+Cheap is only useful if it judges correctly, so it was measured on two fixtures
+with known answers, three runs each: **glm-5.3-flash was right 6 of 6** with no
+disagreement across runs, matching kimi-k3. `glm-5.2:free` abstained on the
+passing fixture and is not usable as a judge. At 48× cheaper the argument for
+leaving verification optional disappears.
+
+**Dispatch is now conditional on a score for THIS run.** The hook stays fast by
+not verifying itself — it declines to hand work to the next stage until a
+judgement is on disk. Three properties keep it a gate rather than a trap:
+
+- a score from an **earlier run does not satisfy a later one** — otherwise a
+  stage verified once is waved through forever after;
+- **`unverifiable` unblocks** — the requirement is that somebody *looked*, not
+  that the look was flattering; a gate nothing can satisfy is a deadlock;
+- the bypass **says the stage was not checked** rather than implying it passed —
+  `GREAT_CTO_REQUIRE_VERIFY=0` renders `NOT VERIFIED` into the directive.
+
+Fail-open on its own failure: no project directory, or an unreadable scores file,
+dispatches. A broken checker halting every transition is a worse outage than the
+defect it looks for. Asserted through the real hook as a subprocess, not only
+through `decideNext`.
+
+### One number that meant two things, and two ways of not counting a run
+
+Compared against the verdict logs on disk across four projects and two windows,
+**every figure disagreed — in both directions**: +18 on one project over 90 days,
+−3 on two others. Three separate causes.
+
+**`runs` was one field with two meanings** — incremented once per priced verdict
+and once per closed task on days that happened to have no cost data, so its
+meaning changed from day to day. Split into `agent_runs` and `task_estimates`,
+with `runs` kept as their sum so no existing reader breaks.
+
+**A run that was never priced is still a run.** The loop opened with
+`if (v.cost_usd == null) continue`, so an unpriced verdict contributed nothing —
+not even its own existence. One project had four verdicts and reported zero runs.
+
+**Prose was read as verdicts.** `.great_cto/verdicts/` holds two artefacts, and
+`<agent>-YYYY-MM-DD-HHMMSS.log` is a free-text run report. Globbing `*.log`
+turned paragraph openings into records — `ts: "DONE:"`, `ts: "artifact:"`. Six of
+one project's ten "verdicts" were first words. The first filter written for this
+was an allowlist that matched the run reports perfectly well, because digits and
+hyphens are what an agent name may contain; an allowlist that cannot exclude what
+it was written to exclude is not a filter.
+
+**And one found on the way:** the space dialect was parsed as `<ts> <verdict>` on
+the premise that it "never carried an agent". Logs written the same day falsify
+it — `great_cto:code-reviewer APPROVED …` produced a record whose verdict was
+`GREAT_CTO:CODE-REVIEWER`, and the existing test asserted that as correct.
+
+Verified against the real logs, not fixtures: **8 of 8** comparisons match
+exactly, **6 of 6** against the running board after install.
+
+### Cost from plans: absence stopped looking like zero
+
+`total_human` read `$0` on every window beside a plan count in the dozens. The
+guard that suppresses a Human figure whose LLM counterpart could not be parsed
+was subtracting it back out silently. Measured: **0 of 41 plans carry a
+parseable LLM figure and 1 carries a Human one** — the format is read by nobody
+because no plan template was ever shipped that specifies it. Now reported as
+`plans_with_cost`, `plans_without_cost` and `plans_human_suppressed`, so `$0`
+is a stated absence rather than a claim that the work was free.
+
+---
+
+## v3.12.0 — 2026-08-26
+
+### A stage declares what it produces, in the map
+
+Borrowed from [Pipelex](https://github.com/Pipelex/pipelex), where every step
+declares its typed inputs and outputs. Here it is one direction — what a stage
+*consumes* is already implied by what its predecessor produced — and it lives in
+`shared/pipeline.toml` beside `on`, `gate` and `next`, where the rest of the
+stage contract already is.
+
+```toml
+[transitions.architect]
+on       = ["APPROVED", "DONE"]
+produces = ["arch"]
+next     = ["pm"]
+```
+
+**The gap was measured, not supposed.** Of seven scored runs, **three came back
+`unverifiable`** — not "the check failed" but *there was nothing to check*,
+because `senior-dev`, `qa-engineer` and `code-reviewer` name no artefact in their
+verdicts. A stage that declares nothing was the cheapest way to pass
+verification.
+
+It also removes a wart from v3.6.0: `REQUIRED_CLAIMS`, a hardcoded object in
+`independent-verify.mjs` with exactly one entry. A stage contract written in
+JavaScript instead of in the stage map is a list somebody has to remember to
+update — the same shape as the bundler's file list before it derived itself from
+the imports.
+
+**What it does on the real logs — silence became findings:**
+
+| | before | after |
+|---|---|---|
+| assessed | 4 of 7 | **6 of 8** |
+| rate | 100% *(nothing could fail)* | **67%** |
+| unverifiable | 3 | 2 |
+
+`pm` and `qa-engineer` now return **REWORK** naming the key they did not write.
+A rate that could not fall was not a measurement; 67% is.
+
+**Three decisions worth knowing.** Contracts are declared only where the agent's
+own prompt *and* its verdict history agree on the key — six of them — and a test
+asserts every declared key is one an agent has been observed writing, because a
+key nobody emits would make verification reject correct work. Coverage is
+**reported, not required** (6 of 29 stages, 21%): not every stage has a contract
+worth writing, and failing on absence would push people to invent them to silence
+the check. And three states throughout — a map that does not exist and a map that
+does not mention this stage are different facts, only one of them yours to fix.
+
+---
+
+## v3.11.0 — 2026-08-26
+
+### Readable type, one fewer strip, and a cost that stops lying
+
+Three findings, all from driving the board rather than reading it.
+
+**Type.** The operator reported small text that is hard to read, and the
+measurement agreed exactly: **42% of all rendered text on the Inbox sat at 11px
+or smaller**, and 11px alone carried **37% of it across 895 elements**. A step
+defined in the scale as *"metadata, counts, timestamps"* was doing the work of
+body text — the role written down and the role in use had come apart.
+
+The bottom of the ramp is lifted one step; the top is not. 11px-and-below now
+carries **6%**, the bulk sits at 13–15px, and no layout gained a horizontal
+scrollbar. Titles were left alone on purpose: the same report called the screen
+overloaded, and enlarging headings would answer one complaint by worsening the
+other. **Density is fixed by showing less, not by shrinking what is shown.**
+
+**Density.** Three full-width strips stacked between the KPI tiles and the
+pipeline; only two were actionable. The third printed
+`[archetype:developer-tools] [compliance:[openssf, …]] [phase:implementation]` —
+the wire format the pipeline passes between stages, rendered verbatim, on a
+screen titled *what needs your decision*. Moved to the sidebar project block
+where the archetype already lived, and **parsed** rather than printed:
+`developer-tools · openssf, api-stability, soc2-type-2 · implementation`, clamped
+to two lines, exact wire value on hover. Not deleted — `PROJECT.md` is not in the
+Docs list, so compliance and phase would have become unreachable.
+
+Two attempts, and the first is worth recording: stripping `[` and `]` with a
+global regex produced an unbalanced string, because the value **nests** —
+`compliance:[…]` sits inside its own brackets. Setting `style.display` to reveal
+it also silently disabled the two-line clamp (an inline display beats the
+stylesheet), so it ran to three lines and pushed the navigation down — the
+opposite of why it was moved.
+
+**Cost.** The board displayed `qa-engineer · $3385.11 measured`. The host hands
+the SubagentStop hook a `transcript_path`, and when that path is the **session**
+transcript rather than the subagent's, the whole session's spend lands on
+whichever verdict file was written last. A wrong number wearing the badge of a
+right one is worse than no number.
+
+The turn count is the tell — an agent run is tens of turns, that reading carried
+**9,103**, and the session transcript holds 9,266. A measurement above 400 turns
+is now recorded as `(unattributed)` instead of being attached to an agent, and
+the reader skips historical lines carrying a session-sized count. The line stays
+on disk: the spend was real, and deleting it would understate the total.
+
+⚠️ The board now reports `$0.00` and `unmeasured` for every agent. That is the
+honest state — nothing has yet been correctly measured per run, and per-agent
+attribution needs the host to hand over the subagent's own transcript.
+
+---
+
+## v3.10.0 — 2026-08-26
+
+### A gate that blocks every push protects nothing
+
+The pre-push privacy guard refused **every** push in this repository, including
+ones containing no private reference at all.
+
+The array of private terms was expanded **unquoted**, so a multi-word project
+name became several independent patterns: 14 lines produced 47 of them, among
+which were `the`, `and`, `with` and `project`. Any push carrying ordinary English
+prose matched one — and the advice printed on a match is `--no-verify`.
+
+Nothing rejected a term that cannot discriminate, either. From the outside, a
+common word in the list is indistinguishable from a genuine leak, so the operator
+learns the gate is noise. That is exactly how the guard named in this file's own
+header came to be silently disabled for months.
+
+Terms are quoted now (one line, one term), and a term shorter than three
+characters or matching a stop list is **refused and named at startup** rather
+than silently arming a gate nobody can pass.
+
+Verified in both directions, because a privacy gate that stops firing is the
+worse failure: with a real private name planted in a tracked file the hook
+reports `LEAK DETECTED` and exits 1; with ordinary prose it exits 0.
+
+---
+
+## v3.9.0 — 2026-08-26
+
+### It worked for the author and for nobody who just found it
+
+Installed the way a stranger would — clean `HOME`, `npx great-cto init`, follow
+the README — and the board does not start:
+
+```
+ERR_MODULE_NOT_FOUND … packages/cli/dist/archetypes.js
+  imported from scripts/lib/gate-plan.mjs
+```
+
+`init` **clones the repository** into the plugin cache, and `packages/cli/dist/`
+is a build artefact. Five of its thirty-two files are in git by accident; the
+rest, including `archetypes.js`, are not. A cloned plugin gets **5 of 32**, and
+the board's project reader dies on import.
+
+It worked in both places anyone would check — the author's cache is filled by
+`install-local.sh` from a built working tree, and the npm tarball ships all 32.
+It failed on exactly one path: the one a new user takes. The board was
+unstartable for every new user across several releases, with CI green throughout.
+
+- **The installer supplies the build** instead of hoping the clone carried one.
+  Not fetched, not rebuilt: this CLI *is* the published package, so the version
+  being installed and the version doing the installing are the same artefacts.
+- **The post-install check asks whether the plugin can RUN.** It asked whether
+  `.claude-plugin/plugin.json` exists — which a clone always satisfies while the
+  board still cannot start. A sanity check a broken install passes is not one.
+
+Verified on a clean `HOME`: `supplied 32 built file(s)`, and the board answers
+**200** on `/`, `version`, `inbox`, `metrics`, `cost`, `scores`, `pipeline`.
+
+The new gate is derived from the source, not listed — it greps what `scripts/`
+and `packages/board/` actually import from `cli/dist` and asserts each is
+present. Confirmed by deleting `archetypes.js` and watching it go red.
+
+### The identifier shown was not the identifier resolved
+
+Found by that run, and pre-existing (fails on v3.8.0 too). `listProjects()`
+derives a display slug from `project` / `name` / `basename(dir)`; resolution
+matched only the slug stored in the registry. **Asking for the name the UI itself
+printed resolved to nothing** and fell back to the server's own project — one
+project's session logs served under another project's name. The fallback header
+said so, which made it wrong rather than silent, but a caller should not have to
+read a header to learn its request was ignored.
+
+---
+
+## v3.8.0 — 2026-08-26
+
+### How well a run went, kept apart from what the run did
+
+The verdict line answers one question — *what happened*. Everything about
+**quality** had to squeeze into that same line as ad-hoc meta keys
+(`tests=46-pass`, `coverage=100`, `findings=3-medium`): an assessment could not
+be added after the fact, revised, attributed, or allowed to disagree with an
+earlier one.
+
+`independent-verify` produces exactly such an assessment and, until now, wrote it
+**nowhere** — zero write calls in the module. It printed a conclusion, returned
+an exit code, and the reasoning was gone with the scrollback.
+
+A **score** is a separate record pointing *at* a run — borrowed from Langfuse,
+where scores are first-class objects attached to traces rather than fields inside
+them. Four things the separation buys:
+
+| | |
+|---|---|
+| **many per run** | a mechanical check and a model's judgement are different evidence and must not overwrite each other |
+| **later than the run** | a 30-second verification does not block the verdict |
+| **revisable** | a re-score appends; nothing is rewritten |
+| **attributable** | every score names its scorer |
+
+Append-only on purpose. v3.5.0 measured the same judge giving different answers
+to an identical question across runs — that is information, and an updating store
+would erase it.
+
+**The value is `null` for `unverifiable`, never `0`.** Zero means *scored, and
+scored badly*; the third state means *nothing was assessed*. `summarizeScores`
+divides by the assessed count and returns `unassessed` beside the rate, so a
+caller cannot render a percentage without also being handed what it is out of.
+On this repository: **7 runs, rate 100%, assessed 4** — `senior-dev`,
+`qa-engineer` and `code-reviewer` claim no artefact and cannot be verified at
+all. Reporting 57% would be a number about work nobody looked at.
+
+Served at `GET /api/scores` with the summary. The bundler picked the new module
+up on its own, because it derives its file list from the board's imports rather
+than a hand-maintained array — verified against the bundled board, not just the
+repo copy.
+
+### Agent budgets actually refuse now
+
+Caps existed for weeks and never held anything back. The rule they rest on — *an
+estimate never refuses, only a measurement does* — was in practice a permanent
+open gate: nothing measured reached the judge, so every cap sat at `unmeasured`
+and every stage ran. The cap was real and the refusal unreachable, which from
+outside is indistinguishable from a cap that works and is never hit.
+
+Verified end to end rather than by reading: a $5 cap, a measured $7.50, and the
+dispatcher returns `PIPELINE-STOP` naming both numbers **without** dispatching
+the stage. All four states asserted in CI — over refuses, under proceeds,
+unmeasured proceeds, and a measured zero counts as *within* rather than unknown.
+
+---
+
+## v3.7.0 — 2026-08-26
+
+### Every agent read $0.00 while the spend sat measured on the same disk
+
+Four links in one chain: a hook measures token usage from the session
+transcript, prices it, appends a line to `cost-history.log`; the board reads that
+line and enriches the verdict, which has no cost of its own because agents do not
+measure themselves. **Every link was present.** Three were broken and one was
+mislabelled — and the result looked exactly like a project nobody had measured:
+26 verdicts in the window, zero with a cost, and a budgets screen reporting
+`unmeasured`. True of what it read. False of what existed.
+
+**1. The writer put a JSON verdict in the timestamp column.** It extracted the
+timestamp with `/^(\S+)/` — the first run of non-space characters, a timestamp
+only in the legacy pipe format. Verdicts have been compact JSON since dda79037,
+so the whole record landed in that column. 55 lines of
+`{"v":1,...} qa-engineer 9286.5251`, and a reader keyed on the first 16
+characters matched nothing, ever.
+
+**2. A self-reported zero shadowed the measurement.** The reader skipped
+enrichment `if (v.cost_usd != null)`, and every verdict carries `cost_usd: 0`.
+Zero is not null — and zero is not a measurement, it is the absence of one.
+
+**3. Opus 5 was billed at the Opus 4 rate.** The table ended in a family
+fallback: anything matching `/opus/i` got $15/$75. **Opus 5 is $5/$25.** All
+8,763 turns of one session were costed at three times their real price, and the
+total looked like a total. That session recomputed: **$9,485 → $3,375.**
+
+**4. An unpriced model cost nothing.** `claude-fable-5` — 172 turns — billed at
+$0.00 because it matched no entry and no family, and `costForUsage` returns a
+number, so *unknown* and *free* are the same value. `priceUsage` now returns the
+third state — `priced | assumed | unpriced` — and the CLI prints
+`N turns NOT priced — no price for: X. This total excludes them.`
+
+Prices come from the Claude API reference (first-party list, cached 2026-06-24),
+not from memory. Current models are listed explicitly, ahead of the fallback.
+**Opus 5 fast mode ($10/$50 rather than $5/$25) is not modelled** and is named in
+the source as a known gap — a fast turn is under-costed 2×, the direction that
+does not manufacture confidence.
+
+**What this unblocks:** agent spending caps could not fire, because the rule "an
+estimate never refuses" held them at `unmeasured` — while the measurement sat
+beside them, computed. Attribution is auditable now: the writer appends
+`turns=N`, so a whole-session total landing on one agent is visible in the file
+instead of silently summing.
+
+The corrupt `cost-history.log` is quarantined, not repaired: several lines carry
+~$9,000 against one agent run, at triple rates. Repairing them would import wrong
+numbers in a correct format.
+
+---
+
+## v3.6.0 — 2026-08-26
+
+### A plan's date is a fact about the plan, not about its file
+
+Both cost readers dated a plan by `statSync(fp).mtime`. mtime is a fact about
+the filesystem, and everything ordinary changes it — a reformat, a copy, a
+`sed -i` across the directory.
+
+`git clone` is what turns it from imprecise into wrong. Clone writes every file
+at clone time, so on a fresh checkout of this repository all 41 plans carried
+today's date and **thirteen distinct dates collapsed into one**:
+
+| | before | after |
+|---|---|---|
+| fresh clone, 30-day window | 41 plans — identical to all-time | **13 plans** |
+| distinct dates on a clone | **1** | **20** |
+| cost chart | every plan stacked on today's bar | 9 days across the window |
+
+The 30-day figure was the project's entire history, every earlier day read as
+zero spend, and nobody reads "$150 in the last 30 days" as suspicious. That is
+the shape of the class: wrong in a way that looks normal.
+
+Where the date actually lives, counted rather than assumed — **21 of 41 plans
+carry it in the filename, 20 carry it nowhere in the file at all**. So git is
+not a nicety: the commit that added the file is the only honest source for half
+of them. One batched `git log` covers the directory in 0.27s against 1.47s for
+one call per file, so the cheap way is also the correct way.
+
+Order: front-matter → filename → adding commit → mtime. The last still returns a
+date (dropping the plan would silently shrink the window — a different wrong
+answer) but marks it `reliable: false`, and `readPlanCosts` now reports
+`dated_by_mtime` beside the total. A figure assembled partly from filesystem
+metadata should say so.
+
+The test locks the property rather than an expected string: it changes
+timestamps and asserts the answer does not move. A fresh clone and a working
+copy now produce identical output from both readers.
+
+### An instruction whose output nothing reads is a suggestion
+
+pm's Step 7b — emit one IMPL-BRIEF per implementation task — has been written
+out in full since 2026-06-06: template, procedure, validator. **Across 41 plans
+not one brief was ever produced**, and nothing noticed, because the verdict
+claimed `plan=<file>` and that file was real. The stage verified and the
+pipeline moved on.
+
+That is why v3.5.0's verifier had nothing to measure "done" against: ACCEPTANCE
+criteria live in the briefs, and there were no briefs.
+
+The claim is now required rather than suggested. pm's verdict carries
+`briefs=<n> brief=<path>`, and `independent-verify` gains a required-artefact
+layer: an agent omitting a claim its role is defined by returns **REWORK**, not
+"nothing to check". pm also refuses to log the verdict at all when Step 7b
+produced nothing, rather than logging a claim it cannot back.
+
+---
+
+## v3.5.0 — 2026-08-25
+
+### An agent's report about itself is not evidence
+
+The pipeline handed one agent's output to the next on the strength of a line the
+agent wrote about itself. `architect | APPROVED | arch=docs/...` is a
+self-report, and every stage downstream treated it as fact — so a wrong one was
+not caught at the next stage, it was **built on**.
+
+The parts to check it were already here, pointed at nothing:
+
+- **`ask_kimi` is declared by 19 agents and has never been invoked once.** The
+  router works; verified with a live call.
+- **`acceptance-verify.mjs` had one caller: its own test.** Because zero
+  documents in the repository have an `## ACCEPTANCE` section. `pm` is
+  instructed to emit one IMPL-BRIEF per task; `docs/impl-briefs/` does not
+  exist and no brief has ever been written. That is why "100% done" had nothing
+  to be measured against.
+
+**`independent-verify.mjs`** asks cheapest-and-hardest first, and the model is
+only asked what the machine cannot settle: do the claimed files exist → do the
+frozen criteria pass when run → does a *different model* find each requirement
+addressed in the actual artefact. Three states — `verified | rework |
+unverifiable` — and `unverifiable` is the point: an agent that claims nothing
+and freezes no criteria is reported, never waved through, or the cheapest way to
+pass becomes claiming nothing. On this repo's own logs it already separates
+them: `architect` and `security-officer` verify, `senior-dev` and `qa-engineer`
+cannot be verified at all.
+
+**Three things had to be measured rather than assumed:**
+
+1. The judge answered the identical closed question differently between runs.
+   The router sent **no `temperature` at all** — every call ran at the provider
+   default. Now 0, and configurable.
+2. Temperature 0 was **not sufficient**: four consecutive runs of one fixture
+   gave "2 not met, 2, 1, 2". Each requirement is now asked three times and the
+   majority taken; a split is reported, not hidden.
+3. Neither was the main problem — **the prompt was**. It said "do not be
+   generous" and "answer no if you cannot tell", so a requirement implemented in
+   plain code came back "no", correctly, by that instruction. It would have sent
+   every stage back forever. The question now separates *addressed* from
+   *proven* and asks only the first. After the rewrite: 3/3 identical on both
+   fixtures, zero splits.
+
+**Wired into the dispatcher**, split by what it can afford to enforce. Layer 1
+runs inline (file stats, microseconds): a stage whose named artefacts are absent
+returns `PIPELINE-REWORK` and dispatches nothing. Layers 2–3 take ~30s per
+requirement, too slow for a synchronous hook, so every success directive carries
+the command and what its three exit codes mean. The asymmetry is written into
+the code rather than left as a silence.
+
+**`REWORK` is a new verdict token with a ceiling of three.** Distinct from
+BLOCKED: BLOCKED means a human must decide, REWORK means the agent that just ran
+can fix this itself. Unbounded return is a loop between two machines whose
+symptom is not a crash but a pipeline that looks busy for hours.
+
+⚠️ **Behaviour change:** a stage that names an artefact it did not write now
+stops the chain instead of advancing it.
+
+---
+
+## v3.4.0 — 2026-08-25
+
+### A check nobody calls and a check that cannot fail are the same thing
+
+v3.3.0 shipped two mechanical checkers — token parity and type-scale parity —
+with passing unit tests. Neither was pointed at anything. Run against the board
+they exited 0 in silence, and they did so against a file with an undeclared
+token and a 17px size planted in it, because neither had a command-line entry
+point: loading the module, defining its functions and exiting 0 looks exactly
+like checking the file and finding it clean.
+
+Both have one now, both run in CI over the real stylesheet, and the gate was
+verified by breaking `index.html` and watching it fail — not by reading the code.
+`share.html` is deliberately exempt from the type-scale check, and the reason is
+written into `ci-local.sh` rather than left as an absence: it is a self-contained
+report published to an external host with its own visual language, so giving it
+a scale is a design decision, not a mechanical snap.
+
+**What the checks found once they could see:**
+
+- **Two `var()` calls that never resolved.** `--bg2` and `--line`, both carrying
+  fallbacks — so they painted `transparent` and `#ddd` straight through the theme
+  switch meant to change them.
+
+- **246 font sizes off the scale by reference.** Each carried a raw pixel value
+  that happened to equal a scale step. They are on the token now; the rendering
+  is byte-identical and the point is that a scale nothing references is
+  documentation. The 8 that stay off it are deliberate and each names its reason:
+  icon glyphs sized to their box, the longform document ramp, the Share hero.
+
+- **Form controls at the browser's 13.333px.** `font-family: inherit` was there,
+  the size was not. Every field the operator types into sat off every step.
+
+**And one no checker can see, found by opening the page.** Budgets awaited its
+two reads bare, so a rejection returned from the function and left `loading…` on
+screen permanently. A page that failed and a page still working are the same
+picture — and the one you are looking at is the one where nothing more is
+coming. Three states now; the failure names what broke, says the caps themselves
+are untouched, and offers the retry.
+
+---
+
+## v3.3.0 — 2026-08-25
+
+### A declaration that does not resolve is not a declaration
+
+Three findings in the board's stylesheet, one shape: something written down that
+never took effect and rendered as though it had.
+
+- **Eight dead custom properties, 26 declarations.** `--text1`, `--text-2`,
+  `--text-3`, `--text-muted`, `--bg1`, `--bg2`, `--bg`, `--bg-hover` were used
+  and never declared, plus `--accent-bg` and `--p1`. CSS drops an unresolvable
+  `var()` silently, so a notification row's background computed to
+  `rgba(0, 0, 0, 0)` — a card with no card — and a failure tag rendered with no
+  colour. The ones carrying a fallback were the worse half: they always paint
+  the fallback, so `var(--accent-bg, rgba(59,130,246,0.2))` painted **blue**
+  inside an emerald palette and survived every theme switch that was meant to
+  change it.
+
+- **No type scale, and no rule for headings at all.** 22 distinct font sizes had
+  accumulated, from 9px to 52px, including 11.5 / 12.5 / 13.5. Because nothing
+  styled `h1`/`h2`/`h3`, four screens rendered their page title in the browser's
+  default bold 700 — a weight the design uses nowhere. One role, six renderings.
+  Now two ramps as `--fs-*` tokens (text 10→22, display numerals 24→52), a
+  heading reset that removes 700 everywhere at once, and one `.page-title` on
+  every panel — two of them previously had no title element whatsoever, and
+  Notifications rendered three *section* headings at page-title size.
+
+- **A staleness banner that could not tell an upgrade from a downgrade.** The
+  check was `installed !== BUILD_VERSION` — true in both directions, feeding one
+  sentence. A board running v3.2.0 against an installed v3.1.0 was told to
+  "restart to pick up the new version", i.e. to go backwards. Four states now,
+  with the direction named and a different message for each.
+
+### Two more mechanical checks, so noticing is not the thing that has to work
+
+Alongside `css-cascade` (does a rule win?), the stylesheet is now checked for
+**token parity** (does every `var()` resolve to a declared name?) and **scale
+parity** (is every `font-size` a step on the ramp?). Deliberate exceptions —
+icon glyphs, longform document typography, the single showcase hero — pass by
+naming their selector, because an exception you have to write down is one you
+have to defend.
+
+### The npm page said things that were not measured
+
+It claimed "47 unit tests" against a measured 305, and a CI matrix across three
+Node versions and three operating systems that has not run since June. Both
+corrected, and the page now describes what the plugin actually does — spending
+caps, the board, the decision journal — rather than only how to install it.
+
+---
+
+## v3.2.0 — 2026-08-25
+
+### The budgets screen answers the three questions it is asked
+
+It shipped as 69 identical chips in one blob — a wall, not a screen. The
+operator named exactly what was missing, and each item was a real gap:
+
+- **No structure.** Grouped now: agents with a cap, agents that RAN in the last
+  30 days without one — the ones a cap would actually apply to — and, collapsed,
+  the 62 that have not run at all. On a fresh project that last group is most of
+  the roster, and burying it is the point.
+- **No idea what an agent does.** Every row carries its description, from the
+  agent's own frontmatter rather than a list maintained beside it.
+- **No idea what one costs.** Runs and spend over an explicit 30-day window, and
+  labelled `estimated` when that is what it is. `llm_usd_30d_real` is preferred
+  where it exists; where it does not, the estimate says so rather than passing
+  for a measurement.
+
+### The README and the landing describe what v3 actually does
+
+Both still said building a product was two approvals. It has been three since
+`gates-only` gained the product gate — the pipeline used to stop on *how* to
+build and on *whether* to release, and never on *what*.
+
+Spending caps and the decision journal were shipped and undocumented. The
+sentence that matters for caps is the one about when they do NOT fire: an
+estimate never refuses, so while no verdict carries a real cost the cap reads
+`unmeasured` and holds nothing.
+
+### The version guard was half a fix
+
+`seo-augment.mjs` derives `softwareVersion` from plugin.json — but only inserted
+it when absent. The block already existed, so the insert was skipped and the
+number froze at 2.96.0 against a shipped 3.1.0: precisely the drift that
+deriving it was meant to end. "Insert if absent" is not "keep correct".
+
+---
+
+## v3.1.0 — 2026-08-24
+
+Everything here came from the operator opening the board and saying he could not
+find, or did not believe, what it showed. Each item names what he saw.
+
+### Budgets is a screen, not a panel two clicks in
+
+The budgets panel lived on the agents tab behind a drill-in from Metrics, and
+rendered nothing at all on a project with no caps declared — so on the project
+actually being opened, the feature did not exist. A limit you can only see after
+hand-editing the config it reads is documentation, not a feature.
+
+Its own item in the sidebar now. It answers both halves of the question: the caps,
+judged by the same module the dispatcher refuses with, and every agent that has
+NO cap — because "which agents are uncapped" is the question you arrive with. The
+empty state says what is true rather than showing nothing:
+
+    No agent has a spending cap in this project.
+    Nothing is being held, and nothing will be.
+
+### A change we noticed must not cost the next reader
+
+Measured before deciding what a full async refactor was worth, and it turned out
+to be worth less than the measurement. The remaining block was not the cold read;
+it was invalidation.
+
+`bdCacheInvalidate` DELETES, and a deleted entry defeats stale-while-revalidate
+entirely — there is nothing left to serve. It fired on every write AND on every
+file event under a watched project, so a reader who asked for something unrelated
+paid for a write they did not make.
+
+Split by intent: a write the board performed drops the entry, because the
+operator clicked approve and is waiting; a change merely noticed ages it, and it
+is still served while the refresh runs off the event loop.
+
+    after a file event   623 ms -> 3 ms
+    after our own write  1172 ms  (unchanged, and correct)
+
+Every endpoint answers in 1.5-70 ms warm.
+
+### Four things the board would not show
+
+- **Docs stuck on "loading…"** for 27 seconds. Nothing was broken — everything
+  was queued behind a cold `bd list`. The cache is warmed at boot now, before
+  anyone is looking.
+- **187 documents that could not be searched inside.** `/api/docs/search` reads
+  them; `scanned` and `unreadable` come back with the answer, because "nothing
+  found across 187 files" and "nothing found across the 3 that could be opened"
+  are different facts.
+- **The Notifications tab never loaded its own list.** The panel had carried one
+  all along, with a renderer to fill it, and the only caller was the bell drawer.
+  Declared and not consumed, in the UI this time.
+- **227 done cards in one column.** Capped at 25, with the rest one click away.
+
+### Two screens reported the same number and disagreed by 2.4x
+
+Fixed, and the pipeline dispatcher now records what it decided — including when
+it decided nothing, which is the case that has hidden every pipeline defect this
+week.
+
+### Withdrawn
+
+I reported a doubled path `great_cto/great_cto/PROJECT.md` in the Agent context
+card. `/api/memory` returns `/Users/…/great_cto/.great_cto/PROJECT.md`, which is
+correct; I misread `.great_cto` on a low-resolution screenshot. Not a defect.
+
+---
+
+## v3.0.0 — 2026-08-24
+
+A major, because the pipeline could not run in most of the fleet and now can, and
+because the default gate set and the agent-budget key both changed under projects
+that already exist.
+
+### The pipeline was installed, wired, and unable to run
+
+`PIPELINE_PATH` resolved `shared/pipeline.toml` against the CURRENT WORKING
+DIRECTORY — the project being worked in, not the plugin. Only a project that
+happened to carry its own copy of the map could dispatch. Measured across the
+registry rather than reasoned about: of seventeen projects with `.great_cto/`,
+**four had a copy and thirteen did not**, and in those thirteen the hook reached
+`return process.exit(0)` and said nothing. No dispatch, no verdict, no task,
+nowhere to look — which is precisely what the operator was seeing and asking
+about.
+
+The map is a property of the plugin. It resolves from the hook's own location
+now; a project-local copy still wins, so a chain can be overridden deliberately.
+Verified by running the real hook from the installed plugin in every registered
+project: **4 of 17 before, 17 of 17 after.**
+
+`pipeline-health.mjs` keeps the class closed. `guard-parity` asks whether a guard
+executes, `declared-consumed` asks whether a declaration is consumed; this asks
+whether the dispatcher could act at all. A directory with no `.great_cto/` is not
+a fault, a map with zero transitions is blocked rather than ready, and an
+unreadable registry is never an empty fleet.
+
+### Per-agent spending caps
+
+`agent-budgets:` in PROJECT.md caps what a stage may spend, and the dispatcher
+refuses to dispatch an agent past its cap — naming the number, the percentage and
+where to change it, rather than failing quietly.
+
+The rule that makes it usable: **an estimate never refuses.** Spend is measured
+from verdicts that carry a cost; where none does, the state is `unmeasured` and
+nothing is held. A limit that fires on a number nobody measured is worse than no
+limit, because it stops real work on an invented basis.
+
+Set and cleared from the board, which writes PROJECT.md through an endpoint gated
+like `/api/projects/register`, replaces the file atomically, and always reports
+the previous value — a cap that silently replaced another is a change the
+operator cannot see they made.
+
+Three of my own defects on the way here, all found by running it: the check was
+wired into `decideNext` and `main()` passed neither argument, so it never fired;
+the board already had a budgets feature under `agent-budget:` (singular) with its
+own parser and a different meaning, so I had built a rival to it; and the
+block-end scan treated a blank line as part of the block, splitting it in two on
+the first write.
+
+### The board was saturated, not broken
+
+It rendered empty and said "live · synced just now", and both were true: SSE was
+connected and every data request had timed out. Three causes, each measured:
+alert crons sweeping sixteen projects synchronously every five minutes; watchers
+invalidating all sixteen caches on any file event in any of them; and — the root
+— `bd list` touching the dolt journal the watcher watches, so **every read
+destroyed the cache that existed to make it unnecessary.** That is why 2 s, 30 s
+and 5 minutes all behaved identically.
+
+    /api/inbox    timeout -> 4.6 s cold, 6 ms after
+    /api/tasks    timeout -> 3 ms
+    /api/version  1-10 s  -> 5 ms
+
+### Cost was recorded as a measured zero
+
+`log-verdict.sh` wrote `cost_usd: 0` when no cost was passed. Every consumer
+reads that as "this run cost nothing" — so 21 of 21 verdicts here claimed zero,
+the fleet showed $0.00 spend across the board, and the budget feature had nothing
+to enforce against. A cost that was never measured is absent now, and absence
+reads as `unmeasured` everywhere it lands.
+
+### Default approval level
+
+`gates-only` gained `gate:product`. It was `arch + ship`, which stopped on HOW to
+build and WHETHER to release, and never on WHAT to build — the decision that is
+wrong for six stages before anyone finds out. One pause per **product**, not per
+feature: `product-owner` is an entry point and runs only from `/start`. `auto`
+still asks nothing.
+
+### Guards that were bought this week
+
+- `css-cascade.mjs` — a conditional block written above the rules it overrides
+  loses at equal specificity while reading as correct in the diff. It happened
+  twice in two days.
+- `pipeline-health.mjs` — above.
+- `provenance-status.mjs` — five levels from ASSERTED to MEASURED, with
+  `settle()` refusing to take a claim's word for its own strength.
+
+### Two eval hypotheses, stated confidently and refuted
+
+`--actor-tools` was never passed by `loop-local.sh` despite the runner's own
+header recommending it beside a +14-point measurement. Passing it moved the low
+cluster by −0.02 and 0.00 — and reading the cases first would have shown why, for
+free: none of them needs a tool. The second, that one shared instruction explains
+the cluster, was refuted by the criterion written before the run. Both are
+recorded as refuted, with the numbers.
+
+Also found: five cases I had appended to a holdout set, destroying the one
+property holdout has, and a prompt I then tuned against it.
+
+---
+
+## v2.99.0 — 2026-08-19
+
+One behaviour change and two classes of defect closed. The behaviour change is
+the reason this is a minor and not a patch.
+
+### The default gated how to build and never what to build
+
+`gates-only` was `['arch', 'ship']`: the pipeline stopped on HOW to build and on
+WHETHER to release, and never on WHAT to build. ADR-009 in this repository's own
+CLAUDE.md puts gates on cost-of-undo rather than on position, and by that rule
+the default was inverted — architecture is cheap to undo, you rewrite a document;
+the product decision is wrong for six stages before anyone finds out.
+
+`gate:product` is now in the default set. It costs **one pause per product, not
+per feature**: `product-owner` is a pipeline entry point, nothing transitions
+into it, so it runs only from `/start`. `/audit` enters at `project-auditor`, and
+the request classifier routes both SIMPLE and COMPLEX CODE straight to
+`senior-dev` or `architect`. `auto` still asks nothing — the unattended
+behaviour is a choice again rather than the thing you get by not choosing.
+
+### The brief was the one artifact nobody read
+
+`docs/product/BRIEF-*.md` matched no entry in artifact-lint's type registry, so
+the file was skipped whole — not its headings, not its freshness, not its dead
+source refs. A 153-line document called a brief sat in `docs/product/` with no
+Problem, no Recommendation, no Debate digest and no Scope, and CI was green
+throughout. It opens with "Review, not a new brief"; it was named wrong from its
+first commit and nothing ever asked.
+
+BRIEF is a type now, and five rules read the section body rather than the
+heading — a heading with nothing under it passes every structural check ever
+written:
+
+- a KILL with no number is not a kill criterion
+- an IN-scope bullet with no R-number
+- a wedge with no `[vs: <name>]` — the real brief said "A normal dashboard
+  optimises for…" and named nobody
+- a Debate digest with no per-persona status
+- a figure carrying neither `[source:]` nor `[assumption]`
+
+That last one replaces "SHOW the arithmetic", which is a ritual: a plausible
+multiplier times a plausible multiplier gives a number with visible working and
+no provenance. The real brief reads `22 projects × ~3 opens/day ≈ 66
+context-switches a day`, the `~3` came from nowhere, and the rule was satisfied.
+
+The panel reports on itself now. There was no failure branch anywhere, and the
+four digest slots are all fillable by two personas — a panel that ran short read
+exactly like one that ran. It had already happened: a brief here records "Kimi
+router unavailable in this env" in parentheses, disclosed because that run chose
+to. A roster with `ok|failed|unavailable` per persona is required, and under
+three `ok` the agent may not write BUILD. Four models agreeing is agreement, not
+evidence.
+
+Three loops closed: `discovery: completed` no longer disables the architect's
+discovery gate (product-owner writes that field itself); architect actually reads
+the `discovery-summary` its prompt has always promised to read; and `NO_BUILD`
+carries a gate, since it writes a standing suppression that every later run
+consults.
+
+### A gate that never runs, and a rule that people re-run instead of read
+
+- **CSS declarations that never apply.** A conditional block written above the
+  rules it overrides loses at equal specificity while reading as correct in the
+  diff. It happened twice in two days on the board's phone layout, and both times
+  it was found by looking at the rendered page rather than the source.
+  `scripts/lib/css-cascade.mjs` reads the stylesheet instead, and fails ci-local.
+  Validated against the two defects that bought it, reconstructed: 3 and 10
+  losing declarations with the winning rule's line number.
+- **A suite people re-run instead of read.** Twenty-eight test sites SIGKILLed a
+  detached board and immediately removed its temp directories. `great-cto board`
+  is a launcher — it exits at once and the server is a grandchild — so the
+  process racing `rmSync` was still alive. `tests/helpers/reap.mjs` waits for the
+  process GROUP to go empty, and a sweep requires every such site to use it or
+  state a reason.
+
+### An install the operator cannot see is not an install
+
+This machine served board v2.95.0 for nine days while three installs in a row
+reported success. `server.mjs` answers EADDRINUSE with "board already running"
+and exits, so every relaunch deferred to the old process; `/board --restart`
+killed by patterns that matched nothing the board is actually called. The
+installer stops the board by PORT now, preserves its working directory,
+restarts, and verifies by asking the new process its version. `/api/version`
+reports `stale: yes|no|unknown`.
+
+And the board got faster. `bd list` takes 3.0–4.6 s here; the cache TTL was 2 s,
+so it expired before the call that filled it returned and every endpoint sat at
+~5 s. A cache whose TTL is shorter than the operation it caches is not a cache.
+Warm calls are 3–35 ms now.
+
+---
+
+## v2.98.1 — 2026-08-19
+
+A patch for two defects in v2.98.0's own mobile work, both the same shape: a
+rule that named what somebody remembered instead of stating a property.
+
+- **Touch targets were a list, not a floor.** v2.98.0 raised `.gate-btn` to
+  44px because that is what a review had pointed at. The hamburger that same
+  release added was 40px and the topbar's icon buttons ~32px — under the
+  minimum from the line they were written on, beneath a block that read as
+  "touch targets: done". Now `button`, `[role="button"]`, `.nav-item`,
+  `.toggle` and `summary` all get a 44px floor under `pointer: coarse`, and a
+  control that must stay smaller has to opt out in writing.
+- **A declaration that loses is not a declaration.** `.inbox-row .actions
+  { gap: 12px }` sat inside that same block and was beaten by the base rule's
+  4px declared nine hundred lines below, so Approve and Reject were 4px apart
+  on a touch screen while the block above said 12. The coarse block now sits at
+  the end of the stylesheet, and the test asserts that ordering rather than the
+  text of the declaration.
+
+### The row layout this exposed
+
+Measured, not eyeballed: the page gives 64px to its side padding and the row
+another 30px to border and padding, leaving 281px for tracks. The fixed ones —
+id 110, two 14px gaps, and a 44px Approve/Reject pair at about 156 — come to
+294. The title column resolved to **zero** and the row overflowed its own
+border box. Raising the buttons to a real touch target is what finished it off:
+at 24px they fit, at 44px they do not — fixing one defect deepened its
+neighbour.
+
+On a phone the row is three rows now rather than three columns: title at full
+width over two wrapped lines, id and status sharing the line below, and on a
+gate a full-width pair of 44px buttons. CSS only, inside the existing
+phone-width block — the markup is shared with the desktop layout, and the
+desktop layout is fine.
+
+Raising every control to 44px then crushed the breadcrumb to "g… / B." —
+present, unreadable, worse than absent. The phone keeps the current screen and
+drops the project name the drawer already shows.
+
+---
+
+## v2.98.0 — 2026-08-18
+
+A design review of the board, and the four things it found that cost most in
+daily use. Every finding below was checked against the source before it was
+acted on, and one was checked and rejected.
+
+### The cheaper click was the one you cannot take back
+
+- **Gate approval now confirms.** Rejecting a gate had always opened a prompt
+  for a reason. Approving one — the human signature the whole pipeline waits
+  on, which appends a verdict, wakes the next stage, and republishes a public
+  URL when sharing is on — fired on a single click with no dialog at all. The
+  friction pointed exactly the wrong way. The dialog states consequences rather
+  than asking whether you are sure; a dialog that only asks that teaches people
+  to dismiss dialogs. Medium cost-of-undo under ADR-009: one confirm, not a
+  typed-name ritual on a button pressed several times a day. The run-an-agent
+  path already shows an editable prompt naming what it will do, so it is not
+  confirmed twice.
+- **Publishing a public report confirms too**, on the way ON only — asking on
+  the safe direction as well would train people to click through the one that
+  matters. The text names who can read it, and that revoking the link is not
+  the same as unpublishing what was already served.
+
+### The board on a phone
+
+- **The sidebar was a fixed 240px at every width**, with no media query anywhere
+  that touched it — 135px of workspace on a 375px screen, narrower than a single
+  kanban column. It is a drawer below 768px now: out of the tab order when
+  closed (visibility, not just a transform), Escape closes it, and focus moves
+  in on open and back to the button on close — except when it closes because a
+  tab was chosen, where pulling focus back would undo what the user came for.
+- **Collapsing it exposed what it had been hiding.** The topbar actions ran to
+  546px inside a container with `overflow: hidden`, so "New issue" was not
+  awkward on a phone, it was past the edge and unclickable; the four-column stat
+  grids lost their fourth cell the same way. Crumbs now shrink, labels give way
+  to their icons with the names kept in `aria-label`, and the grids wrap.
+- **Gate buttons were 24px tall with a 4px gap** — comfortable with a cursor, a
+  coin flip with a thumb, on the one pair where a mis-tap advances work that
+  cannot be un-advanced. 44px and 12px under `pointer: coarse` only; desktop
+  density is untouched.
+
+### An absence is not a value
+
+- **A single em dash was carrying five different facts**: not loaded yet,
+  measured and there is none, cannot be computed, no verdict, no date. On a
+  screen full of money, "we looked and it is zero" and "we could not look" are
+  not the same answer. Three kinds now, each with its own glyph, and every call
+  site passes the specific reason — on hover and in the accessible name, since a
+  bare glyph reads as nothing.
+- **A measured zero rendered as an absence.** `done || '—'` meant a day-one
+  project read "—" beside "+0 this week": the board reporting a failure to
+  measure something it had measured fine. Same for a real $0.00 of spend.
+- **Cycle time was checked and left alone.** It looked like the same falsy bug
+  and is not — the backend emits 0 when no completion could be timed, so 0 there
+  genuinely means not-computable. The reason is now written down so a future
+  sweep does not "fix" it into a literal 0 m.
+
+### Reachable, visible, honest
+
+- **Inbox was the only one of six tabs with no `role`, no `tabindex` and no key
+  handler** — the default tab, reachable by mouse only. The other five were
+  correct, which is why nobody noticed. The test asserts over all nav items, so
+  the next tab added cannot repeat it.
+- **Focus and selection outlines were drawn in `--accent`** (#00d97e), which is
+  1.87:1 on the light theme's white — under the 3:1 floor for a non-text
+  indicator. The outline a keyboard user cannot route around was the one thing
+  they could not see. `--focus-ring` was already #047857 there and used
+  correctly everywhere else.
+- **A disabled button explained itself through a tooltip.** Disabled controls
+  are skipped by screen readers and dropped from the tab order, so the
+  explanation was unreachable by exactly the people who needed it. The feature
+  is not wired up and is no longer advertised.
+- **Live figures set in a proportional serif changed width as they ticked** over
+  SSE. Tabular numerals.
+
+### Two mistakes this cost, both kept in the record
+
+- The mobile block was first written **above** the rules it overrides. At equal
+  specificity the later rule wins, so half of it was silently ignored while
+  looking entirely correct in the diff. A test now asserts the ordering, not
+  only the declarations.
+- `visibility` was eased over the same 200ms as the transform, which flips it at
+  the halfway mark — leaving the drawer unfocusable at the instant focus moved
+  into it. That is the same defect the change set out to fix, reintroduced by
+  the fix. It is switched now, never eased.
+
+---
+
+## v2.97.0 — 2026-08-18
+
+### A document goes stale on a date its author chose
+
+- **`stale_after`** (`scripts/lib/freshness.mjs`). `artifact-lint` derived
+  freshness from mtime, so a typo fix rejuvenated a document that stopped being
+  true months earlier. Measured before proposed: 13 of 159 documents read
+  fresher than their last substantive edit, worst case 76 days — 8%, real and
+  smaller than the problem had been described as.
+  An author writes `stale_after: YYYY-MM-DD` in frontmatter, or
+  `**Stale after:** YYYY-MM-DD` inline where a document has no frontmatter at
+  all — which is how this repository's own ADRs are dated. Where present it is
+  authoritative and compared against `now` with no reference to when the file
+  was last touched. Where absent, the previous rule still applies and the report
+  says which rule judged the document: three verdicts (`fresh` | `stale` |
+  `unknown`), never two, and a document with neither field reads `unknown`
+  rather than fresh forever.
+  `now` is injected once at startup (`--now`, `GREAT_CTO_NOW`), so every state
+  is reachable in a test without a timer hack. `--json` gains a `freshness[]`
+  audit array recording the verdict for every judged artifact, including the
+  ones that produce no warning. Warn-only, as freshness has always been.
+  Adapted from the `stale_after` field in `scaccogatto/okf-skills`; the format
+  itself is not adopted.
+
+### One eval is not breadth
+
+- **`notify-thin`** (`scripts/lib/gate-tier.mjs`). Of the fifteen agents whose
+  gate stood down under `gate-tiering: evidence`, fourteen qualified on a single
+  eval file — roughly eighteen trials — and rendered identically to the one
+  agent with four. The statistics were never wrong: the interval clears the bar
+  on the cases that exist, and says nothing about whether those cases span what
+  the agent answers for.
+  So a third tier. `notify` is conclusive on two or more evals; `notify-thin` is
+  conclusive on one, where the statistics are sound and the coverage is
+  unmeasured; `gated` names its reason as before. This does not measure
+  coverage — nothing here can, and claiming otherwise would repeat the defect a
+  storey up. It marks where coverage is unmeasured so a narrow result stops
+  reading like a broad one.
+  Whether a thin tier stands its gate down is the project's policy, not the
+  tier's fact: **`gate-tiering: evidence` is unchanged** and still stands
+  fifteen gates down, while the new **`gate-tiering: evidence-broad`** restores
+  the fourteen a single eval cannot justify. An unrecognised mode reads as
+  `off` — a misspelt setting must never buy a stand-down.
+
+
+
+## v2.96.0 — 2026-08-11
+
+The self-improving pipeline's remaining phases, and a week of finding that
+several guards were installed but not running.
+
+### The pipeline moves where it has evidence, and stops where it does not
+
+- **Gate tiering by proof** (`scripts/lib/gate-tier.mjs`). An agent whose
+  holdout conclusively passed at three samples — the interval, never the point —
+  has its gate announce rather than wait. Fifteen of sixty-two agents qualify.
+  `devops` and `infra-provisioner` never do at any score: the question at a
+  production deploy is not competence (ADR-009). devops has the best evidence in
+  the repository, 82% [72%, 89%] n=77, which is what makes it the test rather
+  than a comment.
+  Opt-in per project with `gate-tiering: evidence` in PROJECT.md; absent by
+  default, and every failure path in assembling the set leaves the gates
+  standing. `pipelinePosition` gained a `notified` field naming the gates that
+  stood down — a gate that silently vanished is indistinguishable from a gate
+  nobody configured.
+- **`gate:prompt`** (`scripts/lib/prompt-gate.mjs`). A candidate prompt reaches
+  a human only when tuning settles, holdout settles, and holdout's lower bound
+  clears the incumbent's rate. An interval containing the current prompt has not
+  beaten it. A fixture diagnosis never reaches the gate at all.
+- **Holdout rotation** (`scripts/lib/holdout-rotation.mjs`). An approved prompt
+  costs a quarter of the holdout, exchanged with tuning and seeded by the
+  prompt's own hash — a rotation that can be re-rolled is a way to reshuffle
+  until the number is favourable. Equal exchange so the split sizes never drift;
+  recorded, because an unauditable rotation is indistinguishable from none.
+- **Wake on approval.** Approving a gate in the board now records the approval
+  where the next session looks. The resume hook's freshness shortcut treated a
+  three-day-old pipeline as history and returned before reading a single gate —
+  so a late approval, the strongest evidence work is waiting, was the one fact
+  never consulted.
+
+### Guards that were installed and not running
+
+- **`core.hooksPath`.** The privacy pre-push hook was executable, current, and
+  had never run: git was reading hooks from a directory this repository moved
+  out of. `scripts/lib/hook-install.mjs` resolves where git actually looks and
+  names the state — unreachable, missing, not-executable, stale, ok — and
+  ci-local gates on it first.
+- **Private names are derived, not remembered.** The hand-written denylist was
+  missing three project names that had already reached the public repo. Terms
+  now come from the workspace directories at push time; an allowlist covers
+  directory names that are also ordinary words. Matching moved from substring to
+  word boundary — one real term is a substring of `thresholdRaw`.
+- **Receipt verification.** The pre-push hook reports which reviewed files
+  changed after the reviewer approved them.
+
+### Evals
+
+- **A run that ran out of money is not a row of zeros.** Provider exhaustion now
+  stops the run at the first 402 instead of making 147 doomed calls, and files it
+  could not measure never reach the trend history.
+- **Comparisons are like-for-like.** Drift now matches on split AND sample
+  count; the same eval read as a 0.11 regression or a 0.16 improvement depending
+  only on which rows happened to be adjacent. Noise is measured only from runs
+  that could measure it — 416 of 438 rows reported stddev 0 because nothing was
+  observed twice.
+- **A rise is not an alarm.** Only drops exit non-zero.
+- **The loop runs locally** (`scripts/loop-local.sh`), because GitHub Actions is
+  failing at the billing layer. It prices the run — about $47 at three samples —
+  and stops, the way infra-provisioner does before it creates anything.
+- The holdout×3 baseline completed: 75 of 75, three samples, majority judge.
+
+### Board
+
+- A directory inside a project is not a second project; the home directory and
+  the plugin cache are not projects either.
+- An empty project reads differently from one that could not be read.
+- Documents open at half the window; tasks keep the width their rows were sized
+  for.
+- Memory folded into Docs; Portfolio removed.
+
+### Tests
+
+Sixty-two new tests across gate tiering, prompt gating, holdout rotation,
+provider exhaustion, cost estimation, hook reachability and the privacy guard.
+Test ports are now assigned by the OS rather than guessed, which removed a
+collision that failed a different test on every full-suite run.
+
+### A decision that could not be logged is refused
+
+- **Stand-down records** (`scripts/lib/stand-down.mjs`). `gate-tiering: evidence`
+  had been dropping gates to notify-only for six days with nothing guaranteeing
+  the notification was written. A gate that stood down and a gate that stood down
+  and told nobody were indistinguishable — the defect tiering exists to avoid,
+  shipped inside it. The record is now written, fsynced, **before** the pipeline
+  is told it may proceed; an unwritable record means the gate does not stand
+  down. `pipelinePosition` reports which of three things happened: `recorded`,
+  `unrecordable`, `not-applicable`. The recorder is injected, so the default is
+  no recorder — and no recorder means no stand-down.
+
+### Declared, and consumed by nothing
+
+- **`scripts/lib/declared-consumed.mjs`.** `guard-parity` asks whether a guard
+  executes; this asks whether a declaration is read. It found four things nobody
+  had noticed, including `senior-dev`'s own escape hatch: the agent is told to
+  emit `SPEC-OBJECTION` when a plan is structurally wrong, and no transition
+  matched the token, so refusing a bad plan produced silence. Also
+  `product-owner`'s `NO_BUILD` — deciding not to build, the best outcome that
+  stage can reach, looked exactly like an agent that forgot to write a verdict.
+- **Eight agents had no edge** in `shared/pipeline.toml` and were reachable only
+  through routing prose, so the chain stopped after them. Two were authentication
+  and billing.
+- Gated in ci-local, so the class stays closed.
+
+### Retry decided by what the attempt already did
+
+- **`scripts/lib/attempt-effects.mjs`**, wired into the dispatcher. The advice
+  after a cut-off run said "check for changes it left behind" — a request only
+  followed when the reader chose to, and twice this week it was not. The hook now
+  observes and states: it left work behind and re-running would duplicate it, or
+  it left nothing, or this could not be established and should be treated as
+  though it did. Fail-closed, and when the observation itself cannot run the
+  message falls back to asking rather than asserting.
+
+### The design contract says something about money
+
+- **A numeric contract** in `agents/design-advisor.md`. Figure style by a
+  mechanical criterion — a number that can be summed takes tabular figures and
+  right alignment, a phone number or postcode takes neither; a column header
+  takes the alignment of its data. Precision by currency rather than a hardcoded
+  two. The negative convention chosen once, never colour alone.
+- **A vocabulary for absence.** An empty cell cannot distinguish a true zero from
+  one rounded to zero, from data not obtained, from a field that cannot apply,
+  from a value withheld, from one too unreliable to publish. Adapted from the
+  SDMX observation-status vocabulary and Statistics Canada's table symbols, which
+  separate `0` from `0s` for this reason. No corporate design system covers it.
+- **Destructive actions tiered by cost of recovery**, not importance — ADR-009 at
+  screen level. Permission as a fourth empty state; the three mobile states that
+  are not error handling.
+- `artifact-lint` requires the numeric and destructive sections, on the list that
+  has required an a11y section all along.
+- **208 KB removed from `skills/ui-ux-pro-max`**: two CSVs named nowhere in the
+  engine or its own SKILL.md, so their contents reached nobody while looking like
+  coverage. The skill also still declared React Native "this project's only tech
+  stack", scoping its best checklist out of the web work that is the ordinary
+  case here.
+
+### Board
+
+- **The first screen said `idle` whatever the pipeline was doing.** Two functions
+  named `renderPipeline` were declared in one `<script>`; the later won, so every
+  call carrying stage data reached a mermaid parser and the rail stayed the empty
+  div in the markup. Not an empty state — a confident wrong answer, on the first
+  section of the first screen.
+- **One task counted twice.** The inbox's four filters overlap and the badge
+  summed three of them. Each task now lands in its strongest section only and
+  carries `also`, so deduplicating the rows does not deduplicate the facts.
+- **"Proceeded without you"** — the stand-down ledger has somewhere to land, with
+  `notify-thin` rows styled apart from `notify`.
+- **Gate cards say whether the gate will wait**, and freshness in Docs shows
+  three states rather than a modification date.
+- **The npm package shipped four of the six shared scripts the board imports**,
+  so two features worked in the repo and not in what users install. The list is
+  now derived from the board's own imports, transitively, and fails loudly.
+
+---
+
+## v2.95.0 — 2026-08-08
+
+Four pipeline defects, every one found by running the pipeline rather than by a
+test. Three of them were my own assumptions about the shape of the data.
+
+### The pipeline no longer loses a stage
+
+- **A verdict written from a git worktree now lands in the project.** Agents run
+  in worktrees under `.claude/worktrees/`, each with its own `.great_cto/`. Three
+  runs in a row wrote their verdict there, where the dispatcher never looks: it
+  saw nothing, named no next stage, and a human copied the file across. The
+  worktree is then removed with the verdict inside it — once, with 105 passing
+  tests the pipeline could not see. `.great_cto/` is state about the project, and
+  a checkout of a project is not a different project.
+- **A verdict from a previous run is no longer read as this run's success.** The
+  freshness window is thirty minutes and says nothing about *which* run. A
+  verdict written twenty minutes earlier, for the previous task, was reported as
+  a cut-off agent's `TASK_DONE` — and the directive said "succeeded, spawn
+  code-reviewer" for a stage that had produced nothing. A false absence stalls
+  the pipeline; a false success advances it past work that never happened.
+- **A cut-off agent is detected without SubagentStop.** That hook does not run
+  when the harness force-stops a subagent — `cost-history.log`, which it appends
+  to on every invocation, had no entry within two hours of the agent it was
+  written to catch. PostToolUse does fire, and the Agent result carries the
+  agentId, so the transcript is now read directly. The directive names the action:
+  `RESUME it (SendMessage to: <id>)`, and says to check the worktree before
+  concluding the agent produced nothing.
+
+### Agents stop dying during verification
+
+Four of nine subagents were cut off mid-run and recorded nothing. Reading all
+seventeen transcripts, every one died during verification, not during the work —
+97, 100, 105 and 125 turns, each running a full-suite command at the moment it
+stopped, on runs that were **passing**. Agents that recorded a verdict early
+(turns 9, 10, 11, 26) finished.
+
+- `senior-dev` records its verdict when acceptance is met, before the regression
+  pass, and the contract states that overwriting it is free — otherwise an honest
+  agent waits until it is certain, which is the behaviour being removed.
+- Full-repo CI is named as the orchestrator's job. A green result you cannot
+  fully read is still green, and a second run tells you nothing the first did not.
+
+### Session start
+
+`session-pipeline-resume` picks the pipeline up where it was left, so approving a
+gate is no longer one action and "continue" a second. It costs 27ms in a project
+with nothing in flight, against 847ms before the freshness check — a stage that
+succeeded last week is not work waiting for you.
+
+### Also
+
+- `pipeline-tick` decides whether the pipeline may move unattended: only
+  `ready-to-dispatch`, never the same transition twice, never `devops` or
+  `infra-provisioner` *by name* rather than only by gate, never inside a
+  ten-minute floor.
+- A stage may be skipped when the previous one already decided it
+  (`skip_next_when = "depth=small"`), but a skip may never remove an **active**
+  gate — `depth` comes from a verdict an agent writes.
+- Judge provenance: `dagFingerprint`, `judge`/`dagHash` on every history row,
+  a `mismatched` bucket in the gate, and `judgeSwapped` in eval-status. Two runs
+  judged by different graphs are not comparable, and until now nothing said which
+  judge produced a score.
+- `adherence` reports whether the instruction under test reached the answer at
+  all — the diagnosis that would have saved about \$41.
+- `improve-loop` fixes the order in which to ask what a failing eval wants, with
+  "edit the prompt" last.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.94.0 — 2026-08-08
+
+Fewer confirmations, and the pipeline stops losing runs.
+
+Three failures were observed live on 2026-08-07, each costing a human to notice.
+This release closes all three, and adds the measurement that would have saved
+about $41 of a $43 eval campaign.
+
+### The pipeline stops losing runs
+
+- **A cut-off agent is told apart from one that forgot.** Four of seven agents in
+  one live run ended mid-sentence with real work behind them — 33 tests, a 23 KB
+  security report — and no verdict, so the dispatcher named no next stage. The
+  distinction turned out to be exact across twelve transcripts: an agent that
+  returned normally has one `stop_reason: end_turn`, one that was cut off has
+  none. The remedies are opposite — an agent that finished has the context to
+  record its verdict; one that was cut off has to be RESUMED, and 'try again'
+  re-runs work already done.
+- **The loop is closed.** A hook cannot call SendMessage, but PostToolUse runs in
+  the orchestrator's context and it can. SubagentStop records how the subagent
+  stopped; the dispatcher reads it and names the action with the agent id. The
+  Stop hook then holds the turn rather than letting a cut-off agent be abandoned.
+- **Work left in a worktree is reported.** senior-dev implemented 775 lines in a
+  worktree and the main tree looked clean — which reads as 'the agent produced
+  nothing' rather than 'the agent produced something you cannot see'.
+
+### Fewer confirmations
+
+- **The pipeline is picked up at session start.** Approving a gate was never
+  enough: the turn ends, and someone had to come back and say 'continue'. The
+  next session now says what is waiting. SessionStart rather than a scheduler on
+  purpose — it closes the same gap at the one moment the human is present, and a
+  failed recovery under cron is an invisible stall at 3am.
+- **A stage the previous one already decided can be skipped.** `depth=small` from
+  the architect's own verdict skips pm decomposition — but never removes an
+  ACTIVE gate. At `expert`, gate:plan applies and pm runs, because someone asked
+  to see the plan. The approval level decides, never a field an agent writes.
+- **`pipeline-tick`** answers whether the pipeline may move unattended, with four
+  refusals: only ready-to-dispatch, never the same transition twice, never devops
+  or infra-provisioner BY NAME rather than only by gate, and never inside a
+  ten-minute floor.
+
+### Measurement
+
+- **Adherence.** One devops instruction was reworded four times for no movement:
+  5/20 → 11 → 12 → 11 → 10. It appeared in 4 of 22 answers — the wording was
+  never the variable. Runs now report whether the instruction under test reached
+  the answer at all, and say what that means: emission low, the fix is structural;
+  emission high, only then is it wording.
+- **`improve-loop`** encodes the order in which to ask what a failing eval wants.
+  Four of the six repairs that campaign were to the harness, and every one looked
+  at first like an agent needing a better prompt. Each question has an answer that
+  stops the loop, and 'edit the prompt' is the last one. It also names what a
+  prompt-improving agent may never write — the EVAL files, the judge's graphs,
+  run-shape, eval-power — because an optimiser with write access to its own ruler
+  optimises the ruler.
+
+### Reviewer contract
+
+Critical and High findings carry a `Repro:` and are filed as beads. A finding
+with no reproduction cannot be shown to be fixed, so closing it is an opinion —
+which is the standard a security reviewer applied to its own weaker items, now
+written down. One edit to the shared review skill covers forty reviewers.
+
+### Fixed
+
+- `dagFingerprint` threw on a null entry inside `nodes` or `leaves` — safe against
+  the malformed shapes anyone thought to try, unsafe against one nobody did.
+- `finding-beads` read `bd --json` as an object when it returns a list, so it
+  silently reported no findings. The same class of defect as the verdict-format
+  mismatch a day earlier: a reader written against an imagined shape.
+- `finding-closure` had nowhere to record that a reproduction was re-run, so every
+  finding stayed permanently `repro-not-run`.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.93.0 — 2026-08-07
+
+The pipeline stopped taking agents at their word.
+
+### The evidence ladder
+
+An agent used to be believed when it said it was done. Six agents in one live
+run: two recorded a verdict at all, one reported 100% coverage having run about a
+third of the suite, one filed a finding and never checked the fix. Four rungs now
+sit between "reported" and "verified", each cheap enough for where it runs.
+
+- **Verdict present and canonical** — unchanged, but the format check no longer
+  fails an agent for using the helper correctly (that regression shipped and was
+  reverted the same day).
+- **Artefact exists** — `scripts/lib/artifact-claims.mjs`. A path a verdict names
+  must exist and hold content. Stat calls; runs on every SubagentStop. Path
+  detection is deliberately conservative: `task=`, `coverage=` and `files=` are
+  not files, and a false accusation teaches people to switch the check off.
+- **Check re-run** — `scripts/lib/execution-claims.mjs`. The command comes from
+  `[verify]` in `shared/orchestrator.toml` — the repository owner's file — never
+  from the verdict, which agents write. Off unless
+  `GREAT_CTO_VERIFY_EXECUTION=1`, and empty by default.
+- **Independent re-verification** — `scripts/lib/finding-closure.mjs`. A finding
+  may not be closed by whoever fixed it, the verification must postdate the fix,
+  and the reproduction must now pass. It cannot make a distinct verifier a
+  competent one; it removes the case where nobody looked twice.
+
+### Gates are read, not assumed
+
+`scripts/lib/gate-state.mjs` reads whether a gate bead is actually approved.
+Before this, approving a gate was not enough — someone also had to tell the
+orchestrator to continue, a second human action carrying no decision. Four
+states, and only one of them proceeds: `absent` is not approval (the question was
+never asked), and `stale` is not either (that approval belonged to an earlier
+run).
+
+### One parser for verdicts
+
+`pipeline-dispatcher` kept a private copy of the verdict parser. When verdicts
+moved to versioned JSON the other copy was updated and this one was not, so a
+correct record read as no verdict at all and a live run stalled at its first
+transition while the agent had done exactly the right thing. The copy is gone.
+
+### Also
+
+- `scripts/lib/pipeline-position.mjs` — ask "where is the pipeline now" at any
+  moment, not only when a subagent finishes. Names which project it read, after
+  it confidently reported another one's position from a home directory.
+- `pipeline-stall-guard` — a Stop hook that will not let a turn end on an
+  undispatched transition. Gates still stop the turn; that is a human's to answer.
+- `shared/pipeline.toml` — an edge may declare several gates; `gate:code`,
+  `gate:qa`, `gate:security` and `gate:compliance` now exist, so the levels above
+  `strict` stop promising pauses no transition could deliver.
+- Eval runner: the actor's answer is stored on every case, `agents/_shared/*.md`
+  is expanded into the actor prompt (forty of sixty-nine agents were being judged
+  without half their contract), prompt caching cut a run from $10.31 to $1.22,
+  and a truncated run reports NOT MEASURED instead of a rate over the cases that
+  happened to run.
+- `devops` holdout: 25% → 82%, [72%, 89%] over 77 observations.
+
+### Security
+
+Three CRITICALs found by review before this shipped, all in one decision — the
+re-run command came from a file agents write. The worst let an agent with no Bash
+grant obtain unattended execution. Fixed by moving the source, not by tightening
+the string. `docs/security/SEC-execution-claims.md`.
+
+Two CRITICALs in gate reading, found and independently re-verified:
+`docs/security/SEC-pipeline-gate-reading.md`.
+
+### Privacy
+
+A lead-property allowlist named a private site in public source. An earlier
+in-place redaction had silently broken the check, because a placeholder never
+matches a real property. The list moved to the `LEAD_PROPERTIES` environment
+variable.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.92.0 — 2026-08-03
+
+A release about measurement. Most of what follows was found by running something
+that had never been run, and the largest items are cases where a number everyone
+trusted turned out to be about the measuring apparatus.
+
+### A finding must carry the command that proves it
+
+The Structured Findings Format asked for problems that are "evidence-backed" —
+an adjective. Nothing read it, nothing rejected a finding without evidence, and
+no agent referenced the section at all.
+
+The failure it permitted is the expensive one: an agent writes "the secret is not
+set" because it looks true, and that sentence is indistinguishable, as prose,
+from the same sentence written after running `grep`. This is also why a second
+model reviewing the report is the wrong fix — a reviewer judges plausibility, and
+a confident wrong finding is exactly what passes that test.
+
+`**Evidence**` is now a required field carrying a proof status and, for a settled
+one, the command and its raw output. `scripts/lib/finding-evidence.mjs` rejects a
+finding with no field, a `passed`/`failed` with no command, a command with no
+output (running something is not observing it), an invented status, and an
+unproven claim listed as a finding rather than a hypothesis. qa-engineer,
+security-officer and code-reviewer run it on their own report before reporting
+done.
+
+Statuses are the existing `proof-status` vocabulary: `passed`/`failed` are
+results, `not_run`/`inconclusive` are the two ways of not knowing.
+
+### The second model is for disagreement, not approval
+
+`ask_kimi` had been in the tools list of nineteen agents since v1.0.100 and was
+invoked by none. The router works; nothing called it.
+
+Two models agreeing is weak evidence — they are trained on overlapping data and
+fail together. So both judges now walk the same DAG of closed questions and the
+output is the nodes where they answered differently. A divergence names a
+question a human settles in seconds. Agreement is reported as *"weak evidence,
+not confirmation"*, and no word in the report may say verified or confirmed. An
+abstention is a third state; counting it as agreement would let a broken judge
+confirm anything. Wired to security-officer only, for a contested severity call.
+
+### Eval coverage is a ladder, not a percentage
+
+`coverage-gate` defined *covered* as "an EVAL file names this agent" and printed
+it as one number, which reads as a test result. Coverage is now four rungs —
+`missing`, `present`, `exercised`, `passing` — and all four are printed, because
+the distance between *present* and *exercised* is the finding. CI holds a
+**ratchet**: an edited agent keeps the old bar, a NEW agent must have an EVAL
+that has actually run.
+
+Then the suite was run for the first time in six weeks, and two measurement
+defects fell out of it.
+
+**The actor's token cap was measuring the runner.** Twelve of 33 evals were below
+threshold and five agents at or near zero, every judge reason a version of "only
+shows setup commands without completing". The cap was 600, chosen when the actor
+was a generic stub; once it became the real agent body, 600 was not enough to
+reach the task past the setup the prompt itself demands first. Same eval at 2500
+produced real judgements. Default raised; a cap is not a spend.
+
+**The pack evals were measuring the scenario.** Twelve files ran against a
+generic stub, which is why they passed at 92% while agent-bound evals failed at
+55%. Eleven already named a real agent in `> Pack: … · Reviewer: …` and the
+runner read only `> Agent:`. One parser line, not eleven rewrites. `> Actor:
+generic` is now an explicit opt-out for the four voice evals, whose cases ask the
+actor to BE the voice agent rather than review one.
+
+Start of day to end: **1 passing · 19 present-only · 49 missing** →
+**20 passing · 0 present-only · 49 missing**, 32 of 33 evals passing. Every EVAL
+that exists has now been executed.
+
+### Agents fixed against real failures
+
+Each verified by re-running the same cases at the same budget, not asserted.
+
+- **architect** 1/3 → 3/3. It sized features correctly and gated them wrongly:
+  "let users pick a timezone… stored for compliance reporting in the EU" is Tiny
+  and is GDPR; "cache the pricing API for 5 minutes" is Tiny and a stale price is
+  a wrong charge. The archetype floor in `docs/GATES.md` is per-project and said
+  nothing about one feature carrying a signal. A signal table now raises the
+  floor whatever the size, and stating its absence is itself a finding.
+- **devops** 1/3 → 2/3. It printed the required env vars and deployed anyway.
+  `deploy-preflight.mjs` refuses on unset or placeholder values — `CHANGEME` is
+  the absence of a value wearing a value's clothes, and the value is never echoed
+  into a deploy log.
+- **l3-support** 1/3 → 2/3. A postmortem for exposed customer data had no
+  notification step; awareness starts a 72-hour GDPR clock. "Not required" stays
+  valid and must be written with its reasoning.
+- **continuous-learner** 1/3 → 2/3. A contradiction was recorded silently. The
+  merge now surfaces it and the agent must relay it verbatim.
+
+### Context measured in tokens
+
+Sections were being cut by line count, which overstated the effect. Measured:
+always-loaded 14,315 tokens; one agent at spawn 2,268 median; the flat catalogue
+306,742 against a 200,000 window.
+
+Six reference sections moved out of `SKILL.md` behind explicit pointers:
+12,526 → 8,869 tokens (−29%). Only the routing layer was cut. The executing
+layer got deliberately longer — architect and security-officer now open with
+what they must produce, because in a long prompt position outranks wording, and a
+48-line addition to l3-support made it *worse* until cut to 14.
+
+### Update notifier reaches every command
+
+It existed, worked, and had never written its cache. Not printing and not
+learning were the same check, so a silent run never learned the published
+version; and the check ran on 12 of 34 exit paths. Both fixed. `upgrade --self`
+now also warns when the npm package has moved ahead of the plugin cache Claude
+Code actually loads — `npm i -g` never touches it.
+
+### Fixes
+
+- A document's cited source paths are checked for existence. Age is not accuracy:
+  a doc here cited six files a reviewer was invited to verify, all deleted six
+  days after it was written, and it survived six weeks because 47 days is fresh
+  against a 180-day threshold. Placeholders, planned files and deliberate
+  historical pointers are exempt, per line rather than per file.
+- Every auto-attach rule declares a match and a nearest miss. Writing them found
+  that `^docs/` and `.md` are excluded wholesale, so a compliance artefact living
+  as a document never reaches a reviewer — recorded, not changed in passing.
+- `fleet.mjs` classified 40 of 69 agents as `qa` because the qa rule matched
+  `review`, which every `*-reviewer` contains, leaving `/reviewer$/ → domain`
+  unreachable and the domain bucket empty. Now domain 35, qa 4.
+- A gate marked `blocked` in `tasks.md` never left the inbox: every non-done
+  status mapped to `raw_status: 'open'`.
+- Board coverage 59% → 72.7%; `data-readers.mjs` 5% → 88.5%, `metrics.mjs`
+  10% → 83%, `verdicts.mjs` 16% → 94%.
+
+**Tests: 1693 passing.** No breaking changes.
+
+---
+
+## v2.91.0 — 2026-08-01
+
+A release about the difference between a check that exists and a check that
+runs. Seventeen of the bugs below are mechanisms that executed on every request
+and could not fail — several of them guards protecting nothing.
+
+### Scope is enforced by path, and now by width
+
+`edit-scope-guard` compared path **strings**. Claude Code passes Edit/Write an
+absolute `file_path`, so a denylist entry like `secrets.env` matched nothing in
+real use: the hard deny had never fired in the environment it ships for. `../`
+traversal and symlinks walked through for the same reason. Paths are resolved on
+both sides now, and a write is judged under both the name it was given and the
+name it lands on.
+
+The guard also answered *which* files a slice may touch and never *how many*. A
+brief allowing `src/**` says yes to most of a repo. It now counts distinct files
+per slice — repeated writes to one file count once — and speaks past a
+threshold. Advisory by default; a legitimate wide change exists and a guard that
+blocks it is a guard people turn off.
+
+- `GREAT_CTO_MAX_SLICE_FILES` (default `30`, `0` disables)
+- `GREAT_CTO_ENFORCE_EDIT_SCOPE=block` turns both warnings into denials
+- `GREAT_CTO_DISABLE_EDIT_SCOPE=1` turns the guard off
+- Documented in `docs/GATES.md`
+
+### Verdicts have a schema, and it carries its version
+
+Verdicts were free text in two dialects, and the reader chose between them by
+asking whether the line contained `' | '`. Agents write prose in the details
+field; prose contains pipes. `"BLOCKED 3 findings | all in the auth path"` was
+read as the pipe dialect, and the board displayed *"all in the auth path"* as
+the agent's verdict.
+
+`scripts/lib/verdict-record.mjs` replaces the guess with named fields. Writing
+is strict — a record that could not be read later is refused at write time.
+Reading stays permissive: both legacy dialects still parse, because every
+verdict written before this release is in them. A reader meeting an unknown
+`v:` reports it rather than interpreting the fields it happens to recognise.
+
+Found while wiring it: `/review` wrote its log directly with the literal string
+`code-review` in the verdict slot. Every review ever run recorded its verdict as
+`CODE-REVIEW`. It now records `BLOCKED` when a P0 survived triage, `APPROVED`
+otherwise.
+
+### Coverage reports what is known, not what exists
+
+`coverage-gate` defined *covered* as "an EVAL file names this agent" and printed
+it as one percentage, which reads as a test result. It is not one: 33 EVAL files
+exist and 2 have ever executed. Coverage is now a ladder — `missing`, `present`,
+`exercised`, `passing` — and all four counts are printed, because the distance
+between *present* and *exercised* is the finding.
+
+    1 passing · 0 exercised · 19 present-only · 49 missing   (of 69 agents)
+
+`--require exercised` raises the bar; an unknown value exits 2 rather than
+falling back to the weakest rung.
+
+### Documents are checked against the code they cite
+
+Artifact freshness was measured by **age**, and age is not accuracy. A document
+in this repo cited six source files a security reviewer was invited to verify;
+all six had been deleted six days after it was written, and it survived another
+six weeks because 47 days is fresh against a 180-day threshold.
+
+`artifact-lint` now reports a cited source path that does not resolve. Most of
+the work is in what it does *not* flag — globs, template placeholders, files a
+plan intends to create, and pointers a decision record deliberately anchors to
+history. Exemptions apply per line, not per file.
+
+### Lessons merge instead of accumulating
+
+De-duplicating `lessons.md` was a line in the continuous-learner prompt asking a
+Haiku agent to recognise a slug it wrote weeks ago. `scripts/lib/lessons-write.mjs`
+makes it mechanical: the same pattern folds in, evidence accumulates,
+`occurrences:` increments, `confidence:` may rise but never fall. A reversed
+decision is recorded under `**Superseded:**` with its date rather than
+overwritten — a lesson that reversed is the most valuable kind.
+
+### Fixes
+
+- `bd list` prints a status symbol first, so `awk '{print $1}'` returned `○`.
+  Three gate-dedup sites ran every subsequent `bd` command against a bullet
+  character, which is why re-runs created a second open `gate:ship`.
+- `\s` is a GNU extension; BSD grep/sed read it as a literal `s`. `log-verdict.sh`
+  emitted `project= <slug>` with a leading space, which the board's filter
+  captured as empty — every project-scoped verdict query matched nothing. The
+  vulnerability scan's lockfile grep matched no line at all on macOS.
+- 47 sites of `X=$(grep … | awk … || echo "default")`. `awk` exits 0 on empty
+  input, so the default never fired and archetype, approval-level, and project
+  size came out blank.
+- `board ensure` accepted any HTTP response as proof the board was up; anything
+  squatting on the port made it report a healthy board and refuse to start the
+  real one. It asks `/api/version` now.
+- `tasks.md` parsed its table dialect only when the checkbox pass found nothing,
+  so one stray `- [ ]` line hid every table row — gates included.
+- Two projects sharing a basename produced one slug, and the registry read the
+  second as the first having moved: it overwrote the path and a live project
+  vanished from the switcher silently.
+- `phase-task.sh` claimed idempotency but searched `--status open` only, so
+  `start` and a failed `close` both produced duplicates.
+- `DO_NOT_TRACK` accepted only `1`/`true`; the spec says any non-empty value.
+  `docs/PRIVACY.md` updated in the same change.
+- Writing a task status into `tasks.md` addressed cells by index, so an
+  unescaped `|` in a title put `closed` over the title text while the real
+  status cell stayed `open`.
+- A security report reading "initially BLOCKED, now APPROVED" counted as both;
+  the two counters summed to more than the number of reports.
+- MCP `project_status` read `metrics.done` off the response root instead of
+  `metrics.tasks`, reporting `0/0 done` for every project; `cost_summary` built
+  `/api/cost&days=30` with no `?` when called without a project; neither MCP
+  server put a deadline on its board fetch.
+- prose-slop masked any 4-space-indented line as code, skipping every nested
+  list item; its CLI consumed flag operands by value, so `--deny f.md f.md`
+  linted nothing.
+- Three auto-attach rules could never fire — one required a manifest name and
+  the word "version" in the same *path*, two could only match `.md` paths that
+  `EXCLUDE` drops. Two tests now fail on either shape.
+- `.playwright-mcp/session.json` matched `session` and flagged security-officer
+  on every run that used the browser.
+
+### Housekeeping
+
+- `docs/AI-FIREWALL.md` and its plan deleted: they describe the operate surface
+  that left this repo in June. `CHANGELOG` entries for it are left intact — they
+  record what great_cto was at the time, and that record is true.
+- Stack-migration and large-scale-refactor playbooks moved out of `SKILL.md`
+  into `skills/great_cto/playbooks/`. `SKILL.md` is loaded for every request;
+  those two are reached by one Intent Mapping row each.
+- `continuous-learner` was told to run `node` without `Bash(node:*)` in its tool
+  list, so the cross-project promotion it triggers was not runnable by it.
+
+**Tests: 1573 passing.** No breaking changes: legacy verdict logs still parse,
+and the new volume check is advisory unless explicitly enforced.
+
+---
+
+## v2.90.0 — 2026-07-28
+
+### `product-only` — the pipeline chains itself; you answer two questions
+
+The operator had to say "run product-owner", then "run architect", then "run pm",
+then "run senior-dev" — by hand, every time. The transitions were prompt-driven,
+so a context compaction or a tangent silently ended the run. This release makes
+the chain execute and adds the approval level most operators actually want.
+
+- **New `approval-level: product-only`** — pauses at `gate:product` (what are we
+  building) and `gate:ship` (do we go live), and nowhere in between. Architecture,
+  planning, and code review are delegated. Two approvals per feature instead of
+  four, without dropping to `auto`.
+- **`scripts/lib/approval-level.mjs`** — the rule now lives in one place instead of
+  as prose duplicated across agent prompts, where it had already diverged. A typo
+  in the level falls back to the default, never to "no gates"; a regulated
+  archetype (fintech, healthcare) keeps its security/compliance/ship floor even
+  under `auto`. 14 tests.
+- **The dispatcher consults the level before announcing a gate.** `pipeline.toml`
+  says where a gate *can* sit; the approval level says which ones stop a human.
+  Without this, `product-only` waited forever on a `gate:arch` the architect
+  deliberately never creates. Omitting the policy still honours every gate — the
+  absence of a policy must never read as "no gates". 5 tests.
+- **`/start` accepts `product`** and writes the canonical `product-only`. The level
+  previously shipped with no way to choose it.
+- **Checkpoints are stated as a rule, not a list.** Four agents skipped checkpoints
+  by matching `auto|gates-only|strict`; a level added later fell outside the list
+  and started pausing — `product-only` would have asked *more* often than the
+  default it is meant to be lighter than. Now: checkpoints run at `expert` and
+  `step-by-step`, everything else skips.
+- **Verification** — the chain was walked end-to-end against the real hook at three
+  levels: `product-only` stops exactly twice, `gates-only` at arch + ship, `auto`
+  runs clean through to `l3-support`. `BLOCKED` halts the chain; `fintech + auto`
+  keeps `gate:ship`; a missing verdict line yields an instruction, not silence.
+  Suite **966/966**.
+
+Upgrade note: the plugin is loaded from a versioned cache, and `npm i -g` does not
+refresh it — run `great-cto init` (or `scripts/install-local.sh` from source) and
+restart the session, or the previous version's hooks keep firing.
+
+---
+
+## v2.89.0 — 2026-07-28
+
+### The benchmark measures the product now, not the machine it ran on
+
+**One vocabulary for "did this check prove anything".** The same idea had four
+implementations — `overall:null` plus an `unmeasured` string, `{ok:false,
+reason:'unreadable'}`, `tests.ran=false`, and the literal string `mutation: not
+configured`. `scripts/lib/proof-status.mjs` closes it into four values:
+`passed` / `failed` / `not_run` / `inconclusive`. INCONCLUSIVE was missing
+everywhere and is the useful addition — the check ran and still settled nothing
+(a partial run, an unparsable summary, a live pid whose port hangs), which is a
+different report and usually a different fix than "never ran". `isProven()` is
+true only for `passed`, `blocksGate()` blocks on both unknowns, and an invented
+status throws instead of flowing onward looking plausible.
+
+**Diffs too large to review are flagged.** A change can pass every check here —
+tests green, scope respected, security clean — and still be unreviewable. Past
+~400 hand-written lines review quality collapses and the change is approved
+rather than read. Measured in the benchmark products: single commits of 12,306
+and 10,687 insertions. Generated files are excluded (a 15-line change beside a
+15,000-line lockfile stays "ok"), the heaviest files are named, and it is
+advisory — a hard block on line count teaches people to split artificially.
+
+**Benchmark: the score was moving without the code.** Scoring `subs` three times
+with nothing changed gave 70 / 79 / 79. The cause was `npm audit` — 15% of the
+ceiling weight, answered by a registry that changes daily, so a product could
+lose points overnight because someone published a CVE. It is now off unless
+`GREAT_CTO_EVAL_AUDIT=1`, and carries the date it belongs to. With it off, `subs`
+is stable at 85/85/85. The rule this establishes is in the methodology: a
+benchmark that has not been run twice has not been validated.
+
+**Benchmark: the collector was still calling the filename scorer.** Every fix to
+the executing oracle this week landed in `quality.mjs` while `bench-collect` kept
+invoking `product-score.mjs` — the one where `mkdir e2e && touch` is worth +25.
+It now routes through `quality.assess` and publishes floor / ceiling / contracts
+alongside the total, because one number hides what produced it.
+
+**Benchmark: what the run cost in attention.** `human-cost.mjs` counts gate
+verdicts and manual restarts from artifacts already on disk. quoting scores 64
+with zero gates passed and six restarts; coaching scores 82 but needed seven
+interventions. Every reading carries confidence — below ten verdict lines it is
+flagged indicative, because a sparse count dressed as a metric is worse than none.
+
+**Environment defects that made products look broken.** An x86_64 psql in
+/usr/local/bin shadowed the Homebrew arm64 build on a Mac without Rosetta, so
+every postgres call died with "bad CPU type" while `command -v` reported the tool
+present; and Homebrew postgres will not start on macOS without `LC_ALL`. With
+both fixed, all six database-backed products provision and migrate — two of them
+only via a fallback script, which is now recorded in the data rather than
+implied. The first re-score with every environment up: six of ten products fully
+green, and `coaching` — published as 76 on a suite that never ran — measured at
+296/296.
+
+**Also:** `quota-check` reads the macOS Keychain (the session-limit warning had
+never fired on this platform), `cost-drift.mjs` compares estimates against
+measured spend, ADR-009 states that gates follow reversibility rather than
+pipeline position, and qa-engineer gains Gherkin scenarios plus mutation testing.
+
+---
+
+## v2.88.0 — 2026-07-23
+
+### Measure what you claim, gate what you cannot undo
+
+**The quota warning never fired on macOS.** `quota-check` read only
+`~/.claude/.credentials.json` and returned silently when it was absent — but
+Claude Code keeps OAuth in the login Keychain on macOS and writes no such file.
+So the hook exited at its first line for every macOS OAuth user: exactly the
+population it protects. It now tries the file first, then the Keychain on darwin,
+with refreshed tokens written back only to the file store (a Keychain entry is
+Claude Code's to manage). This is why three parallel benchmark runs exhausted a
+session window earlier with no warning at all. 7 tests.
+
+**Estimates are now checked against reality.** `scripts/lib/cost-drift.mjs`
+compares the hardcoded `ROUGH_COST_USD` predictions against measured spend in
+`cost-history.log`. Deterministic, zero tokens, no new tracking. It refuses to
+pronounce below 30 samples, reports medians (one outlier decides nothing), and
+surfaces agents that were measured but never estimated. First run: architect
+2.67× over its estimate (n=27), median 1.385× → "estimates-adequate, do not
+calibrate" — a question answered with data instead of opinion. 14 tests.
+
+**Gates follow reversibility, not just position (ADR-009).** Gates here are
+positional; `/crystallize approve` sat outside every stage boundary and shipped
+ungated while activating a pattern injected into every future run of every
+project. An audit found the remaining irreversible operations already covered
+(infra-provisioner stops for approval before creating paid resources, publish
+refuses on a dirty tree, devops refuses prod domains) — so no gate was added or
+moved. What was missing is the rule that produced that coverage, now stated in
+CLAUDE.md: an operation needs a human decision when undoing it is expensive —
+escapes the machine, crosses a project boundary, costs money, or destroys
+evidence. A refusal, a plan-and-stop, or an evidence requirement all satisfy it;
+silence does not.
+
+**qa-engineer: Gherkin scenarios + mutation testing.** Critical paths are stated
+as Given/When/Then before test code is written — a path that cannot be phrased as
+observable precondition → action → outcome is one you do not yet understand well
+enough to test. Mutation testing then asks whether the suite would actually catch
+a fault, since a green run only proves the tests executed. Both feed the report
+and the substantiveness rubric. Neither invents a number: no mutation framework
+configured reports exactly `mutation: not configured`, and no BDD runner is added
+to a project that never asked for one. 11 eval cases weighted toward that honesty
+boundary.
+
+**Also:** a broken `timeout` binary (x86 on arm64, exit 126) no longer blocks a
+push — the hook treats 126/127 as "the wrapper failed" and falls through; a
+`package.json` "files" entry that pointed at a directory which never existed is
+removed, with a test asserting every entry resolves; and `docs/decisions/
+DISCOVERY-NO-BUILD.md` records four evaluated-and-rejected ideas with the
+evidence that decided each, so they are not re-litigated.
+
+---
+
+## v2.87.1 — 2026-07-22
+
+### `adapt` points forward instead of back at itself
+
+With the telemetry Worker redeployed (its `?days=all` + lifetime block had been
+written on 2026-06-26 and never shipped), the real usage shape became visible for
+the first time: 100 recorded runs, `adapt` 69 of them against `board` 2. People
+run `adapt`, come back, run it again.
+
+The cause was in the command's own last words — both closing lines pointed at
+`adapt` ("Re-run after editing PROJECT.md…", "add other AI tools…") and nothing
+pointed forward. The command taught its own loop.
+
+- `adapt` now ends with a `Next:` block. Claude Code users get the three real
+  entry points (`/audit`, `/start`, `/inbox`) plus the board.
+- The block is **tool-aware**: `adapt` is the one command that serves
+  non-Claude-Code users (Cursor / Copilot / Windsurf / Aider), and the agent
+  pipeline is Claude-Code-only. Sending a Cursor user to `/audit` would be a dead
+  end — worse than saying nothing. Those users are instead told plainly what
+  they have and the concrete step that unlocks the rest.
+- `nextStepsAfterAdapt` is a pure function, so the routing is tested without
+  generating files. 7 tests; 288/288 CLI suite green.
+
+Telemetry Worker: deployed (version f8f69cf9) — `?days=all` and lifetime totals
+now respond as documented.
+
+---
+
+## v2.87.0 — 2026-07-22
+
+### Verified acceptance — the system stops pretending it succeeded
+
+A continuation of the previous release's theme, informed by the "code clean-up
+agents" argument that the bottleneck has moved from generation speed to
+**verified, minimal, reviewable change** — not faster auto-merge loops. Three
+additions, each built by composing pieces already in the repo; none adds a
+runtime dependency, new tracking, or recurring cost.
+
+**Edit-scope enforced at write time, not after**
+- New PreToolUse hook (`Edit|Write|MultiEdit`) turns an IMPL-BRIEF's declared
+  scope into a hard constraint on the write, reusing the existing `checkScope`.
+  A denylisted file → hard deny (exit 2), always; a file on neither list →
+  advisory by default (scope creep surfaced, not blocked, because incomplete
+  allowlists otherwise train people to disable the hook);
+  `GREAT_CTO_ENFORCE_EDIT_SCOPE=block` upgrades it; no active brief → allowed.
+- The active brief is located via the `.great_cto/active-brief` pointer that
+  senior-dev writes on task claim and clears on close/block. A stale pointer can
+  only ever block a denylisted path (fail-safe); `GREAT_CTO_DISABLE_EDIT_SCOPE=1`
+  is the escape hatch. 12 tests + a verified stdin→deny/allow e2e.
+
+**A stopped agent emits a handoff package, not a bare status flip**
+- `scripts/handoff-package.mjs <reason> <feature>` assembles one reviewable
+  evidence bundle when an agent stops (blocked, spec-objection, budget cap):
+  the diff + changed files, what ran and how it came out, the attempt history,
+  what it cost, and why it stopped. Reads only local logs already on disk
+  (agent-writes, cost-history, verdicts, git) — no new tracking, no ADR. Reports
+  honestly: unmeasured tests are "unverified", a stop before any write says so
+  rather than fabricating a diff. Wired into senior-dev's blocked +
+  spec-objection paths. 8 tests.
+
+**Acceptance-oriented metrics on the board**
+- `cost_per_accepted` (window AI cost ÷ gate-APPROVED verdicts) and
+  `rework_rounds` (sent-back review outcomes), derived from verdict logs and
+  surfaced as two board tiles. `cost_per_accepted` is `null` when nothing was
+  accepted in the window — dividing a real cost by zero approvals would invent a
+  number, same discipline as the null-score oracle. Deliberately two of the five
+  metrics the literature lists, not all five: a solo project's denominator is
+  tiny and the rest would be noise until volume justifies them. 8 tests.
+
+Full suite green across board / top-level / hooks / lib (107 / 207 / 168 / 368).
+
+---
+
+## v2.86.0 — 2026-07-19
+
+### The harness stops giving confident answers where it does not know
+
+One theme across the release: every place the system could fail silently and
+render its failure as a clean, confident answer now says what it actually knows.
+Informed by the open problems in arXiv:2605.18747 "Code as Agent Harness"
+(oracle adequacy, semantic verification, self-evolving harnesses, shared state).
+
+**Board always-on (ADR-007)**
+- `great-cto board ensure` — idempotent health gate: starts the board only when
+  it is not already answering; never kills a healthy instance; restarts a live
+  pid whose port is hung (the case a liveness supervisor cannot see).
+- `great-cto board install-daemon` / `uninstall-daemon` — per-user OS service
+  (launchd / systemd --user / schtasks) with start-at-login + restart-on-crash.
+  Explicit opt-in, never a side effect of init. `--dry-run` prints the unit.
+
+**Board reads space-path / tasks.md-backed projects**
+- The tasks.md fallback now parses the Markdown-table dialect the pipeline
+  writes when beads cannot open a path (e.g. one containing a space) — with
+  header-mapped columns, escaped-pipe handling, and owner-debris filtering.
+- Gate approve/reject falls back to a tasks.md status write-back when bd is
+  unavailable, and reports which path it used (`via: beads|tasks.md`).
+- Metrics and session-log parsers tolerate real-world heading/format variance;
+  the session-log fallback scopes verdicts to the project instead of showing
+  every project the same global list.
+- The project switcher hides $HOME (the global config dir is not a project) and
+  dead registrations with no data source.
+
+**Silent failures now speak (the release theme)**
+- `readSafe`/`parseSafe` keep "absent", "unreadable" and "here it is" apart —
+  the shared root of five separate board bugs where emptiness rendered as truth.
+- `GET /api/tasks` and `/api/logs` carry an `X-Board-Degraded` header when a
+  read failed; the UI mounts a persistent banner (visible on every tab), and
+  the landing view no longer claims "All clear" / "Nothing urgent" over data it
+  could not read. Round-trip verified: break the file → banner; fix it → gone.
+- Session-log reads distinguish ENOENT (normal) from a real read failure.
+
+**Quality oracle tells the truth (bench)**
+- `parseTestCounts` reads vitest and jest summaries, not only node:test — an
+  unparsed suite was previously scored as "1 test, and it failed".
+- "ran" now means "we obtained real counts"; `assess()` returns
+  `overall: null` when the suite was not measured, and `evaluateGate(null)`
+  blocks with a reason. A product whose suite exited 143 can no longer carry a
+  published grade.
+- `scripts/bench-env.mjs` provisions each product's declared database (env-file
+  discovery → compose fallback), relocates onto a port we own when the declared
+  one is somebody else's cluster, and migrates the schema with the product's own
+  script. Measured on one product: 62/132 without env → 131/132 with it.
+
+**Pipeline state survives interruption**
+- `scripts/pipeline-state.mjs` reconstructs completed / failed / next /
+  remaining stages from the verdict logs; `/resume` runs it instead of the
+  operator hand-writing "these stages are done". Exit 3 when a mandatory stage
+  (QA / security) has no terminal verdict.
+
+**Learning loop disarmed until it earns trust**
+- `/crystallize approve` is gated: a stamped eval regression can never be
+  activated (no override); no evidence blocks unless `--no-eval "<reason>"`,
+  and the reason is logged. Noisy deltas activate as "not shown to help".
+- The GP frontmatter writer now emits the `fix:`/`verification:` keys its
+  consumers grep — all four live patterns were being injected with an empty
+  "→ apply:" line. Consumers fall back to detection steps when no remedy exists.
+- continuous-learner delegates cross-project promotion to `lessons-merge.mjs`
+  instead of a prose reimplementation that had already drifted.
+
+**Decisions log is per-project (ADR-008)**
+- Gate decisions land in `<project>/.great_cto/decisions.md`; with no scope the
+  write is refused rather than redirected to the global file. One project's gate
+  vocabulary can no longer reach another project's agent context. The global
+  file keeps only promoted `## pattern:` entries.
+
+**Misc**
+- LLM router default moves to the newest cheap-lane Kimi (k2-0905: 2× context
+  for +5%/+9% per token); pricier tiers stay explicit opt-in.
+- `bench-run.sh` can bill against an API key from `~/.great_cto/secrets.env`
+  (out of repo) instead of the subscription's shared session limit.
+- pre-push private terms load from an out-of-repo file
+  (`~/.great_cto/private-terms`), so the leak detector no longer ships the very
+  names it guards against.
+
+Tests: 99 board · 199 top-level · 368 lib · 281 CLI — all green.
+
+---
+
+## v2.85.3 — 2026-07-06
+
+### Fix: board menu bughunt — Logs badge + budget NaN
+
+Hunted all admin-board menus. Two real cosmetic bugs fixed:
+- **Logs nav badge** stayed `0` until you opened the Logs tab (it was populated
+  lazily) — now it fills on load and on project switch.
+- **Projected-month %** showed `NaN%` when the monthly budget was explicitly `0`
+  (0/0) — now guarded (`budget > 0`).
+
+A code hunter flagged two P1 XSS in onclick handlers; **disproved live** — the
+single-/double-quoted attribute escaping (`&apos;`/`&quot;`) holds and `<>` in an
+attribute value never becomes DOM (4 breakout payloads, zero execution). The
+menus are otherwise clean. (One noted low-priority hardening: `showToast` inner
+HTML of a server error string — localhost-only threat, left as-is.)
+
+---
+
+## v2.85.2 — 2026-07-06
+
+### Fix: measured cost actually reaches the board
+
+Real-pipeline validation of v2.84.0 caught a bug the fixtures missed: the
+SubagentStop hook (and `log-verdict.sh`) write `cost-history.log` **project-local**
+(`<cwd>/.great_cto/`), but `readVerdicts` enriched only from the **global**
+`~/.great_cto/cost-history.log` — so measured cost never reached the metrics and
+the board stayed on the estimate. `readVerdicts` now reads the project file first
+(global as fallback). Verified end-to-end on real session subagent transcripts:
+4 agents → `source: 'measured'`, real \$20.38 summed (cache tokens included).
++1 regression test.
+
+---
+
+## v2.85.1 — 2026-07-06
+
+### Fix: correct the Flint API in the dashboard viz contract
+
+Verified `flint-chart` (v0.1.3) against reality: it's a **library, not a CLI** —
+`references/dashboard-viz.md` wrongly told the agent to run `npx flint-chart`
+(which doesn't exist). Corrected to the real build-time call
+`assembleECharts(input)` (imported from `flint-chart` as a devDependency), with
+the actual `ChartAssemblyInput` shape (`data.values` · `semantic_types` ·
+`chart_spec.chartType` — whose names match `charts.csv`). Confirmed by compiling
+a spec to a real ECharts `option` object. Still dev-only; product ships native
+ECharts.
+
+---
+
+## v2.85.0 — 2026-07-06
+
+### Dashboard visualization contract (Flint at build time → native ECharts)
+
+The `dashboard` archetype ingested data (connector-builder) but nobody owned the
+OUT half — charts. senior-dev hand-wrote ECharts config per product. This adds a
+charting contract:
+
+- **`references/dashboard-viz.md`** — senior-dev now follows it for dashboard /
+  analytics builds: pick the chart with `ui-ux-pro-max/data/charts.csv`, generate
+  polished specs with **Flint** (semantic chart language) at **build time**, and
+  **ship the compiled native ECharts config**.
+- **Flint is dev-only, never a runtime dep of the shipped product.** The client's
+  product depends on mature ECharts; Flint (v0.1.x) only runs during the build and
+  the choice is reversible (drop Flint, keep the native config). Falls back to
+  authoring ECharts directly if a spec won't compile.
+- **stack-baseline** pins Charts = ECharts (shipped) · Recharts (alt) · Flint
+  (build-time generator).
+- Pilot posture: measure chart quality on one dashboard product via the
+  `product-quality` harness before escalating to a dedicated `viz-engineer` agent.
+  Docs/prompt-only; full suite 342, structural + docs-reference green.
+
+---
+
+## v2.84.0 — 2026-07-06
+
+### Measured LLM cost (not estimated)
+
+pxpipe's discipline applied to the board's metrics: measure real token usage,
+and only report measured cost when the measurement is trustworthy.
+
+- **SubagentStop records real usage.** When a subagent finishes, the completion
+  hook reads its transcript, sums the real token usage, and writes a measured
+  `cost` for that agent — no agent self-report needed. Fail-open; opt out with
+  `GREAT_CTO_NO_MEASURED_COST=1`.
+- **Cache tokens are now priced.** `cost-meter` bills `cache_creation` at 1.25×
+  and `cache_read` at 0.1× the model's input rate — ignoring them under-counted
+  real spend badly (a cached turn is often 50k+ cache tokens).
+- **The board promotes measured → canonical past a trust gate.** When enough of
+  the window's completed tasks carry a real verdict cost (coverage ≥ 50%, min 3)
+  and the spend is real (≥ 1¢), the board shows the *measured* cost and a real
+  savings multiplier (`source: 'measured'`). Below the bar it honestly falls back
+  to the time-based estimate — partial/synthetic verdict data never distorts the
+  ratio.
+- New `scripts/lib/usage-from-transcript.mjs` (+6 tests); cost-correctness gains
+  2 trust-gate tests. Suites: root+board 342, lib 353, all green.
+
+---
+
+## v2.83.0 — 2026-07-06
+
+### Ranked memory recall (BM25)
+
+- **`scripts/lib/memory-search.mjs`** — a zero-dep BM25 search over great_cto's
+  memory (session logs, brain/lessons/decisions, and `~/.great_cto/global-patterns`).
+  Rich memory was let down by naive recall: `/resume` read the *most recent*
+  logs and architect's pattern-lookup grepped patterns by exact `applies_to`
+  frontmatter. Recent ≠ relevant, and an exact grep misses a related pattern
+  under a different label. Ranked search surfaces the *relevant* memory.
+- **Wired into `/resume`** — now also surfaces the past sessions most relevant
+  to the current work (query built from the git branch + open task titles), not
+  only the newest three.
+- **Wired into architect pattern-lookup** — adds a "also possibly relevant
+  (ranked recall)" section alongside the exact-tag matches, so a semantically
+  related pattern surfaces even when its `applies_to` label differs.
+- Pure Node, no deps, no index files, builds in-memory per call (memory corpora
+  are small). Fail-open: silent if node/module is unavailable. Idea adapted from
+  Kuberwastaken/reference (BM25 over agent memory); implemented fresh in Node.
+- Tests: lib suite +6 (348 total, all green).
+
+---
+
+## v2.82.3 — 2026-07-04
+
+### Board honesty fixes (found by admin bughunt)
+
+- **Cost savings no longer fabricated.** The board's metrics recomputed their own
+  human-cost estimate (`done × 4h × $150`) and savings multiplier, ignoring the
+  backend — which deliberately returns `savings_x: null` when there's no measured
+  verdict cost data. That produced an absurd "5,538×" out of nothing. The
+  frontend now uses the backend's `cost.savings_x` / `cost.human_usd`; with no
+  measured data it shows "—", not a made-up multiplier (a real number still
+  renders when verdict cost data exists).
+- **In-app notifications dedupe by key.** The alert crons tick every 5 min and a
+  persistent condition (open P0, blocked/stale gate, cost over threshold, and the
+  daily digest across its whole UTC hour) added a fresh bell notification on every
+  tick — email/push already deduped, the in-app one didn't. `addNotification` now
+  takes a `dedupeKey` and skips duplicates; all crons pass theirs.
+- **Update-check cache** freshness is inclusive at the exact 24h boundary
+  (`<` → `<=`) — no needless background refresh on the tick.
+- Tests: board suite 56 → 60 (+4 notification-dedup regression tests via a new
+  `GREAT_CTO_NOTIF_HISTORY_FILE` test seam); CLI update-check suite green.
+
+---
+
+## v2.82.2 — 2026-07-03
+
+### Fix: tax / procurement / msp archetype detection
+
+- Completes the detection fix from 2.82.1. Tax, procurement, and MSP projects
+  misclassified at init-time (`web-service`/`library`) because their domain terms
+  never reached the scorer. Now routed to the archetypes their reviewers already
+  declare: **tax → fintech**, **procurement → enterprise-saas**, **msp →
+  enterprise-saas** (`mineReadmeKeywords()` emits the terms; fintech and
+  enterprise-saas `score()` gain strong/soft term blocks — generic terms like
+  `sla`/`rfp`/`irs` weighted +1 so they never flip an archetype alone).
+- **Side fix:** enterprise-saas's existing `multi-tenant` keyword check was also
+  silently dead (the term was never emitted) — now live.
+- Regression fixtures added (`tax-prep`, `procurement-p2p`, `msp-rmm`);
+  `run-archetype-e2e` 31 → 34, zero regressions. All 8 new regulated verticals
+  now correct on both init-time detection and runtime auto-attach. Suites 307 +
+  268 green, `ci-local --quick` green.
+
+---
+
+## v2.82.1 — 2026-07-03
+
+### Fix: legal & insurance archetype detection (found by pipeline testing)
+
+- **`legal` and `insurance` projects were misclassified as `library`.** Their
+  archetype `score()` functions check raw README terms (`iolta`, `matter`,
+  `acord`, `naic`, `underwriting`…) that `mineReadmeKeywords()` never emitted, so
+  detection always scored ~0 from README. Insurance was latently broken; legal
+  shipped this way in 2.81.0. Fixed by emitting the legal + insurance detection
+  terms from `mineReadmeKeywords()` (bare `claim` deliberately excluded as too
+  generic). A real legal project now detects as `legal` (high confidence), a
+  real insurance project as `insurance` — so `init` writes the correct reviewer
+  set + gates and `ci` archetype-drift is accurate.
+- **Regression coverage** these verticals shipped without: added
+  `tests/fixtures/legal-clio` and `insurance-acord`; `run-archetype-e2e` is now
+  31/31 (was 29). Runtime auto-attach was already correct for all reviewers —
+  this fixes the init-time classification path. Full suites 336 + 268 green.
+
+---
+
+## v2.82.0 — 2026-07-03
+
+### 5 new domain reviewers — reviewer system complete
+
+Built the 5 remaining planned reviewers, taking `test_new_reviewers.py` to 9/9:
+
+- **rcm-reviewer** — healthcare revenue cycle: CMS-1500/UB-04 claims, CPT/HCPCS/
+  ICD-10 coding + upcoding/unbundling (False Claims Act / OIG), 835 remittance,
+  No Surprises Act good-faith estimates.
+- **procurement-reviewer** — source-to-pay: three-way match, segregation of
+  duties, OFAC vendor screening, competitive-bid fairness, SOX procurement.
+- **accounting-reviewer** — GL/close: double-entry integrity, ASC 606, 1099,
+  month-end reconciliation, SOX ITGC, journal-entry approval + SoD. GL/GAAP
+  auto-attach tokens migrated off the `enterprise-saas-reviewer` stop-gap to this
+  dedicated reviewer (no double-attach). Closes the accounting-catalog gap.
+- **msp-reviewer** — managed IT: multi-tenant isolation, MSA/SLA enforcement,
+  credential vaulting, patch/backup SLAs, SOC 2 for MSPs.
+- **tax-reviewer** — tax prep: IRS MeF e-file, PTIN + Circular 230, taxpayer-data
+  safeguards (Pub 4557 / GLBA / WISP), Form 8879, §7216 consent.
+- Each ships agent + TM threat-model template + pack overlay + `/command` +
+  token-specific auto-attach pattern. Tests: main suite 336, CLI 268 (+42), all
+  green; structural validators + `ci-local --quick` green.
+
+---
+
+## v2.81.0 — 2026-07-03
+
+### Legal archetype + legal-reviewer
+
+- **New `legal` archetype** with a dedicated **`legal-reviewer`** agent covering
+  UPL guardrails (information-vs-advice line, attorney-review gate), IOLTA client
+  trust accounting (commingling, per-client ledgers, three-way reconciliation),
+  attorney-client privilege (ABA Model Rule 1.6), conflict-of-interest screening
+  (Rules 1.7-1.9), e-filing/court integration (PACER/CM-ECF, FRCP 5.2 redaction),
+  and records retention / legal hold. Wired end-to-end: detection, reviewers,
+  gates (`upl-review`), UI-bearing set, cost tier, `/upl-check` command,
+  `TM-legal` threat-model template, and a legaltech pack overlay.
+- **`legal-reviewer` auto-attaches** on IOLTA / trust-account / matter / conflict-
+  check / PACER / ECF / docket signals (token-specific, false-positive-tested).
+- **Dental support** — `healthcare-reviewer` now also triggers on CDT-code /
+  odontogram / perio-chart / dental-claim signals, for the dental vertical.
+- Backs the greatcto.systems catalog's dental + law-firm verticals with real
+  compliance review. Tests: main suite 307→327, CLI 264→268 (+24), all green.
+
+---
+
+## v2.80.1 — 2026-07-03
+
+### Healthcare reviewer auto-attaches (catalog honesty)
+
+- **`healthcare-reviewer` now auto-attaches** on HIPAA/PHI signals
+  (`hipaa`, `phi_`, `hl7`, `fhir`, `hitech`, `baa`, `ehr/`, `superbill`,
+  `icd-10`, `soap-note`) — previously the agent existed but had no trigger, so a
+  healthcare project never got a HIPAA review. Closes the gap now that the
+  greatcto.systems catalog ships regulated verticals (allied health, insurance
+  agencies, accounting) whose whole pitch is automatic compliance review.
+- `regulated-reviewer` gets a narrow DORA/NIS2/ISO-27001 trigger (SOX/HIPAA stay
+  with the more-specific reviewers — no double-attach); accounting general-ledger
+  / GAAP signals route to `enterprise-saas-reviewer` (SOX-ITGC).
+- Patterns are token-specific and false-positive-tested (bare `health`/`care`/
+  `claim` deliberately excluded). +9 auto-attach test cases; full suite 324/324.
+
+---
+
+## v2.80.0 — 2026-07-03
+
+### Self-upgrade
+
+- **`great-cto upgrade --self`** — upgrades the CLI in place, detecting how it was
+  installed from the running binary's realpath: npx cache (nothing to do — npx
+  always runs latest), volta, pnpm, or npm with the exact global prefix derived
+  from the binary path. On machines with more than one npm prefix it upgrades the
+  binary that is actually running and prints which prefix was updated, then
+  verifies old → new.
+- **Interactive update prompt** — when a newer version exists and you're in a real
+  terminal, the update hint becomes a one-time `Update to X.Y.Z? [Y/n]` (15s
+  timeout = No, asked at most once per release via `promptedFor` in the cache).
+  Non-TTY, CI, and protocol commands (`mcp`) keep the silent one-line hint, which
+  now recommends `great-cto upgrade --self`.
+- README highlights `npx great-cto@latest` as the zero-maintenance path for
+  occasional use.
+- Tests: CLI suite 229 → 264 (+35); board/root 198.
+
+---
+
+## v2.79.0 — 2026-07-03
+
+### Update notifier
+
+- **CLI hint** — after any human command, a one-line stderr hint appears when a
+  newer great-cto is on npm (`update available: A → B`). Zero-dep
+  update-notifier pattern: the foreground only reads a 24h cache; a detached
+  worker refreshes it from the npm registry for the next run (~0.05s foreground,
+  never blocks). Skipped in CI, non-TTY, and protocol commands (`mcp`).
+- **Board notification + push** — daily registry check in the alert cron;
+  in-app notification + web-push exactly once per release
+  (`update.available:<version>` dedupe).
+- **Opt-out**: `GREAT_CTO_NO_UPDATE_CHECK=1`. The check is a read-only registry
+  fetch (same traffic as `npm install`), documented in `docs/PRIVACY.md`.
+- Tests: +49 (CLI 229, board/root 198).
+
+---
+
+## v2.78.0 — 2026-07-03
+
+### Quality deepened, prompts on a diet, structured logs
+
+- **QUALITY-DEEPEN follow-ups #3–#6** (`ARCH-quality-deepen-followups.md`):
+  archetype domain contracts extended 6 → 14 archetypes; contract regexes
+  hardened against false positives (the `/hold/`-matches-"household" class);
+  `quality.mjs --gate --baseline` (product-eval parity) and `--trend`
+  (sparkline over `metrics-history.jsonl`); opt-in `--browser` harness with
+  axe-core a11y + Web Vitals (LCP/CLS/INP) — dynamic playwright import,
+  graceful `na` everywhere, runtime stays zero-dep.
+- **Agent prompt diet** — `architect.md` 1181 → 827 lines, `project-auditor.md`
+  1019 → 701 (−30% each): 16 embedded bash blocks extracted to `scripts/*.sh`,
+  pricing/framework tables to `skills/great_cto/references/`, duplicate step
+  numbering fixed, vestigial `bd_create_if_new` code removed. Cheaper every
+  single agent invocation.
+- **Structured logging** — zero-dep leveled logger (`GREAT_CTO_LOG_LEVEL`,
+  ISO timestamps, error→stderr) across the board server; script diagnostics
+  routed through it; hook protocol and CLI user output untouched by design.
+- **Board hardening** — static path-traversal containment, origin-check dedupe,
+  HOME-boundary for raw `?project=` paths.
+- **Telemetry endpoint** — default now the documented `telemetry.greatcto.systems`
+  (verified live); personal placeholder hostname removed.
+- Fixed the archetype-drift test failures (`cli` vs `cli-tool`) — main is fully
+  green: lib suite 355, full suite 176, hooks 117.
+
+---
+
+## v2.77.2 — 2026-07-03
+
+### Board bughunt wave 2 + honest storefront
+
+- **Board: projects registry self-heals** — duplicate slugs are deduped, entries
+  with existing paths win, a moved repo updates its entry instead of adding a
+  second one. Fixes the "board shows 0 tasks after a repo move" failure.
+- **Board: transient `bd` failures no longer wipe the view** — the server keeps
+  the last-good task cache on a lock/timeout and the UI re-verifies an empty SSE
+  snapshot before accepting it.
+- **Board: zero external calls** — marked, DOMPurify and Geist/Geist Mono
+  variable fonts (latin, ~56 KB) are vendored into `public/assets/`; a new
+  `no-cdn` test guards regressions. Works fully offline now.
+- **Board: `.beads` watcher** picks up a late-created `interactions.jsonl`.
+- **README/CLAUDE.md trust pass** — agent count aligned to the real 61, dead
+  proof link removed, "one gate" promise now states the irreversible-change
+  caveat explicitly, older pivots compressed to CHANGELOG pointers, telemetry
+  policy reworded to match reality (opt-in, off by default).
+- Tests: full suite 163/163 (+20 new across registry/cache/watchers/no-cdn).
+
+---
+
+## v2.77.1 — 2026-07-03
+
+### `npx great-cto board` works on a fresh install
+
+- **Board bundled into the npm package** — `prepack` now ships `packages/board`
+  (server, `lib/`, `public/`) plus its runtime import closure inside the tarball
+  (109 kB → 260 kB), so a clean `npm i -g great-cto` runs the board with no
+  plugin installed. Previously every fresh install failed with "Board server
+  not found".
+- **Plugin-cache scan fixed** — the resolver checks every marketplace dir under
+  `~/.claude/plugins/cache/`, not just the hardcoded `local`; resolution order:
+  dev checkout → plugin cache (newest versions) → bundled fallback.
+- Resolver extracted to `src/board-path.ts` with 6 new tests (CLI suite:
+  194/194), including an empty-`$HOME` boot test of the bundled server.
+- `scripts/release.sh` tag step works with `tag.gpgSign=true` (annotated `-m`).
+
+---
+
+## v2.77.0 — 2026-07-02
+
+### Measured product quality + mechanical pipeline + board server split
+
+- **Product-quality harness (P1–P4)** — automated 0–100 score for shipped products:
+  archetype-aware rubric, fleet scoring, empirical benchmark across 6 generated
+  archetypes (89/100), SCORE artifact, UI-heuristic fix.
+- **QUALITY-DEEPEN #1–#5** — executed-quality harness + deploy gate, per-archetype
+  domain contracts, unified quality verdict with trend tracking and gate.
+- **Pipeline autochain** — mechanical agent handoff via `shared/pipeline.toml` map +
+  PostToolUse dispatcher; fleet-wide canonical verdict logging; reviewer family
+  unified with HANDOFF fallback in the dispatcher.
+- **Agent fixes (waves 2–3)** — mechanical 72h gate expiry + mid-session reviewer
+  nudge hooks, runnable l3-support escalation ladder, coordinator lane-overlap
+  check (WPL = Decomposition Matrix), AI-pair contract sync, security-officer
+  mode/templates/waiver extraction, shared boilerplate factored into
+  `agents/_shared/`, bd CLI verb drift fixed, db-migration-reviewer wired into
+  qa-engineer (was orphaned).
+- **Board server split** — `packages/board/server.mjs` (3,414 lines, hottest file
+  in the repo) split into a 133-line entry + 15 single-responsibility modules under
+  `packages/board/lib/` (design: `docs/arch/ARCH-board-server-split.md`). Strictly
+  behavior-preserving: full suite 143/143 green, QA report byte-diffed the largest
+  moved functions and all 26 routes, security review confirmed CSRF/origin guard
+  and body-size cap unchanged. One commit per module — the branch bisects cleanly.
+- **Docs** — README refresh (61 agents, measured quality, escape hatch,
+  cross-model review).
+
+---
+
+## v2.76.0 — 2026-06-28
+
+### Adopted ideas from AgentSpace + architect-loop (ideas, not the stacks)
+
+- **Grant/credential audit** (`/doctor` Check 8e, `scripts/lib/grant-audit.mjs`) —
+  LLM-key / npm / gh auth + provider↔key orphan detection; critical when no LLM key.
+- **Knowledge versioning** — `bumpGpVersion()`; crystallize versions a global pattern
+  + appends a Version-history entry on re-crystallize instead of overwriting.
+- **Harness router (slice)** — `scripts/lib/harness-router.mjs` detects the current
+  harness (Claude Code / Codex / OpenCode) + capability registry, so great_cto
+  degrades safely off Claude Code (hooks/subagents are CC-specific). ADR-006.
+- **Cross-model adversarial review** (architect-loop R3) —
+  `scripts/lib/cross-model-review.mjs` red-teams the diff with a non-Claude model via
+  OpenRouter (default `openai/gpt-5`); wired into `code-reviewer` for high-stakes
+  changes — fixes the Claude-on-Claude same-model blind spot. + fresh-context review.
+- **Stall-triage (slice)** (architect-loop R9) — `scripts/lib/stall-triage.mjs` flags
+  hung parallel lanes, "kill narrowest first".
+- **Context discipline** — `references/context-discipline.md` (loaded by coordinator):
+  isolate reads in subagents, compact with intent, rewind over correct, respect the
+  ~40% dumb-zone / context-rot budget.
+
+## v2.75.0 — 2026-06-28
+
+### DEEPEN — make the self-improvement pipeline real (not just declared)
+
+Closed the four loops the product advertised but that never mechanically worked:
+
+- **Learning loop.** The eval runner now binds the actor to the real `agents/<X>.md`
+  body (parses `> Agent:`), persists an append-only `results-history.jsonl`
+  (run-id + commit), runs multi-sample with rate mean + stddev, routes through
+  **OpenRouter** (fallback Anthropic-direct), and the promotion gate is
+  variance-aware (Δ within the σ-band = noise). Split-aware pass thresholds.
+- **Recall loop.** `shared/gp-schema.mjs` aligns the keys crystallize writes with
+  the ones architect greps (`applies_to`/`stack_fingerprint`/`symptom`/…), with a
+  conformance test; crystallized patterns can finally resurface.
+- **Cost loop.** `scripts/lib/cost-meter.mjs` turns real `response.usage` into USD;
+  measured cost replaces the hardcoded estimate.
+- **Completion loop.** SubagentStop completion-teeth hook + `acceptance-verify.mjs`
+  execute frozen acceptance criteria instead of trusting self-report.
+
+### New agents & skills
+
+- `agents/code-reviewer.md` — one stable, calibrated reviewer (+ EVAL).
+- `agents/e2e-test-engineer.md` — Playwright golden-path + live-URL deploy gate (+ EVAL).
+- `skills/test-strategy` (pyramid/boundary/property/mutation/flake) → wired into qa-engineer.
+- `skills/observability-baseline` (Sentry + request-id logging + /healthz) → wired into 4 agents.
+- Eval coverage backfilled for the core pipeline agents (coverage 11→19/60).
+
+### Eval fidelity
+
+- Judge grades against the crisp `Pass` criterion + `--judge-votes` majority vote.
+- `--actor-tools` ReAct inspect loop (A/B: rate 0.50→0.64; opt-in).
+- `gp-eval-trace.mjs` (variance-aware crystallize→eval delta) and `eval-drift.mjs`
+  (with a noise gate that refuses to alert on a noisy signal).
+
+### Mid-build spec escape hatch (#107)
+
+- ADR-005 + `docs/strategy/MID-BUILD-RECOVERY.md`: `gate:plan` is reversible-with-cost;
+  any agent can raise `SPEC-OBJECTION` on a structural spec error to re-open it
+  (senior-dev Phase 0 + `/review` wired).
+
+### Supply chain & CI/CD
+
+- CycloneDX SBOM + OpenSSF Scorecard in CI; Node 22; `.nvmrc`.
+- **Local CI/CD** (`scripts/ci-local.sh` + `scripts/cd-local.sh`, `docs/LOCAL-CICD.md`)
+  — GitHub Actions is disabled at the account level; the pipeline runs on the mac.
+
+
+## v2.74.0 — 2026-06-20
+
+### The Product Builder pivot
+
+GreatCTO becomes an **AI Product Builder** — describe a software product, approve the spec at one
+CTO gate, and the pipeline ships it (spec → scaffold → build → test → deploy). The regulated
+runtime surface (operator console, autopilot runtime, 25 vertical flows) was extracted to a
+separate repo; great_cto is now build-only.
+
+**Gate tiering (ADR-003).** Build gates are risk-tiered on a per-change axis (`change_tier`):
+T0 maintenance opens no gate (CI is the gate), T1 reversible feature opens only `plan` (the one
+CTO gate), T2 irreversible/regulated forces the full set. `effectiveGates` + `classify` +
+`gate-plan` (`scripts/lib/`), with a volume/scope escalation (a bulk change → T2). The board shows
+a live `change_tier` badge. Hard floor: a regulated archetype keeps security+compliance+ship at
+every tier.
+
+**Tier-aware judge (ADR-004).** Judge/eval/scorer agents run a cheap model on T0/T1 and the
+frontier model + human on T2 — spend reasoning in proportion to blast radius. `selectJudgeModel`
+(env-pluggable cheap judge) + `judge-validate`.
+
+**Product Builder archetypes.** Six build archetypes (`vertical-saas`, `booking`, `crm`,
+`dashboard`, `content`, `marketplace-lite`) — the ~40 products across 10 US industries collapse
+into these, each shipping through the one-CTO-gate pipeline. `design-advisor` (ui-ux-pro-max +
+anydesign) plans the UI; senior-dev builds it.
+
+**Reviewer fleet consolidation.** All reviewers now mount `archetype-review-base` (single scaffold
+source); 22 regulated-vertical reviewers moved out with the runtime; anti-regrowth lint added.
+
+**Board.** Removed the in-board agent-launch (the Agents tab + Run-agent + `/api/agent/*` + the
+gate auto-spawn) — the board observes the pipeline, it doesn't spawn coding agents.
+
+Tests: full suite green (cli 207, root 500+). New: effective-gates, change-tier, gate-plan,
+judge-model, design-skills, flow wiring. Docs: ADR-003/004, PRODUCT-BUILDER-DIRECTION,
+BUILD-PIPELINES, PIPELINE-QUALITY-ASSESSMENT (6 pipelines avg 85/100). README + greatcto.systems
+fully repositioned.
+
+---
+
+## v2.73.1 — 2026-06-13
+
+### Phase 4: monitor steps no longer re-run the irreversible write
+
+- A flow step referenced a connector by id only, and the runner defaulted to the connector's
+  FIRST capability — a WRITE for write-capable connectors. So 10 `monitor` steps re-ran the
+  irreversible write (e.g. rcm monitor called `clearinghouse:submit-837` instead of `fetch-835`)
+  rather than reading status/remittance. Idempotency guarded real double-submission, but it was
+  semantically wrong and a latent duplicate-write risk.
+- Tools now accept an explicit `connector:op` form (backward compatible). Fixed 10 monitor steps
+  to a read op (`fetch-835` / `check-status`); added `check-status` to `irs-efile`.
+- Phase 4 Wave 1 (rcm + live FHIR/EHR) verified end-to-end: live FHIR + NLM code-sets + NCCI →
+  gate → approve → live 837 submit; the irreversible write still runs only after a signature.
+- Tests: `tests/flow-connector-ops.test.mjs` (3); all 25 flows valid. Follow-on great_cto-nl5:
+  8 pre-gate steps reusing write-first connectors need per-vertical review.
+
+---
+
+## v2.73.0 — 2026-06-13
+
+### Demo case feeder — make the operator console come alive
+
+The operator console is empty until a source system pushes cases — a dead screen for demos /
+first-run / sales. An **opt-in** feeder injects realistic stub cases so the Inbox fills, gates wait
+for a signature, and the flow diagram shows real work — with no external system.
+
+- Enable with `GREAT_CTO_DEMO_FEED=1` or `--demo` on `great-cto board`/`console`. Interval via
+  `GREAT_CTO_DEMO_INTERVAL` (seconds, default 30); tenant via `GREAT_CTO_DEMO_TENANT`. **Off by
+  default; never on in production; safe-mode halt blocks it.**
+- Round-robins 8 verticals (rcm, aml, mortgage, prior-auth, insurance, tax, collections, soc) in
+  stub mode (`source:demo`), seeds one immediately, and stops feeding while pending demo cases
+  reach a cap (default 12) — the inbox refills as the operator signs.
+- Runs now carry a top-level `source` field (`manual`|`webhook`|`demo`). Tests: +3 (42/42).
+  Verified live: 12 cases across 8 verticals, cap respected, off by default.
+
+---
+
+## v2.72.5 — 2026-06-13
+
+### Fix: inbox task id no longer overlaps the title
+
+- A long project-prefixed task id (e.g. `<private-project>-5q2`) overflowed the fixed 90px id column
+  in the inbox lists (P0 open, Blocked, Stale) and overlapped the task title. The id column is now
+  110px and the id cell is constrained (`min-width:0; overflow-wrap:anywhere; word-break`) so a long
+  id always stays inside its own grid track. Verified: 0 rows overlap.
+
+---
+
+## v2.72.4 — 2026-06-13
+
+### Graphical flow diagram in the operator console
+
+- The Flow tab gains a **graphical block-flow** as the default view (toggle **Diagram | List**): a
+  vertical chain of nodes with arrows, rendered from the existing `/api/autopilot/flow` data — a
+  pure render layer, no server/runtime/invariant change.
+- Agent steps are nodes colour-coded by **blast radius** (low=green, medium=amber, high=red) with
+  🤖, the action, agent name and 🔌 connector chips; the **human gate** is a distinct 🛡️ shield node
+  (signer + gate id); the **irreversible** step is ringed with a "⚠ irreversible · <blast> blast"
+  badge. Legend + the existing summary (autonomous/human/connectors/owner/quality); view persisted.
+- The free-form canvas constructor stays out of scope by design ("настройка, не сборка").
+  Verified live (Playwright): rcm + a 2-gate vertical render correctly; Diagram⇄List toggles; 0 errors.
+
+---
+
+## v2.72.3 — 2026-06-13
+
+### Bug hunt: operate alerts no longer leak into the builder admin
+
+- The build board's Notifications were showing operate-side alerts — 50 unread `dead-letter`
+  entries (failed autopilot writes, an operator-console concern) drove a bogus "50" badge.
+  After the build/operate split, the builder admin must only show builder alerts.
+- Each alert is now tagged with a **surface** (`operate` for `autopilot.*` / `dead-letter` /
+  `connector.*` / `sla.*`, `builder` otherwise); `/api/notif-history` defaults to `scope=builder`
+  (excludes operate alerts), with `?scope=operate` / `?scope=all` to opt in. Legacy untagged
+  entries are classified by event name, so existing dead-letters are filtered too.
+- Verified: builder badge `50 → off`; `?scope=operate` still returns them for the console.
+  (Full board bug-hunt pass: all 8 tabs + interactive actions error-free, all builder APIs 200.)
+
+---
+
+## v2.72.2 — 2026-06-13
+
+### Build surface is pure-builder — operate cross-links removed
+
+- The dev board (`great-cto board`) no longer mixes operate-side navigation into the builder
+  admin: the **"Autopilot" sidebar item** and the **"Operate ↗" topbar button** (both linked to
+  `/autopilot.html`) are removed. The build board is now purely the builder surface; the operator
+  console runs as its own surface via `great-cto console` (own port, invite-only). Operators on an
+  invite session are already hard-redirected to the console, unaffected.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.72.1 — 2026-06-13
+
+### Dev-board fixes
+
+- **Agent drawer shows tools + skills** — the per-agent profile now parses each agent's
+  `tools:` (inline CSV or YAML list; `Bash(...)` collapsed to one chip) and `skills:`
+  frontmatter and renders them as chips. (Was: not surfaced at all.)
+- **Logs tab no longer stuck on "Loading…"** — `switchTab` referenced an undefined `labels`
+  global (only ever a function-local), throwing a ReferenceError on every tab switch that
+  skipped the per-tab loaders, so `refreshLogs` never ran. Fixed with a local crumb map;
+  `refreshLogs` also renders an error state instead of returning early on a null response.
+- **Build-version badge** — new `GET /api/version` (reads the plugin manifest) + a `v<version>`
+  badge next to the sidebar brand, so you can see which great_cto build the board is running.
+
+---
+
+## v2.72.0 — 2026-06-13
+
+### Safe mode — tenant-wide action-control switch (the AI-firewall control plane)
+
+Per-tenant `config.safeMode` (default `off`) — a control-plane switch to restrict autopilots on
+anomaly or during an incident. The framing: an AI firewall controls *what an agent does right now*,
+not just *who has access* (see `docs/AI-FIREWALL.md`).
+
+- **`gate-all`** (soft freeze) — every new case is forced to the human gate regardless of
+  confidence; the autopilot still does the reversible volume, but nothing irreversible auto-runs.
+  `autoEligible` is forced false at `startRun`, and a `forced-to-gate: safe-mode` note is written to
+  the run's hash-chained audit.
+- **`halt`** (kill-switch) — `startRun` throws `SafeModeHalt`; ingest + manual start return **503
+  Retry-After** so source systems back off. Existing pending cases stay parked at their gates.
+- Server: config POST whitelists `safeMode` (validated), now **admin OR compliance-lead** (the
+  ops/safety owner); a safe-mode change fires a push alert to the team.
+- Console Ops tab: off / gate-all / halt control + a persistent top banner while active.
+- Tests: +3 (gate-all forces+audits, halt blocks then clears, per-tenant default off) — 44/44.
+  Verified live: ingest 503 under halt, 400 on a bad value, 403 for non-admin, UI banner toggles.
+
+### Flow tab + per-tenant parametric flow customization ("настройка, не сборка")
+
+The operator console gains a **Flow tab**: every signer can see the flow they sign inside of —
+steps, gates, who signs, what's irreversible — and an admin / compliance-lead can **customize it
+per tenant** without forfeiting the measured base flow. Phase 0+1 of the flow-configurator plan
+(the free-form canvas constructor was deliberately deferred: a tenant configures a proven vertical,
+they don't assemble an unmeasured one).
+
+- **Flow viewer (P0)** — `GET /api/autopilot/flow?vertical&tenant` returns `{ base, override,
+  effective, stats }`; the console's new Flow tab renders steps with 🤖/🧑‍⚖️ icons, signer + gate
+  badges, irreversible/blast flags, connector chips, owner and the (base-flow) qualityScore.
+  Read-gated by `roleAllows` — a signer can always inspect their own vertical.
+- **Parametric overrides (P1)** — `scripts/lib/flow-overrides.mjs`: three knobs, no free-form edits —
+  `roles` (rename who signs a gate), `disabledSteps` (skip optional reversible agent steps; gates and
+  the irreversible write are NOT disableable), `extraGates` (insert an additional human checkpoint,
+  e.g. a tenant compliance pre-check). Stored per tenant in `~/.great_cto/flow-overrides/` with a
+  per-file change history; `GREAT_CTO_OVERRIDES_DIR` to relocate.
+- **Safety invariants hold by construction** — every save re-validates the EFFECTIVE flow against
+  both the structural schema (`flow.mjs`) and the runtime invariants (`flow-runner.mjs`:
+  irreversible ⟹ human gate before it, accountable owner named). An override that would weaken the
+  safety model is rejected with itemised errors (422); a stored override that stops validating
+  (base flow drifted) falls back to the base flow with a warning — safety over customization.
+- **Runtime wiring** — `startRun` executes the tenant's effective flow and stamps a `flowSnapshot`
+  on the run, so approve / dead-letter requeue resume the exact steps the case started with even if
+  the customization changes while it waits at a gate. CLI + webhook ingest inherit this for free.
+- **Console editor UI** — the Flow tab's ✎ Customize panel (admin / compliance-lead): per-gate signer
+  inputs, skip-checkboxes on the skippable steps only, an add-checkpoint row, save (server-validated)
+  and reset-to-base. Multi-gate runs verified end to end: extra gate pauses first → renamed signer →
+  completed; the default tenant stays on the shipped flow.
+- API: `POST /api/autopilot/flow-overrides` (incl. `dryRun: true` validation), `DELETE …/flow-overrides`.
+- Tests: `tests/flow-overrides.test.mjs` — 13 unit tests (rename, refusals, insertion, invariants,
+  tenant isolation, drift fallback). Override knobs are opt-in; no behavior change for tenants
+  without an override.
+
+---
+
+
+## v2.71.0 — 2026-06-13
+
+### Tuned the agent layer for Claude Opus 4.8 (and the Fable/4.x family)
+
+Behavioral deltas in the current model family bite great_cto's agents specifically. Four fixes
+(plan: `docs/plans/PLAN-opus48-tuning.md`):
+
+- **Review recall (coverage before filter)** — `/review` (12-angle) now separates the *finding*
+  stage (surface every issue at every severity + confidence; no self-filter) from the *filter*
+  stage (skeptical triage + arbiter). 4.8 follows "report blockers" faithfully and under-reports
+  low-severity/uncertain findings; this restores recall without raising false-positive gate blocks.
+  P2/low-confidence items stay in the report as a triage-skipped backlog, never silently dropped.
+- **Effort = xhigh for spawned coding agents** — the board agent runner now sets `CLAUDE_EFFORT=xhigh`
+  (was: stripped → unset → under-thinking) and `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000`, both overridable
+  (`GREAT_CTO_AGENT_EFFORT` / `_MAX_OUTPUT`, `none` opts out). `senior-dev` + `architect` effort → XHIGH.
+- **Subagent fan-out steering** — 4.8 under-spawns by default; architect + senior-dev now get explicit
+  guidance to fan out across independent files/items in one turn (and not to spawn for work doable directly).
+- **Frontend-aesthetics guard** — 4.8's editorial house style (cream/serif/terracotta) is wrong for our
+  domain; architect sets UI direction explicitly in ARCH (concrete palette or propose-then-pick) and
+  carries a `<frontend_aesthetics>` guard; `/review` Angle 12 flags the editorial default on non-editorial
+  archetypes. Doc-tests 8/8, lint 0 errors.
+
+---
+
+## v2.70.1 — 2026-06-13
+
+### Privacy fix: a legacy config.json no longer silently re-enables telemetry
+
+- A pre-v2.9.2 install left `~/.great_cto/config.json` with `{ "telemetry": true }`. The v2.70.0
+  opt-in resolver honored that stale flag and silently re-enabled collection on upgrade — without
+  a fresh, informed opt-in. **Fixed**: the legacy config.json fallback is dropped entirely; only
+  the new `~/.great_cto/telemetry.json` (or `GREAT_CTO_TELEMETRY=on`) enables telemetry.
+  Affected machines now correctly report `disabled (default)` until the user explicitly opts in.
+- +1 regression test — `tests/telemetry.test.mjs` 8/8.
+
+---
+
+## v2.70.0 — 2026-06-13
+
+### Anonymous, opt-IN CLI telemetry (default OFF, no PII)
+
+Re-introduces usage telemetry after the zero-collection stance of v2.9.2 — strictly **opt-in**.
+A fresh install collects nothing until the user explicitly enables it.
+
+- **What's sent** (only when opted in): one event per command —
+  `{ ts, version, command, archetype, node, os, exit_code, duration_ms, anon_id }`.
+  No file paths, no code, no repo names, no IP, no PII. `anon_id = sha256(user@hostname)`
+  truncated to 8 hex chars (not reversible).
+- **Opt-in / opt-out**: enable with `npx great-cto telemetry on` or `GREAT_CTO_TELEMETRY=on`.
+  Honors `DO_NOT_TRACK=1` (overrides everything), auto-skips CI, and a non-interactive install
+  never prompts. Inspect/toggle with `great-cto telemetry status|on|off|whoami`.
+- **Server-side guards** (Cloudflare Worker + D1): drops the client IP, rejects any unknown key
+  (PII-smuggling defense) and any non-allowlisted command/archetype, 30-day TTL on raw events,
+  public aggregates at `/v1/stats` (no anon_id), right-to-be-forgotten at `/v1/forget?anon_id=`.
+- Full policy in `docs/PRIVACY.md`. Tests: `tests/telemetry.test.mjs` — 7 privacy invariants.
+  Verified end-to-end against the live endpoint (valid event stored, extra-key → 400, RtBF deletes).
+
+---
+
+## v2.69.0 — 2026-06-11
+
+### The surface-line cut — autopilot API extracted from server.mjs (PLAN-ui-split P4)
+
+- **`packages/board/autopilot-api.mjs`** — every `/api/autopilot/*` route + its helpers
+  (apAuth, ingest HMAC verify, invite email, run-change SSE) now lives in its own module
+  behind one entry point: `handleAutopilot(req, res, url, pathname, { firePushAlert })`.
+  `server.mjs` delegates after its global guards (CSRF, surface boundary, invite-token
+  guard, body cap). Pure motion — no behavior change; server.mjs 3851 → 3598 lines.
+- This module is the seam for the future package split (`great-cto-console`); triggers
+  documented in `docs/plans/PLAN-ui-split.md` (P5).
+- Tests: surface + gate + operators 15/15; live smoke green across the console API
+  (page, runs, roles, stats, SSE stream, ingest→run) and the dev board API.
+
+---
+
+## v2.68.0 — 2026-06-11
+
+### Two surfaces, one engine — the operator console becomes its own entry (PLAN-ui-split P1+P2)
+
+- **Surface boundary.** `GREAT_CTO_SURFACE=builder|console|both` (or `--surface`; default `both`).
+  In `console` mode the server serves ONLY the operator console — `autopilot.html`,
+  `/api/autopilot/*`, `/api/push/*`; `/` 302s to the console; the dev board (UI and API)
+  does not exist on that surface.
+- **`great-cto console`** — second CLI entry: `console [--port 8788] [--bind 0.0.0.0] [--no-open]`.
+  Separate `console.pid`: board and console run side by side. `--bind` makes the console
+  hostable (tunnel / console.client.com) with a startup warning; same-host origins pass CSRF.
+- **Invite-only console.** On the console surface there is no local-admin fallback — without a
+  valid invite the operator sees an "ask your administrator" lock screen. Operator sessions are
+  de-branded ("Operator console", no great_cto; tenant brand via white-label config).
+- **Invite token ≠ builder key.** A request carrying a resolved operator invite token reaches
+  only the console's world — in ANY mode.
+- **Tenant boundary on writes.** approve/reject/escalate/send-back, bulk, qa-score, requeue
+  refuse another tenant's cases for invited operators (403); reads were already scoped.
+- New public beacon `GET /api/autopilot/surface`.
+- Tests: `tests/board-surface.test.mjs` (console-only surface + ingest stays up, token guard,
+  cross-tenant denial incl. bulk) — surface+gate 8/8; verified live side-by-side with Playwright.
+
+---
+
+## v2.67.0 — 2026-06-11
+
+### Dev board — gate timestamps + openable document links in tasks
+
+- **Exact date+time on gates.** Gate cards (kanban + Inbox pending-gates rows) show precisely
+  when the decision has been waiting since — `⏳ 06/11, 05:17 PM`, full timestamp on hover —
+  instead of only a relative age. The task side panel adds a "Waiting since" row for open gates.
+- **Documents in the task side panel.** Any `.md` path referenced in the ticket text
+  (description / notes / design / acceptance) surfaces as a "Documents" section; click opens the
+  doc rendered inline with "← back to task".
+- **New `GET /api/doc?path=…`** — path-traversal-safe (the resolved path must stay inside the
+  project cwd), `.md` only, 1 MB cap.
+- Tests: board-gate 5/5, lib 351/351; verified end-to-end in the live board with Playwright.
+
+---
+
+## v2.66.0 — 2026-06-11
+
+### Operator console — human gate in the pipeline, autonomous approve→run
+
+- **Human gate is now a pipeline stage.** The Active pipeline renders the human gate as its own
+  node, sitting immediately before the irreversible `devops` step, so operators always see where
+  the rails are. It lights up "N awaiting signature" when gates are pending; clicking it jumps to
+  the inbox where they get signed. (`getPipeline()` inserts the node; the board renders it.)
+- **approve→run defaults the agent prompt from the task body.** "Approve + ▶run" now seeds the
+  launch prompt from the task's own `bd show` (title + description + labels + a TDD/close
+  instruction) instead of a generic string — the "ready-to-run prompt embedded in the issue"
+  pattern. The operator still sees and edits the prompt before anything launches, so the human
+  gate is preserved. New endpoint: `GET /api/agent/prompt-for?id=<task>`.
+
+### Security / hardening
+
+- **Invite links now expire.** Operator invites carry a 7-day TTL by default
+  (`GREAT_CTO_INVITE_TTL_DAYS`, `0` = never). `resolveInvite`/`acceptInvite` reject expired tokens
+  and the Team panel lists them as `expired` — closing the "a leaked invite link is permanent"
+  gap. +4 tests.
+- **POST body-size cap.** The board now caps request bodies at 2 MB (`413` + socket destroy) at a
+  single point, guarding every route's `body += c` accumulation against unbounded buffering.
+
+### Tests
+
+- `pipeline-e2e` updated for the new contract: 8 agent stages **+ 1 human-gate node**, asserting
+  the gate sits immediately before `devops`. Suite green (`tests/lib` 351/351).
+
+---
+
+## v2.65.2 — 2026-06-10
+
+### Board fix — gate Approve no longer fails under a minimal PATH (BH-32)
+
+- "Approve" / "Approve + run" failed with the opaque "bd update failed" when the board was launched
+  from a GUI / login shell whose PATH omits `/opt/homebrew/bin` (Homebrew's `bd`): `spawnSync('bd')`
+  → ENOENT. `bd list` was served from cache so tasks still showed, masking the cause.
+- The board now resolves `bd` once against `/opt/homebrew/bin` · `/usr/local/bin` · `~/.local/bin`
+  (override `GREAT_CTO_BD_BIN`) and spawns every `bd` call with an augmented PATH. Failures now return
+  an actionable message (ENOENT → install Beads / set `GREAT_CTO_BD_BIN`; timeout → stale `.beads/.lock`).
+  Verified: a board launched with `PATH=/usr/bin:/bin` approves a gate fine.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.65.1 — 2026-06-10
+
+### Project-audit fixes — CSRF guard · green tests · lint block-scalar
+
+- **Security (CSRF, BH-31)** — the board set `Access-Control-Allow-Origin: *` with no Origin check on
+  most mutation endpoints; a page the user visits could POST to localhost and **approve an autopilot
+  gate (→ run an irreversible connector write)**, approve a dev gate, or mutate tasks. Added a
+  same-origin guard on every `POST/PUT/PATCH/DELETE` (exempting the HMAC-authenticated
+  `/api/autopilot/ingest` webhook). Cross-origin mutations now 403; reads, same-origin, and CLI calls
+  unaffected.
+- **Tests** — `packs-integration` was red (2 fail): the reviewer-integrity test now parses
+  `PACK_REVIEWERS` dynamically (no hardcoded count/list) and the overlay harness gained the 4 missing
+  packs (digital-health · sec-cyber · adtech-privacy · us-ai). 5/5.
+- **Lint** — `agent-prompt-lint` mis-read YAML block scalars (`description: |`) as 1 char → 3 false
+  `FM-002` errors (exit 1). `parseYamlBlock` now collects `|`/`>` block bodies. Lint exit 0.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.65.0 — 2026-06-10
+
+### Fable 5 support (claude-fable-5)
+
+- **Agent-model override** — `agent-model: fable` in `~/.great_cto/config` pins every managed
+  agent/command to Fable 5 (alongside opus|sonnet|haiku).
+- **Lint tier policy** — `claude-fable-5` / `fable` recognised as the newest deepest tier: accepted
+  anywhere the policy allows opus; still flagged for haiku-only utility agents.
+- The board agent runner passes `--model` through verbatim, so `claude-fable-5` already works there.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.64.3 — 2026-06-10
+
+### Board launch control — Run on an empty prompt is no longer silent
+
+- Clicking **Run** with an empty prompt field (the placeholder looks like text) used to silently
+  focus the field and do nothing — read as "the Run button doesn't work". It now shows
+  "✗ Enter a prompt first …" and flashes the field.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.64.2 — 2026-06-10
+
+### Board launch control — Run failures are now visible (not silent)
+
+- On a board started before the agent endpoints existed (a stale process), clicking **Run** set the
+  status to "running…" but nothing happened — the error-swallowing `api()` helper hid the 404.
+  `agentRun` / `agentStop` now use a direct fetch that surfaces network/404 errors, including a clear
+  hint: **restart the board to load `/api/agent/*`**.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.64.1 — 2026-06-10
+
+### Board launch control — auth-error hint + child-env hygiene
+
+- A board-triggered `claude` that fails to authenticate now streams a clear **error** line with a fix
+  ("run the board from a terminal where `claude` is logged in, or set `ANTHROPIC_API_KEY`") instead of a
+  misleading `result (success)` followed by a silent non-zero exit.
+- The spawned agent's env is cleaned of this process's Claude-Code **session identity**
+  (`CLAUDE_CODE_SESSION_ID` / `ENTRYPOINT` / `EXECPATH` / `AGENT_SDK_VERSION` / `EFFORT`) so a board
+  launched from inside a Claude Code session never hands the child its parent's identity.
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.64.0 — 2026-06-10
+
+### Board launch control — approve a gate → spawn an agent, streamed live
+
+The dev board becomes a **pult, not just a mirror**: approving a gate (or pressing Run) spawns a Claude
+Code agent headlessly in the project and streams its output into the board. Implements
+`docs/plans/PLAN-board-agent-launch.md`.
+
+- **Spawn + stream** — `startAgentRun` runs `claude -p "<prompt>" --output-format stream-json --verbose
+  --permission-mode <mode>` in the project cwd; parses the JSON event stream (assistant text · tool_use ·
+  result) and pushes `event: agent` over SSE. New endpoints `POST /api/agent/run`, `/api/agent/stop`,
+  `GET /api/agent/status`; gate-approve accepts optional `{ runAgent, agentPrompt }`.
+- **Guardrails** (it runs an autonomous agent that edits files): same-origin only, project must live in
+  `$HOME`, **one run per project** (409), hard timeout (SIGTERM→SIGKILL), 2000-line ring buffer,
+  configurable bin (`GREAT_CTO_AGENT_BIN`), child stdin closed. **Permission default `acceptEdits`** —
+  full autonomy is opt-in via `GREAT_CTO_AGENT_DANGEROUS=1`, never the default.
+- **UI** — a **Run agent** panel (prompt · Run · Stop · live stream · status dot) opened from the nav,
+  and an **Approve + ▶run** button on gate cards.
+- **Verified** end-to-end with a stub bin (streaming, all four guardrails, Stop) **and** a real `claude`
+  run (spawn → stream-json parse → SSE all confirmed). Lib suite 348/348.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.63.0 — 2026-06-09
+
+### Enterprise operator console (UI/UX P1–P7) + board theming + quality uplift
+
+A full enterprise-grade pass on the operator console (`/autopilot.html`), the same theming/a11y
+treatment for the main dev board, a behavioural quality uplift on three verticals, and a permanent
+safety-invariant e2e guard. Implements `docs/plans/PLAN-console-enterprise-uiux.md` end to end.
+
+**Operator console — all 7 phases:**
+- **P1 · Design system** — a full semantic token set (legacy names aliased, zero breakage), **light/dark**
+  (`data-theme` + `prefers-color-scheme` + persist), a **white-label seam** (`--brand-accent`), a
+  **density** toggle, and `:focus-visible` rings.
+- **P3 · Accessibility (WCAG 2.2 AA)** — tablist semantics + arrow-key nav, dialog focus-trap + Esc,
+  `aria-live` badges + an SR status region, labelled controls, `prefers-reduced-motion`. **axe-core: 0
+  violations across all tabs in both themes.**
+- **P2 · Keyboard-first** — ⌘K **command palette**, queue cursor (`j/k`, `Enter`, `a/r/e/b`, `s`),
+  `?` cheatsheet, `/` search.
+- **P5 · Signature ceremony** — signing an irreversible write opens an alertdialog that names exactly
+  what will execute (gated step + blast radius + gate) and requires explicit confirm; **audit
+  "✓ verified"** badge; toast feedback.
+- **P4 · Realtime + performance** — **SSE** (`/api/autopilot/stream` + `fs.watch`) pushes a change the
+  instant any run mutates (console / CLI / webhook); optimistic decisions; a render cap (80) with a
+  show-all escape keeps 500+ queues smooth; the blind 4s poll became a 15s safety net.
+- **P6 · Productivity** — smart-queue saved views (All · Auto-eligible · Escalated · SLA at-risk · High
+  blast), SLA-aware sort, bulk preview, Cases sort + **CSV export**.
+- **P7 · Enterprise admin** — per-tenant **white-label** (brand accent + name, applied for everyone on
+  the tenant) and an **impersonation banner** when acting via an invite token.
+
+**Main dev board** — the same emerald token system gains a **light theme + toggle**; tokenized the
+hardcoded translucent surfaces; fixed pre-existing contrast + a focusable scroll region → **axe-core 0
+in both themes**.
+
+**Quality uplift** — enriched the `cro` / `aml` / `insurance` reviewers + packs with the judge-flagged
+missing regimes (EU CTR 536/2014; AMLA 2020 / CTA-BOI / 314(b) / FATF / EU AMLD / FinCEN CVC; NAIC
+#900/#670 + guaranty funds / ORSA / surplus-lines, and a fix to a hallucinated NAIC #672) → all pass
+median×3 `--ci 90` with coverage at 85%.
+
+**Reliability** — a durable-runtime **e2e test across all 25 verticals** (start → gate → sign → write,
+safety-invariant guard, auto-covers new verticals); the **pre-push hook** can no longer hang a push
+(skip-flag short-circuit + hard timeout, warn-only). Lib suite **348/348**.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.62.0 — 2026-06-08
+
+### Three more service-autopilot verticals — workers-comp · estate · patent (22 → 25)
+
+Adds three more depth-matched verticals (each a full flow + reviewer agent + compliance pack +
+threat-model template + `/…-review` command + 12-case golden set) plus central registration
+(connector catalog, SLA, latency budget, operator role, plugin hook, console) and live landing pages.
+
+- **🦺 Workers-comp** — determine compensability + benefits; a **licensed claims adjuster** signs
+  denials/terminations (IAIABC EDI filing). Core risk: AOE/COE compensability, AWW/benefit accuracy,
+  UR + physician peer review for medical denials, statutory FROI/EDI deadlines, **bad-faith** exposure.
+  Gate `gate:claims-adjuster-signoff`.
+- **📜 Estate** — draft + assess wills/trusts; a **licensed estate attorney** signs before execution.
+  Core risk: **UPL** (drafting is law practice), execution formalities (witnesses/notary/self-proving or
+  the will is void), testamentary capacity + undue influence, estate/gift/GST tax (Form 706/709,
+  portability). Gate `gate:estate-attorney-signoff`.
+- **💡 Patent** — prior-art + patentability; a **USPTO-registered practitioner** signs before filing.
+  Core risk: patent-bar UPL (37 CFR 11), **duty of candor / IDS** (inequitable conduct), 102 statutory
+  bars, inventorship (35 USC 115), foreign-filing license (35 USC 184). Gate `gate:patent-attorney-signoff`.
+
+Each flow keeps the v2.43.0 safety invariant: the irreversible write sits strictly after the human
+gate and the runtime refuses it without a signature.
+
+- **Registration** — 6 new connectors (comp-rules, claim-edi, estate-rules, probate-filing, prior-art,
+  uspto-filing), SLA hours (workers-comp 120 / estate 360 / patent 120), latency budgets, operator
+  roles (wc-adjuster · estate-attorney · patent-practitioner), plugin hook, console picker/icons/criteria.
+- **Verification** — all 3 **SHIP-READY** on the behavioural scorecard (OpenRouter): **workers-comp 91,
+  estate 97, patent 98.5** — every benign case un-blocked (precision 4/4), every must-escalate case
+  gated (8/8), citations 85–100% real. All 3 run the durable workflow start → gate → sign → write in
+  stub; flows pass `--validate`. Lib suite 322/322 (flow-count test bumped 22 → 25). Landing pages live
+  at greatcto.systems/autopilots/{workers-comp,estate,patent}.html.
+
+---
+
+## v2.61.0 — 2026-06-08
+
+### Three new service-autopilot verticals — immigration · appraisal · payroll (19 → 22)
+
+Adds three depth-matched verticals, each a full vertical (flow + reviewer agent + compliance pack +
+threat-model template + `/…-review` command + 12-case golden set) mirroring the existing 19, plus all
+central registration (connector catalog, SLA, latency budget, operator role, plugin hook, console).
+
+- **🗽 Immigration** — assemble petitions + check eligibility/priority-date; a **licensed attorney of
+  record** signs before filing (USCIS ELIS). Core risk: **UPL** — a non-lawyer giving legal advice or
+  appearing without a G-28 (8 CFR 292.1 / 1003), plus document fraud (18 USC 1546, INA 274C) and
+  frivolous-filing bars (INA 212(a)(6)(C)). Gate `gate:attorney-of-record-signoff`.
+- **🏠 Appraisal** — pull comps + reconcile value vs AVM; a **state-certified appraiser** signs every
+  **USPAP** report. Core risk: **appraiser independence** (Dodd-Frank §1472 / Reg Z 1026.42, FIRREA),
+  an AVM output is not an appraisal, and valuation-bias / undervaluation (ECOA + Fair Housing, ROV).
+  Gate `gate:licensed-appraiser-signoff`.
+- **💵 Payroll** — compute gross-to-net + payroll tax; a **payroll manager (CPP)** signs before the
+  irreversible **ACH funding + 941 deposit**. Core risk: **FLSA** minimum-wage/overtime, the **Trust
+  Fund Recovery Penalty** (IRC 6672) for unremitted withholding, EFTPS deposit schedule, CCPA Title-III
+  garnishment caps, worker misclassification. Gate `gate:payroll-officer-signoff`.
+
+Each flow keeps the v2.43.0 safety invariant: the irreversible write (`reversible:false`,
+`blastRadius:high`) sits strictly after the human gate, and the runtime refuses it without a signature.
+
+- **Registration** — 7 new connectors (eligibility-check, uscis-filing, comps-data, avm,
+  appraisal-filing, payroll-calc, ach-funding, payroll-filing; tax-engine reused), SLA hours
+  (immigration 240 / appraisal 168 / payroll 72), latency budgets, operator roles (immigration-attorney
+  · appraiser · payroll-manager), plugin hook (reviewers + `/…-review` commands), and the operator
+  console (vertical picker, icons, decision-criteria SOPs).
+- **Verification** — all 3 scorecards **structural 10/10 (wired)** with their EVAL suites; all 3 run the
+  full durable workflow start → gate → sign → write in stub; flows pass `--validate`. Lib suite 313/313
+  (flow-count test bumped 19 → 22). Behavioural Tier-1 scorecard (OpenRouter) to be run with the key:
+  `vertical-scorecard.mjs <v> --median 3 --ci 85`.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.60.0 — 2026-06-08
+
+### Operator console — Ops tab (metering · connector health · dead-letter requeue)
+
+The Wave H (v2.59.0) ops surfaces were API-only. This adds the **Ops tab** to the operator console
+(`/autopilot.html`) so admins/compliance-leads can *see* and *act* on them — completing Tier-3
+end-to-end in the UI.
+
+- **Ops tab** — role-gated (admin / compliance-lead, like QA), with a live **dead-letter badge** that
+  polls off-tab so a stuck write is visible without clicking.
+- **KPI tiles** — runs, connector calls, est. cost, avg latency, retries, over-budget, dead-letters.
+- **Dead-letter queue** — each failed write with its connectors + error and a one-click **↻ Requeue**
+  (`POST /api/autopilot/requeue`) that re-runs the post-gate write and recovers it to `completed`.
+- **Connector health table** — per-connector 🟢/🔴, call count, failure %, p95 latency, last error
+  (unhealthy rows highlighted).
+- **Metering by industry** — per-vertical runs / calls / latency / cost, sorted by spend.
+
+Verified end-to-end: seed a dead-letter → it appears in `/dead-letters` → requeue → `completed` →
+queue empties → metering reflects the recovery. Tab RBAC checked via a 6-assertion DOM sim across
+admin / compliance-lead / token-scoped operator. No functional regression; lib suite 304/304.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.59.0 — 2026-06-08
+
+### Autopilot Tier-3 (Wave H) — operable: metering · dead-letter · connector health
+
+Implements `docs/plans/PLAN-autopilot-tier3.md` (Tier-3 = ops). Tier-2 made the autopilot calibrated +
+provable; Tier-3 makes it **operable** — you can see what it costs, catch a failing connector, and
+recover a write that didn't land instead of a silent "completed". All buildable + tested here via a
+deterministic cost model and a fault-injection seam.
+
+- **Cost/latency budgets (#9)** — new `scripts/lib/budgets.mjs`: per-vertical `LATENCY_BUDGET_MS` + a
+  flat env-overridable connector unit cost. `runMetrics(run)` flags `overLatencyBudget`.
+- **Retry / dead-letter (#10)** — a post-gate write that exhausts its 3× retry budget now lands in
+  `status:'dead-letter'` (not a silent completion) with an audit `dead-lettered` event + a `deadLetter`
+  envelope. `deadLetters({tenant})` queue + `requeue(id, who)` re-runs the write (gate already signed)
+  → recovers to `completed`, or stays dead-lettered with attempts bumped. New
+  `POST /api/autopilot/requeue` + cron reminder.
+- **Billing / metering (#11)** — `metering({tenant})` aggregates runs → connector calls, total latency,
+  total cost (USD), retries, over-budget count, per-vertical breakdown. New
+  `GET /api/autopilot/metering` (admin/compliance).
+- **Connector health (#12)** — `connectorHealth({tenant})`: per-connector failure rate, p95 latency,
+  last error, `healthy` flag. New `GET /api/autopilot/health` + cron `connector.health` (flags a
+  connector with ≥5 calls and >50% failing) + a dead-letter reminder.
+- **Test seam** — `GREAT_CTO_FAULT_INJECT=1` deterministically fails every stub connector call,
+  exercising the retry→dead-letter→requeue path and the unhealthy-connector view. Lib suite 304/304.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.58.0 — 2026-06-08
+
+### Autopilot Tier-2 (Wave G) — calibrated · provable · self-reacting
+
+Implements `docs/plans/PLAN-autopilot-tier2.md` (Tier-2 = quality & trust). Every item is fully
+buildable + tested here — no external IdP / sandbox creds. Makes the operated pipeline not just *run*
+but stay *honest, rigorous, and reactive*.
+
+- **SLA auto-escalation (#7)** — the deadline clock now ACTS. `slaState()` classifies an awaiting run
+  `ok` / `at-risk` (≤25% of the window left) / `breached`; `autoEscalateStale()` escalates breached
+  runs once each (idempotent via `slaEscalated`, audit event `sla-escalated`). New board cron
+  `sla.escalate` (5 min) sweeps every tenant and fires email/push — a breach never sits silent.
+- **Calibrated confidence + closed loop (#5)** — `calibration()` buckets decided runs by the AI's
+  `recoConfidence` and measures how often it was actually right (no override, no failing QA), reporting
+  a reliability curve + **ECE**. `suggestFloor()` proposes a data-driven `confidenceFloor` from observed
+  accuracy. New admin/compliance endpoint `GET /api/autopilot/calibration`.
+- **Eval rigor — ×3 median CI gate (#6)** — `vertical-scorecard.mjs --median N` runs the full case+judge
+  eval N times and takes the **median** (kills single-run noise — the cro 82→97 problem); `--ci THRESHOLD`
+  exits non-zero when the median falls below the bar. A real regression gate for prompt/model changes.
+- **Sequential review pipelines (#8)** — `stageProgress()` surfaces a multi-gate run as an ordered
+  pipeline (intake → QC → review → submit) with each stage's signer + status; attached to
+  `GET /api/autopilot/run` as `stages`.
+- **Flake fix** — the Wave F retention-purge test used a `days:0` boundary that raced `Date.now()` under
+  concurrent load; switched to `days:-1` for a deterministic cutoff. Full lib suite now 299/299 green ×5.
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.57.0 — 2026-06-08
+
+### Operator console UI/UX — tabbed app shell, inbox-first
+
+Reworks the operator console (`/autopilot.html`) information architecture per
+`docs/plans/PLAN-console-ui-ux.md`. The console was one long vertical scroll where the operator's
+actual job — the Inbox — sat below admin/analytics sections. Now it's a tabbed shell.
+
+- **Tabbed app shell** — sticky top tab bar: **Inbox · Cases · Analytics · QA · Admin**. Sections
+  become panels (`[data-sec]`); only one shows at a time. The operator lands on their **Inbox** (the
+  work), not Analytics.
+- **Role-gated tabs** — **QA** appears only for `admin`/`compliance-lead`; **Admin** (Start · Settings ·
+  Team) only for `admin` without an operator token; **Build** link hidden for operators. If the active
+  tab isn't allowed for the role, it falls back to Inbox. Client gating mirrors server-side RBAC.
+- **Inbox badge** — the Inbox tab shows a live count of cases awaiting the operator's signature.
+- **Context-aware refresh** — the 4s poll always refreshes the Inbox (for the badge) but only reloads
+  the panel that's open, cutting redundant Cases/Analytics/QA/Config fetches.
+- **Visual pass** — KPI tiles with accent, sticky header, card hover, status colour system, per-tab
+  fade-in, mobile stacking.
+
+No functional regression: sign / escalate / send-back / bulk / filters / criteria / evidence / drawer
+all unchanged. Verified with a 16-assertion DOM simulation driving the real tab functions across
+admin, compliance-lead, and token-scoped operator roles.
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.56.0 — 2026-06-08
+
+### Autopilot production depth (Wave F) — webhooks · tamper-evident audit · encryption · receipts
+
+Turns the demo into a really-operated pipeline. Reference: rcm. Implements
+`docs/plans/PLAN-autopilot-production-depth.md` (Tier-1 buildable slice).
+
+- **Auto case-ingestion (webhook)** — `POST /api/autopilot/ingest` (HMAC-SHA256 via
+  `GREAT_CTO_INGEST_SECRET`, header `x-gcto-signature`) starts a run from a source-system payload and
+  pushes the signer. Cases arrive automatically; a bad signature is rejected (401).
+- **Tamper-evident audit** — every audit entry is hash-chained (`prevHash`→`hash`); `verifyAudit()` +
+  `GET /api/autopilot/verify` detect any edit/insert/removal. The audit is evidence, not a log.
+- **Encryption at-rest** — run files are AES-256-GCM encrypted when `GREAT_CTO_ENCRYPT_KEY` is set
+  (PHI/PII never in plaintext); transparent decrypt on read.
+- **Submission receipt + retry** — the post-gate write records a receipt (generated vs really
+  submitted · connectors · attempts) and retries with backoff against a real provider.
+- **License attestation** — every signature records the signer's attested license in the chained audit.
+- **Regulator-format export** — `GET /api/autopilot/export` emits the signed determination document
+  (with the audit-integrity verdict), not raw JSON.
+- **Retention** — `purgeRuns({days})` deletes runs past their window.
+
+293 lib tests.
+
+## v2.55.0 — 2026-06-08
+
+### Operator console: declutter + the missing sections (Waves E1–E3)
+
+Implements `docs/plans/PLAN-operator-console-menu.md` — strip what a licensed operator doesn't need,
+add what they do.
+
+**E1 — declutter**
+- **Hard-gate the Build board** — an invite (operator) session is redirected from `/` to
+  `/autopilot.html`; Operate is the only surface an operator reaches.
+- **"My cases" + "My work"** — for an operator the runs list is relabelled *My cases* and the
+  Analytics row shows their **own** numbers (my decisions · approved · rejected · escalated · my avg
+  time-to-decision) via `stats({by})`, not org totals. Admin / compliance-lead still see org Analytics.
+
+**E2 — operator essentials**
+- **Decision-criteria (SOP) panel** in the case drawer — a short, per-vertical reference of the rules
+  the human applies (medical necessity, FDCPA, ECOA, ALTA, FMCSA, 21 CFR Part 11, §6694 …).
+- **"Escalated to me" + "Sent back / needs info"** filters in the queue.
+
+**E3 — findability + onboarding**
+- **Search** (id / vertical / signer) over the operator's cases.
+- **Help** drawer — a plain-language "how this works" for the licensed signer.
+
+289 lib tests.
+
+## v2.54.0 — 2026-06-07
+
+### Console Waves C+D — explainability · narrative · routing dial · QA · bulk · observability
+
+Completes the console gap-roadmap (`docs/plans/PLAN-console-gap-roadmap.md`).
+
+**Wave C**
+- **Evidence-linked explainability** — the case drawer's *Evidence* section lists exactly what each
+  connector found (the signals behind the AI recommendation) with the live/stub flag.
+- **AI-drafted determination** — every run carries a templated rationale composed from the connector
+  evidence; the signer reviews it in the drawer before signing.
+- **Configurable confidence floor (the routing dial)** — admin Settings sets a per-tenant floor; a
+  low-confidence approve is downgraded to *escalate* (routed to a human), and clean high-confidence
+  cases are flagged **auto-eligible**.
+
+**Wave D**
+- **QA sampling** — a deterministic ~20% sample of *closed* cases lands in a QA queue (admin /
+  compliance-lead) to be scored 1–5 against the work; recorded on the run + audit + Analytics.
+- **Bulk actions** — multi-select awaiting cases (or "select auto-eligible") → bulk approve / reject /
+  escalate with a reason, RBAC-checked per case.
+- **Agent-run observability** — per-connector latency (ms) in the drawer + a **⟳ Replay** action to
+  re-run a vertical.
+
+New endpoints: `/api/autopilot/config`, `/qa`, `/qa-score`, `/bulk`. 288 lib tests.
+
+## v2.53.0 — 2026-06-07
+
+### Console Wave B: AI recommendation + override logging + regulatory-deadline SLAs · email invites
+
+- **AI recommendation + confidence per case** — the runtime derives a recommendation (🟢 approve /
+  🟡 escalate / 🔴 block) from what the pre-gate connectors actually found (OFAC hit, fraud-score
+  refer, um-criteria not-met, hs-classify confidence, ITGC severity, …) and shows it on the card so
+  the human triages fast. Confidence surfaced when a connector returns one (e.g. HS classification).
+- **Override logging** — when the human decides against the AI (approve a block/escalate, or reject
+  an approve), the audit trail records `override: true` + the AI's recommendation. Critical evidence
+  for a "human signs the action" product; shown in the case drawer and counted in Analytics.
+- **Regulatory-deadline SLAs** (`scripts/lib/sla.mjs`) — per-vertical turnaround (prior-auth 72h,
+  pharma 360h/15-day ICSR, aml 720h/30-day SAR, soc 4h, freight 24h, …). The console **counts down
+  to the deadline** (due in / at-risk / OVERDUE), not just elapsed time.
+- **Email invites** — the admin Team panel takes an operator email and best-effort sends the invite
+  link via the notify relay (falls back to copy-link if the relay only allows the verified address).
+- 285 lib tests.
+
+## v2.52.0 — 2026-06-07
+
+### Console: the queue→platform jump (analytics · structured dispositions · escalation)
+
+Implements Wave A of `docs/plans/PLAN-console-gap-roadmap.md` — a gap analysis vs the operator
+consoles of the startups in our verticals (Cohere, Anterior, Hummingbird, Sardine, Unit21, Checkr,
+Sierra, Decagon, Scytale, Descartes …). Our console was best-in-class as a *signing surface* but a
+*queue, not a platform*. This closes the three most-cited gaps:
+
+- **Analytics dashboard** — aggregate KPIs over real run data (total · completed · awaiting ·
+  approval rate · escalation rate · avg time→decision · SLA breaches · rejected/escalated/sent-back),
+  role- and tenant-scoped. *"Is the autopilot taking work off your desk?"*
+- **Structured dispositions + reason codes** — every decision carries a controlled reason
+  (meets-criteria · below-confidence-floor · policy-exception · insufficient-documentation ·
+  fraud-suspected · …), recorded in the audit trail. No more un-aggregatable free text.
+- **Escalation as a first-class state** — `↑ Escalate` (route to a senior; stays in the queue,
+  flagged) and `↩ Send back` (needs-info; recoverable, nothing irreversible runs) alongside
+  approve/reject. New `/api/autopilot/stats`, `/escalate`, `/send-back`.
+
+Roadmap (Waves B–D) captures the rest: AI recommendation+confidence, override logging, regulatory-
+deadline SLAs, evidence-linked explainability, AI-drafted narrative, QA sampling, bulk actions.
+283 lib tests.
+
+## v2.51.0 — 2026-06-07
+
+### The admin onboards operators — scoped invite links
+
+The CTO/admin gets full access and **invites a licensed operator into an industry**: pick a role
+(which fixes the vertical scope) + a tenant + a name → mint an **invite link** to send them. The
+operator opens the link and is locked to that role + tenant — no role picker, no Build board.
+
+- **Invite store** (`scripts/lib/operators.mjs`) — `createInvite` mints a token; `resolve / accept /
+  revoke` lifecycle. Rejects unknown / admin roles.
+- **The token is the operator's credential** — resolved **server-side and authoritative**: an
+  operator can't escalate by passing `role=admin` (the token wins). Verified: an operator sees only
+  their vertical even with `role=admin` in the request; a non-admin can't create invites (403).
+- **Admin Team panel** in the console — create an operator (role + tenant + name) → copy the invite
+  link · list invites with status (pending/accepted) · revoke. The whole panel is admin-only.
+- **Operator session** — `?invite=<token>` (saved in localStorage) → "Signed in as … · <role> ·
+  tenant" banner, queue scoped to their vertical(s) + tenant, sign-out link.
+- New endpoints: `POST /api/autopilot/invite`, `GET /api/autopilot/invites`,
+  `GET /api/autopilot/invite-resolve`, `DELETE /api/autopilot/invite`. 280 lib tests (4 new).
+
+## v2.50.0 — 2026-06-07
+
+### The console is the operators' app — role-based access + case-detail drawer
+
+Answers "does the CTO need the admin board?": **no — the Operate console is the operational staff's
+surface** (the licensed humans who sign). The CTO/admin builds in the CLI and oversees; only `admin`
+may switch to the Build board.
+
+- **RBAC (`scripts/lib/roles.mjs`)** — 20 roles. An operator role (coder · BSA officer · customs
+  broker · CPA · QPPV …) only **sees and signs** the cases for its own vertical(s); `compliance-lead`
+  sees every queue but can't Build; `admin` does everything. Enforced on the API: `/api/autopilot/runs`
+  is role-filtered, and **approve/reject/start return 403** outside a role's verticals.
+- **Console** — a role picker ("I am the …") scopes the queue, hides the Build switch + "Start a run"
+  for operators, and restricts the start picker to the role's verticals.
+- **Case-detail drawer** — click any run → a side drawer with the full step trace, the accountable
+  owner, multi-gate progress, the **audit trail**, and an **⬇ Export audit (JSON)** button.
+- New `/api/autopilot/roles`. 276 lib tests (5 new RBAC tests; verified: a BSA officer can't see or
+  sign an rcm case).
+
+## v2.49.0 — 2026-06-07
+
+### Rethink the CLI + admin board around the autopilot model (Build ⇄ Operate)
+
+Implements `docs/plans/PLAN-cli-board-autopilot-rethink.md`. The product has two modes — **Build** an
+autopilot (the gated engineering pipeline) and **Operate** one (the runtime where a licensed human
+signs the risky call) — and the operator surfaces now make that explicit.
+
+**CLI**
+- **`/autopilot`** — first-class Operate command (`start | inbox | runs | show | approve | reject`),
+  previously only `node scripts/autopilot.mjs`. Shares the run store with the admin board.
+- **`/flow`** — dropped stale "stubs today / measured score" copy; added a "▶ run it: `/autopilot
+  start <vertical>`" footer so inspect → operate is one hop.
+- **`/help`** — regrouped around the two modes: Operate · Build · Compliance reviewers · Daily · Admin.
+- Removed the broken `commands/s-classify.md`.
+
+**Admin board**
+- **Operate ⇄ Build mode switch** in both headers (the dev board topbar gains a "🛂 Operate ↗" link);
+  the autopilot console is now the operator's primary surface, not a bolt-on page.
+- **Console = a real compliance work-queue**: filter by tenant / vertical / status · per-vertical
+  icons + signer role on each card · ⏱ time-in-queue SLA pill (warn >1h, breach >4h) · multi-gate
+  "✍️ N of M signatures" progress · tenant badge · oldest-waiting-first ordering · all 19 verticals
+  in the start picker · 🔔 push subscribe in the header.
+
+272 lib tests.
+
+## v2.48.0 — 2026-06-07
+
+### Live connectors for customs / audit / pharma (22 live total) + CLI/board rethink plan
+
+- **5 new live connector adapters** so the three newest verticals run on real domain logic, not
+  mocks (keyless by default; POST to the real provider when env creds are set):
+  - **hs-classify** (customs) — HS/HTSUS classification from a curated table; low confidence →
+    escalate to the broker (a misclassification carries 19 USC 1592 penalties).
+  - **customs-entry** (customs) — CBP Form 7501 entry generation + duty/MPF/HMF; **blocks without the
+    licensed-broker signature**.
+  - **itgc-test** (audit) — real ITGC control tests across the 4 domains → exception + severity
+    (deficiency / significant / material weakness); significant+ escalates to the CPA.
+  - **meddra-code** (pharma) — MedDRA coding of a verbatim AE term; an Important Medical Event or low
+    confidence forces medical review (never auto-downgrades seriousness).
+  - **safety-report** (pharma) — ICH E2B(R3) ICSR generation + 15-day expedited flag; **blocks without
+    the QPPV signature**.
+- Live runs confirm: customs fires hs-classify + OFAC, audit fires itgc-test, pharma fires FHIR +
+  MedDRA — all pre-gate. **22 live adapters across the 19 verticals.** 271 lib tests.
+- **Plan** `docs/plans/PLAN-cli-board-autopilot-rethink.md` — reframe the CLI + admin board around
+  the autopilot model (Build ⇄ Operate; `/autopilot` slash command; the board's compliance work-queue).
+
+## v2.47.0 — 2026-06-07
+
+### 3 new verticals (19 total) + browser push to the signer + physical tenant isolation
+
+- **3 new hard-gap verticals** (research-backed US markets), each with its own flow, connectors,
+  compliance reviewer, pack/command/TM, and golden eval set — all Tier-0 wired:
+  - **customs** — Customs clearance ($4.6B); a licensed customs broker signs the entry of record.
+    Reuses live **OFAC/sanctions-screen** for denied-party.
+  - **audit** — SOX ITGC audit ($15–25B); a CPA / engagement partner signs the ICFR opinion.
+  - **pharma** — Pharmacovigilance ($1.65B outsourced); a QPPV / drug-safety physician signs before
+    a safety report is filed. Reuses live **ehr-fhir**.
+- **Browser push to the signer** — the autopilot console has a "🔔 Notify me" button that subscribes
+  the licensed human's browser (VAPID); when a case lands in their queue they get a real push.
+- **Physical multi-tenant isolation** — runs are now stored under `<base>/<tenant>/<id>.json`; a
+  tenant's directory never holds another tenant's runs (logical filtering hardened to physical).
+- 270 lib tests. All 19 verticals pass `--validate` and the durable run → inbox → sign → write loop.
+
+## v2.46.0 — 2026-06-07
+
+### Layer D — operated end-to-end autopilot service (durable runs + human-gate inbox)
+
+Autopilots stop being flows that *describe* a pause and become a **real operated service**: a run
+persists, pauses at the human checkpoint, waits in an **inbox** for a named licensed human to sign,
+then **resumes and executes the irreversible action** (the write). Built on `rcm`; reusable by all 16.
+
+- **Durable run store** (`scripts/lib/run-store.mjs`) — runs persist to
+  `.great_cto/autopilot-runs/<id>.json` and survive process restarts. `startRun` → `awaiting-approval`
+  at the gate; `approve(id, who)` resumes + runs the write; `reject(id, who)` ends it with nothing
+  irreversible run. Every transition is appended to an immutable audit trail (who · what · when).
+- **Resumable runtime** (`flow-runner.mjs`) — `runFlow` gains `startAt` + `approvedGates`. The
+  v2.43.0 safety invariant now holds *end to end*: the irreversible step executes **only because a
+  human signed its protecting gate** — proven across a process boundary (approve in a separate run).
+- **Operator CLI** (`scripts/autopilot.mjs`) — `start · inbox · show · approve --by · reject · runs`.
+- **Admin console** (`packages/board`) — additive endpoints `/api/autopilot/{runs,start,approve,reject}`
+  + an **Autopilot inbox** page (`/autopilot.html`) to sign gates, with an "Autopilot" board nav link.
+- Demonstrated on rcm live: intake → code → NCCI (3 live connectors) → **pause** → coder signs in the
+  inbox → **837 claim submitted** (the write) → completed. Reject path submits nothing.
+- **CLI ↔ board sync** — one shared store (`~/.great_cto/autopilot-runs`) so a run started in either
+  tool shows in the other's inbox; approve/reject from either is reflected. Verified bidirectionally.
+- **Multi-gate flows** — a flow can require several signatures in sequence. `tax` now needs two:
+  the preparer signs (PTIN), then the taxpayer signs Form 8879 — the IRS e-file fires only after both.
+- **Push to the signer** — the board pushes "🛂 new case awaiting your signature" when a gate opens
+  (start, or the next gate of a multi-gate flow), reusing the existing web-push adapter (deduped).
+- **Hardening** — multi-tenant scoping (`tenant` on a run; the inbox shows only that tenant's queue)
+  + an **idempotency key** (stable per run) threaded into the write so a retry never double-submits.
+- 261 lib tests.
+
+## v2.45.0 — 2026-06-07
+
+### Every vertical goes live — 8 new connectors, 16/16 autopilots run on real data (Wave 8)
+
+Closes the live-connector gap: the 5 zero-live verticals (soc, insurance, mortgage, credentialing,
+collections) each get a real adapter, plus deeper "brains" for prior-auth, aml and freight. Keyless
+by default (deterministic real logic or a curated public slice), POST to the real provider when keyed.
+
+- **threat-intel** (soc) — IOC enrichment: type detection + curated abuse.ch/URLhaus-style bad list + heuristic scoring. VirusTotal/GreyNoise when keyed.
+- **fraud-score** (insurance) — 11 transparent P&C SIU red-flag indicators → score + `refer`.
+- **aus** (mortgage) — DU/LPA-style underwriting: LTV/DTI + codified conventional/FHA/VA thresholds → Approve/Refer/Ineligible.
+- **primary-source** (credentialing) — OIG LEIE / SAM exclusion screen (hard block) + real NPI Luhn check.
+- **comms-outreach** (collections) — FDCPA/Reg F (7-in-7) + TCPA + 8a–9p guardrail: ALLOW/BLOCK each contact. Twilio when keyed.
+- **carrier-vet** (freight) — FMCSA SAFER vetting (authority/insurance/safety + double-broker flags). Live FMCSA QCMobile when keyed.
+- **um-criteria** (prior-auth) — CMS NCD/LCD-style medical-necessity matcher; **never auto-denies** — missing criteria escalates to the medical director.
+- **sar-filing** (aml) — FinCEN SAR (Form 111) generation; **blocked without the BSA Officer signature**. FinCEN BSA E-File when keyed.
+
+Plus a dispatcher fix: `call()` now owns `mode` — any live-adapter result is `mode:'live'` (the
+adapter's sub-mode is kept as `adapterMode`). **17 live connectors total; all 16 verticals exercise
+≥1 live connector** (14 pre-gate; legaltech e-sign + aml SAR fire post-gate by design). 252 lib tests.
+
+## v2.44.0 — 2026-06-07
+
+### 10 new service-autopilots — 16 verticals total
+
+Research-backed expansion (US market, 2024–2026) beyond the original 6. Each new vertical pairs a
+large displaceable-labor pool with a **legally-required named human who signs the risky call** — the
+exact shape the v2.43.0 safety engine is built for. All sixteen ship green on `--validate`.
+
+The 10 new autopilots (flow + connectors + compliance reviewer + page):
+
+- **prior-auth** — Prior-authorization ($35–56B); medical director signs every denial.
+- **aml** — KYC/AML compliance ($61B); BSA Officer signs every SAR. Reuses live **sanctions-screen**.
+- **soc** — Managed-SOC / MDR (~$4–6B); SOC analyst authorizes containment.
+- **insurance** — Claims & underwriting (~$36–38B); licensed adjuster/underwriter signs.
+- **mortgage** — Mortgage underwriting (~$40B origination cost); DE underwriter signs clear-to-close.
+- **title** — Title & escrow ($16.2B); licensed officer signs the title + authorizes the wire. Reuses live **e-signature**.
+- **credentialing** — Provider credentialing; credentialing committee signs privileging.
+- **collections** — Debt collection ($13.5–16B); manager/attorney signs escalation + settlements.
+- **freight** — Freight brokerage ($19–125B); FMCSA-licensed broker signs binding rates.
+- **cro** — Clinical-trial ops (~$20–28B US); PI / medical monitor signs eligibility + safety. Reuses live **ehr-fhir**.
+
+- **33 new connectors** in the catalog (65 total), reusing live ones (sanctions-screen, e-signature,
+  ehr-fhir, payment-rails…) so several new verticals run live on day one.
+- **7 new compliance reviewers** (prior-auth, aml-bsa, soc-mdr, title-escrow, credentialing,
+  collections, freight-broker); insurance / mortgage / cro reuse existing reviewers.
+- Every flow carries the v2.43.0 safety invariant — irreversible step behind a human gate + an
+  accountable owner. Site shows all 16 with live/stub connector badges, irreversible flags, owner.
+- 250 lib tests (flow-count 6→16). Plan: `docs/plans/PLAN-vertical-expansion-10.md`.
+
+## v2.43.0 — 2026-06-07
+
+### The permission is never the wound — irreversible-action gating + accountable owner
+
+Inspired by Oleksandr Torlo's *"The Permission Was the Wound"* (2026): the real danger of an agent
+isn't going rogue — it's doing *exactly what it's permitted*, irreversibly, at machine speed, with no
+human hesitation. GreatCTO already pauses at human checkpoints; this release makes the boundary an
+**enforced runtime invariant**, not just a convention.
+
+- **`reversible` + `blastRadius` on every flow step** — each step is tagged reversible (read / draft /
+  check) or not (money move, claim submission, e-signing, fleet change, tax filing), with a
+  low/medium/high blast radius.
+- **The runtime refuses to execute an irreversible action autonomously** (`flow-runner.mjs`) — an
+  irreversible step with no prior human checkpoint is **blocked** (`blocked-unsafe`); one that *is*
+  protected runs only after the gate is signed (in a whole-flow dry-run it's recorded as `gated`, never
+  auto-fired). The volume runs straight-through; the point of no return always waits for a person.
+- **`validateFlow()` + `--validate`** — enforces the invariant (irreversible ⟹ preceded by a human
+  gate) and that every autopilot names an **accountable owner**. All six verticals ship green.
+- **Accountable owner per autopilot** — one named human answers for what it does, closing the
+  "confused deputy / the AI did it" gap. Surfaced in the run trace and on each autopilot page.
+- **Site** — autopilot pages now flag the irreversible steps (always behind the checkpoint) and show
+  the accountable owner. 7 new tests (30 in the flow-runner suite, 220 lib total).
+
+## v2.42.0 — 2026-06-07
+
+### Every autopilot executes on a live connector — all 6 verticals (Phase 4 complete)
+
+v2.41.0 shipped the connector runtime + the first two live connectors (FHIR, code-sets). This
+release finishes Phase 4: **seven more live connectors** so that *every* service-autopilot vertical
+runs at least one step against real data or real domain logic — not a mock. Still keyless: each
+connector defaults to a public source or deterministic real generation, and POSTs to the real
+provider only when env credentials are present.
+
+- **clearinghouse** (`connectors/clearinghouse.mjs`, rcm) — generates a structurally valid **X12
+  837P** claim and parses **835** remits. `GREATCTO_CLEARINGHOUSE_URL` to submit.
+- **ncci-mue** (`connectors/ncci.mjs`, rcm) — real **NCCI PTP** unbundling + modifier edits and
+  **MUE** unit limits before a claim goes out.
+- **e-signature** (`connectors/e-signature.mjs`, legaltech) — builds a real **DocuSign** envelope and
+  enforces **ESIGN/UETA** exclusions (refuses to e-sign a will, etc.). `DOCUSIGN_*` to send.
+- **bank-feed** (`connectors/bank-feed.mjs`, accounting) — a real **Plaid** `/transactions/get`
+  request + deterministic GL classification of each txn. `PLAID_*` to pull a live feed.
+- **sanctions-screen** (`connectors/sanctions.mjs`, procurement) — fuzzy-matches a counterparty
+  against a curated slice of the real **OFAC SDN** list; a hit is a **HARD BLOCK** (strict
+  liability). `GREAT_CTO_OFAC_PATH` loads the full list.
+- **rmm** (`connectors/rmm.mjs`, msp) — `stage-change` builds a real **staged rollout** plan
+  (canary 1% → early 5% → broad 25% → fleet 100%) with a health gate + auto-halt-and-rollback per
+  ring + a pre-change snapshot — never a fleet-wide push.
+- **tax-engine** (`connectors/tax-engine.mjs`, tax) — a real **2025 US federal** computation
+  (brackets + standard deduction) + a §6694 authority-ladder position classifier.
+
+Phase 4 status: **9 live connectors across all six verticals** — rcm (4: FHIR · NLM · NCCI · 837) ·
+legaltech (e-sign) · accounting (Plaid) · procurement (OFAC) · msp (RMM) · tax (engine). Demo
+inputs thread representative payloads so `flow-runner.mjs <vertical> --live` exercises each adapter.
+213 lib tests.
+
+## v2.41.0 — 2026-06-07
+
+### Autopilots execute the flow — connector runtime + two live connectors (Phase 4)
+
+The service-autopilot verticals (shipped in v2.40.0) stop *describing* a flow and start
+**executing** it, with the first **live connectors** reading real data — no API keys.
+
+- **Connector runtime** (`scripts/lib/connectors.mjs`) — a `call()` dispatcher with **stub | live**
+  modes, a lazy live-adapter registry, `hasLiveAdapter`, and a CLI. Stub stays deterministic +
+  network-free; live hits a real adapter when one is registered, else falls back to stub.
+- **Live FHIR/EHR connector** (`connectors/fhir.mjs`) — a real FHIR R4 client; defaults to the
+  public HAPI sandbox (no auth), `GREAT_CTO_FHIR_BASE`/`TOKEN` for Epic/Cerner/athenahealth.
+  Reads real clinical notes.
+- **Live code-sets connector** (`connectors/codesets.mjs`) — real ICD-10-CM / HCPCS lookup +
+  validation via the NLM Clinical Table Search Service (free, no auth). CPT is AMA-licensed, so it
+  returns a clear "needs a licensed service" note rather than a wrong answer.
+- **Flow-runner** (`scripts/lib/flow-runner.mjs`) — the doing layer: walks a flow's steps, runs each
+  agent step's connectors, and **pauses at a human checkpoint** — the assistant↔autopilot boundary
+  enforced at runtime. CLI: `flow-runner.mjs <vertical> [--live] [--full]`.
+
+Proven end to end: `flow-runner.mjs rcm --live` runs **two live connectors** (real note via FHIR,
+real ICD-10 via NLM) then halts at `gate:coding-signoff`. 39 new unit tests (205 lib total).
+
+## v2.40.0 — 2026-06-07
+
+### AI autopilots for business — service-autopilot verticals, a quality scorecard, and the positioning pivot
+
+The big one: great_cto becomes **"AI autopilots for business"** — products that sell the *outcome*
+of a service, not a tool to a specialist. Seven verticals, a measured quality scorecard, and a
+full positioning pivot. 49 new lib tests since v2.39.0 (189 total); structural + 21 reviewers green.
+
+**Service-autopilot family (epic great_cto-rpd).** A cross-cutting overlay + six vertical packs,
+each a full reviewer + threat-model template + pack + command + measured human-sign-off gate:
+- `service-autopilot-pack` + `scripts/lib/autopilot-gate.mjs` — the four autopilot invariants made
+  machine-checkable: judgment boundary (confidence→escalation), accuracy-as-SLA, per-decision audit
+  trail, per-outcome unit economics.
+- **legaltech** (UPL · privilege · e-sign · `gate:attorney-signoff`), **rcm** (ICD-10/CPT · False
+  Claims Act · NCCI · `gate:coding-signoff`), **procurement** (OFAC sanctions · FCPA · fraud/SoD ·
+  `gate:payment-release`), **accounting** (GAAP/ASC 606 · SOX ICFR · `gate:financial-close`),
+  **msp** (change-mgmt · JIT/PAM · SOC 2 · `gate:change-approval`), **tax** (Circular 230 ·
+  §6694/6695/7216 · `gate:preparer-signoff`). 21 domain reviewers wired.
+
+**Vertical quality scorecard (epic great_cto-h6n).** Measure each vertical 0–100 — quality is
+earned, not declared.
+- `scripts/lib/vertical-score.mjs` (7 weighted dimensions) + `scripts/eval/vertical-scorecard.mjs`
+  (golden + adversarial cases through the reviewer + LLM judge) + a regression gate
+  (`--gate`/`--rebaseline`) wired into `ai-eval-engineer`. Two measure→improve→re-measure cycles
+  lifted legaltech 85→94.75 and msp 78→98.5. All seven verticals ship-ready on a measured basis.
+
+**Autopilot pivot (epic great_cto-og7).** Positioning moves from packs/pipelines to **flows**.
+- `flows/*.flow.json` (single source of truth) + `scripts/lib/flow.mjs` + `scripts/lib/connectors.mjs`
+  (connector catalog, all sandbox stubs) + `/flow` command + `docs/positioning/vocabulary.md`.
+- `/start` detects the business function → renders the flow; README leads with the autopilots.
+  Packs / reviewers / gates are now the under-the-hood trust layer, never the headline.
+
+
+## v2.39.0 — 2026-06-06
+
+### NaCl-inspired governance: impl-brief + traceability + gap-closure waves (Phases 3–5)
+
+Completes the governance contour started in v2.38.x (Phase 1 signed exceptions · Phase 2
+strict-mode evidence-blocking gates). All logic is machine-checkable with `$0`, no new
+runtime deps, lean (no Neo4j). 63 new unit tests (120 lib total).
+
+**Phase 3 — impl-brief handoff bundle.** Each senior-dev task ships a per-task brief that
+pins files-to-modify (allowlist) / **files NOT to modify** (denylist) / API-CONTRACT /
+TEST-SPEC / ACCEPTANCE, so scope creep is caught mechanically, not in review prose.
+- `skills/great_cto/templates/IMPL-BRIEF-template.md` + `scripts/lib/impl-brief.mjs`
+  (`parseBrief` / `validateBrief` / `checkScope` — glob `**`, denylist = hard fail). CLI
+  `check <brief> <changed-files…>` exits 1 on a denylist hit.
+- pm Step 7b emits + validates; senior-dev Step 4 reads, Step 6b refuses an out-of-scope
+  commit (override = signed exception); architect derives the denylist from ARCH Non-goals.
+
+**Phase 4 — requirement → use-case → task → test traceability + `/trace`.** NaCl's graph
+value (impact analysis + coverage gaps) modelled on beads relationships.
+- `scripts/lib/trace.mjs` (`traceUp` rationale / `traceDown` impact / `coverageGaps`) +
+  `/trace <id> | feature <slug>`; `/review trace` is now a thin alias for the one engine.
+- architect mirrors REQ + UC into bd and wires `task→uc→req`; qa-engineer wires `test→impl`.
+
+**Phase 5 — gap-closure waves.** Adopt strict gates on a legacy repo incrementally instead
+of blocking cold: enumerate gaps, schedule into waves (criticals never deferred), hold each
+deferred gap green with an interim **signed, expiring** exception — never a silent bypass.
+- `scripts/lib/gap-waves.mjs` (`planWaves` / `interimExceptionsNeeded` / `validateRegister`) +
+  `GAP-REGISTER` / `GAP-WAVE-PLAN` templates; `/audit` step 4b + `/migrate` step 3b emit them.
+
+## v2.38.0 — 2026-06-06
+
+### Context compression layer (headroom-inspired, native)
+
+Cut the tokens agents read from logs / tool-outputs / JSON / memory — **without losing
+answers** — using deterministic, $0 compressors (no LLM, no native dependency). Concepts
+borrowed from [chopratejas/headroom](https://github.com/chopratejas/headroom), built native
+to keep great_cto lean and local-first.
+
+- **Compressors** (`scripts/lib/compress/`) — ContentRouter auto-detects type and applies:
+  `log-template` (collapse repeats to sample + count, keep FATAL/ERROR/stack verbatim),
+  `json-minify` (+ optional array crush, safe fallback on non-JSON), `line-importance`
+  (keep severity + stack, elide boilerplate to budget). `compress(text,{type,budget,crush})`
+  + CLI. Real numbers: CI log 31,475→155 chars (99.5%), JSON 43% minify / 98% crush, noisy
+  test run 86% with the FAIL preserved.
+- **CCR — Compressed Context with Retrieval** (`scripts/lib/ccr.mjs`, `/ccr`) — anything
+  dropped/compressed is stored locally (`.great_cto/ccr/`, content-addressed, ~500-item GC)
+  and recoverable on demand. `memory-filter` now registers what it filters out and appends a
+  recall footer → **lossless-on-demand**, so we compress aggressively without risk.
+- **Agent wiring** — `l3-support` (logs) and `qa-engineer` (test/build output) compress before
+  reasoning via the shared `agents/_shared/compress-prompt.md` contract.
+- **Fidelity gate** — `EVAL-compression-fidelity` (tuning+holdout) runs through the v2.37.0
+  eval loop: a compressor ships only if the key fact survives on the holdout split.
+- CI: evals-runner unit job now also runs `tests/lib`. 30 new unit tests.
+
+### Fixed
+- `ccr store` flag parsing (a `--source` value was mistaken for content); now reads stdin too.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.37.1 — 2026-06-05
+
+### Fixed
+
+- **pre-push hook: new-branch leak scan no longer scans entire history.**
+  `scripts/hooks/pre-push.sh` computed the scan range with
+  `git rev-list --remotes --not <local_sha>` (reversed — lists commits on remotes
+  *not* in local). On a branch that descends from already-pushed history this
+  returned empty and fell back to `range=<local_sha>`, making `git log <local_sha>`
+  scan the **whole repo history** — false-flagging private project names in old
+  commits and blocking legitimate pushes (worked around with `--no-verify`).
+  Now uses `git rev-list <local_sha> --not --remotes` and scans only the genuinely
+  new commits (`base..local_sha`). Real leaks in new commits/diffs are still blocked.
+  Added `tests/hooks/pre-push.test.mjs` (3 integration tests).
+  Note: existing repos keep their already-installed hook (installer skips if present)
+  — re-sync manually with `cp scripts/hooks/pre-push.sh .git/hooks/pre-push`.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.37.0 — 2026-06-05
+
+### Self-improvement loop (SIA-inspired)
+
+Closes the agent-prompt self-improvement loop, porting the generation→evaluate→gate
+cycle from [hexo-ai/sia](https://github.com/hexo-ai/sia). A learned prompt improvement
+can no longer ship until it is re-run and proven on a held-out eval set.
+
+- **Tuning / holdout eval split** — `tests/eval/runner.mjs` parses `## Cases (tuning)`
+  (visible to ai-prompt-architect) vs `## Holdout cases` (gate-only, anti-overfit),
+  with a new `--split all|tuning|holdout` flag. Backward-compatible: a plain `## Cases`
+  heading is treated as tuning.
+- **Promotion gate** — `scripts/eval-gate.mjs` blocks any candidate prompt that
+  regresses on the holdout split or falls below an eval's own threshold (exit 0/1/2).
+- **Closed prompt-evolution loop** — `scripts/prompt-evolve.mjs` + `/prompt-evolve`
+  command: lesson → candidate prompt → holdout gate → PROMOTE/REJECT, with an auditable
+  per-agent generation ledger (`.great_cto/prompt-evolution/<agent>.jsonl`).
+- **Evolutionary memory** — `scripts/agent-changelog.mjs` renders a per-agent generational
+  changelog (lesson + held-out eval delta + provenance), surfaced in `/agent-review`.
+- **Sandbox hardening** — `scripts/lib/guards.mjs` (`safeReadFile` size-cap, `truncate`,
+  `withTimeout`) wired into `scripts/memory-filter.mjs`; `scripts/sandbox-eval.sh` runs a
+  candidate prompt's holdout evals in an isolated, timeout-bounded throwaway copy.
+- **CI** — `evals-runner.yml` gains a no-API `unit` job (runner + gate + evolve + guards
+  tests) that gates the paid judge run. 71 new/updated unit tests.
+- **Docs** — `ai-eval-engineer`, `gen-evals` (now emits 70/30 tuning/holdout), EVAL-template.
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.33.1 — 2026-05-29
+
+### Fixed: 3 SessionStart config bugs in plugin.json
+
+Closes the remaining 3 bug-hunt findings that were tracked in
+`docs/PENDING-v2.32.1.md` (the other 5 — hooks + CLI — already shipped in
+v2.33.0 via commit `448ad48`). All three live in the `SessionStart` hook
+command in `.claude-plugin/plugin.json`:
+
+- **#6 — `&;` broke SessionStart under bash/sh.** Six `&;` sequences
+  (background + stray `;`) are accepted by zsh but rejected by bash/sh with
+  a syntax error that aborted the *entire* hook (no agent/command sync, no
+  PROJECT/brain load). Replaced all six `&;` → `&`. `bash -n` now passes.
+- **#4 — broken model-override path.** `bash "\/scripts/apply-model-override.sh"`
+  (stray backslash, missing `${PLUGIN_DIR}`) never resolved, so
+  `~/.great_cto/config: agent-model` was silently ignored. Fixed to
+  `"${PLUGIN_DIR}/scripts/apply-model-override.sh"`.
+- **#2 — 5 routed agents never synced.** `gdpr-reviewer`,
+  `us-privacy-reviewer`, `dpdpa-reviewer`, `digital-health-reviewer`, and
+  `coordinator` were absent from the agent copy-list, so they were never
+  written to `~/.claude/agents/` and dispatch silently failed. Appended them.
+
+This completes the v2.32.0 bug-hunt (9 findings, all verified and closed).
+Version files re-synced together (plugin.json + package.json + jsr.json) —
+the original v2.32.0 drift came from a partial bump.
+
+---
+
+
+## v2.33.0 — 2026-05-29
+
+### Fixed: digital-health-pack was non-functional + fully wired it
+
+`digital-health-pack` (Wave 4) was registered in the pack registry but only
+half-wired, so it could never actually auto-attach:
+
+- **Detection bug (user-facing):** `detect.ts` `mineReadmeKeywords` only emitted
+  Wave 1-3 pack-trigger terms, so none of digital-health's keywords (wearable,
+  HRV, HealthKit, mental health, supplement AI, physician HITL, RPM, …) were
+  ever surfaced — the pack was undetectable from any README. Added all Wave 4
+  terms, kept in sync with `packs.ts` SIGNALS.keywords.
+- **Gates:** registered the 5 pack gates (`gate:wellness-vs-samd`,
+  `gate:hitl-design`, `gate:wearable-api-access`, `gate:supplement-safety`,
+  `gate:mental-health-protocol`) in `ARCHETYPES.md` Domain Overlays + the
+  human-gate summary (corrected the stale "13 gates / Wave 1-3" labels).
+- **Reviewers:** added the missing `<!-- HANDOFF -->` block to
+  `digital-health-reviewer`; added `applies_to` + HANDOFF to
+  `healthcare-reviewer`.
+- **Threat model:** new `TM-digital-health.md` template.
+- **EVAL:** added `EVAL-digital-health-hitl-boundary`,
+  `EVAL-digital-health-supplement-safety`,
+  `EVAL-digital-health-mental-health-crisis`.
+- **Test coverage:** new `digital-health-wearable` e2e fixture; removed the
+  pack from the packs-e2e documented-exception allowlist. Every registered
+  pack now has a fixture (11/11), packs-e2e 531/531 assertions pass.
+
+---
+
+
+## v2.32.0 — 2026-05-29
+
+### Removed: AgentShield scanner
+
+The bundled AgentShield static scanner has been fully removed. It was an
+AI-security pattern scanner (OWASP LLM Top 10) that shipped its own CLI
+commands, MCP tools, rule files, and SARIF/JUnit output. Pre-implementation
+threat modelling is now owned entirely by the `ai-security-reviewer` agent,
+which is a better fit for the gated-pipeline model.
+
+**Breaking — removed CLI surface:**
+- `great-cto scan` command (+ `--severity` / `--scanner` flags)
+- `great-cto list-rules` command
+- `scan` and `list_rules` MCP tools (MCP now exposes **7 tools**:
+  `detect_archetype`, `estimate_cost`, `query_decisions`, `project_status`,
+  `cost_summary`, `pipeline_stages`, `recent_verdicts`)
+- The `~/.great_cto/guardrails.yml` file is no longer created on bootstrap
+- `agentshield-rules/` rule files dropped from the published npm package
+
+**`great-cto ci` survives** — the command now runs archetype-drift and
+budget checks only (`--no-archetype` / `--no-budget` to skip). Existing CI
+pipelines keep working but no longer fail on security findings.
+
+**Unchanged:** the `secret-scan` pre-commit hook is a separate subsystem and
+is unaffected. Per-file opt-out remains `// great_cto:allow-secrets`; the
+whole hook honours `GREAT_CTO_DISABLE_SECRET_SCAN=1`.
+
+---
+
+
+## v2.31.0 — 2026-05-29
+
+### Opus 4.8 upgrade
+
+Anthropic released [Claude Opus 4.8](https://www.anthropic.com/claude/opus)
+on 2026-05-28 (API id `claude-opus-4-8`). It is the new flagship for deep
+reasoning — better coding at the default effort level (similar token spend to
+Opus 4.7) and a 1M-token context window.
+
+**Model bumped `claude-opus-4-7` → `claude-opus-4-8`** in:
+- `architect` (`model:` pin) — cross-cutting reasoning + ADR generation
+- 41 reviewer/specialist agents + `commands/review.md` (`advisor-model:` pin)
+
+**Tier aliases unchanged.** Every `model: sonnet` / `model: haiku` agent keeps
+its alias and auto-resolves — only the explicitly pinned Opus references moved.
+
+**No cost change** — Opus 4.8 standard pricing is $5 in / $25 out per MTok,
+identical to Opus 4.7. (Fast mode, if used, is $10 / $50 at ~2.5× speed.)
+
+**Pricing docs corrected:** `agents/pm.md` and `ADR-002` carried a stale
+`$15 / $75` Opus rate from the Opus 4.5 era. Updated to the current `$5 / $25`
+so PM cost estimates and the model-tier policy reflect reality.
+
+**Sonnet 4.6 + Haiku 4.5 unchanged** (no new versions released).
+
+### ⚠️ Security note — prompt-injection regression
+
+Anthropic's Opus 4.8 model card reports a regression in agentic
+prompt-injection robustness: **9.6% attack-success rate vs 6.0% on Opus 4.7**
+when processing untrusted inputs. great_cto's `ai-security-reviewer` and the
+advisor escalation path both run on Opus, so when reviewing pipelines that
+feed untrusted external content into tool-calling agents, treat
+input-sandboxing and output-validation as higher priority than before. No
+code change in this release — flagged for awareness.
+
+---
+
+
+## v2.30.0 — 2026-05-28
+
+### Board server auto-restart on upgrade
+
+`npx great-cto init` now automatically restarts the board server when a new
+version is installed and the server was already running. No more stale admin
+panel after upgrades.
+
+**How it works:**
+
+- `great-cto board` writes a PID file to `~/.great_cto/board.pid` on start
+  and removes it on exit.
+- Before spawning a new server process, `board` kills any process recorded in
+  the PID file — so `great-cto board` always starts fresh with the latest code.
+- `npx great-cto init` (after installing a new version) checks if the board is
+  running, kills the old process, and relaunches detached with `--no-open`
+  so the existing browser tab keeps working at the same port.
+
+---
+
+## v2.27.0 — 2026-05-28
+
+### Claude Code quota warning at SessionStart
+
+Adds `scripts/hooks/quota-check.mjs` — a lightweight hook that checks
+Claude Code subscription quota at the start of every session and warns
+before the user launches a heavy pipeline that would hit a rate limit
+mid-run.
+
+**What it does:**
+- Reads `~/.claude/.credentials.json` (Claude Code OAuth token)
+- Fetches `api.anthropic.com/api/oauth/usage` (undocumented endpoint,
+  same one used by ai-usagebar / claudebar)
+- Outputs a quota block only when thresholds are exceeded:
+  - ⚡ 70%+ → warn, prefer fast-path for large features
+  - 🔴 85%+ → alert, fast-path only (skip ARCH doc)
+  - 🛑 95%+ → critical, do NOT start heavy pipeline
+- Shows per-window pacing (ahead/on-track/under vs elapsed time)
+- Shows Sonnet 7-day sub-quota separately (Sonnet has its own cap)
+- Shows extra (pay-as-you-go) spend when ≥ 50% of monthly limit
+- Auto-refreshes expired OAuth tokens via platform.claude.com
+- 5-minute cache in `~/.great_cto/quota-cache.json` — parallel agents
+  share one fetch, no API hammering
+- Silent exit when credentials absent (API-key users unaffected)
+
+**Where it appears:** between `=== STATUS ===` and `=== PATTERNS ===`
+in the SessionStart output.
+
+**Source inspiration:** akitaonrails/ai-usagebar (Rust). API endpoints,
+auth flow, and response schema ported to Node.js (60 lines, no deps).
+
+---
+
+## v2.26.0 — 2026-05-28
+
+### PM discovery pipeline: PRD, OST, discover, outcome roadmap, prioritisation
+
+Five patterns from phuryn/pm-skills that complete the pre-development
+Discovery → PRD → architect pipeline previously missing from great_cto.
+
+**New commands**
+- `/prd` — structured 8-section Product Requirements Document workflow.
+  Accepts problem statement, gathers context (max 4 questions), generates
+  PRD with Executive Summary / Background / Objectives+Metrics / Users /
+  User Stories P0-P2 / Non-Goals / Constraints / Success Criteria.
+  Writes `docs/requirements/PRD-<slug>.md`.
+- `/discover` — full product discovery cycle. Maps 3–7 customer
+  opportunities, ranks by Opportunity Score, generates ≥3 solutions per
+  opportunity, designs experiments. Writes
+  `docs/discovery/OST-<slug>.md`.
+
+**New skills**
+- `opportunity-solution-tree` — Teresa Torres OST framework.
+  4-level structure: Desired Outcome → Opportunities → Solutions →
+  Experiments. Opportunity Score = Importance × (1 − Satisfaction).
+  Assumption priority: Value → Usability → Feasibility → Viability.
+- `outcome-roadmap` — transforms output-focused feature lists to outcome
+  statements. Formula: `Enable [segment] to [outcome] so that [impact]`.
+  "So what?" chain method for deriving outcomes from features.
+
+**Agent enhancements**
+- `agents/pm.md` — added Step 0a: feature prioritisation when multiple
+  features compete. Framework selection table: Opportunity Score / ICE /
+  RICE / MoSCoW with formulas. Detects output-focused roadmaps and
+  applies outcome-roadmap skill before task decomposition.
+- `skills/pre-mortem/SKILL.md` — added Step 4b: Tigers / Paper Tigers /
+  Elephants risk classification. Tigers classified as Launch-Blocking /
+  Fast-Follow / Track with owner + due date. Pre-mortem template updated
+  with all three blocks.
+
+**Discovery → PRD pipeline position:**
+`/discover` → `/prd` → `/architect` → `/pm` → senior-dev
+
+---
+
+## v2.25.0 — 2026-05-28
+
+### agent-workflows patterns: triage gate, structured findings, hand-off rules
+
+Inspired by [franklioxygen/agent-workflows](https://github.com/franklioxygen/agent-workflows).
+
+#### Triage Gate — depth-based pipeline selection
+
+- **Added** Triage Gate section to `CLAUDE.md` request classifier — classifies SIMPLE CODE (Tiny/Small/Medium) and COMPLEX CODE (Small/Medium/Large) before pipeline runs
+- **Added** Escalation guard: if scope grows during work → stop and reclassify; do not continue with under-powered process
+
+#### Reproduction Requirement — bug-fix gate
+
+- **Added** Reproduction Requirement to `agents/coordinator.md` — before any implementation agent edits code for a bug fix, must establish: failing automated test, failing repro command, or explicit infeasibility note. "It would take effort" is NOT infeasible.
+- Blocks implementation packet until repro packet completes
+
+#### Baseline Establishment — refactoring gate
+
+- **Added** Baseline Establishment to `agents/coordinator.md` — run full validation set (tests + lint + build) before refactoring edits; record pass/fail. Separates new regressions from pre-existing failures.
+
+#### Structured Findings Format — review output standard
+
+- **Added** Structured Findings Format to `skills/great_cto/SKILL.md` — Critical/Major/Minor/Nit severity tiers with Location/Problem/Why it matters/Recommended fix/Status fields
+- **Added** mandatory Summary block (APPROVED/BLOCKED verdict) to all review output
+- Critical + Major findings block merge and gate:ship
+
+#### Workflow Hand-off Rules
+
+- **Added** explicit hand-off transition table to `agents/coordinator.md` — INCIDENT→BUG-FIX, BUG-FIX→Feature, SIMPLE→COMPLEX, Cleanup→Refactoring, etc.
+- Silent workflow class switches are explicitly prohibited; always notify CTO with reason
+
+#### Per-workflow Safety Rules
+
+- **Added** `shared/safety-rules.md` — five safety rule variants: Standard Coding, Review-Only, Behavior-Preserving, Cleanup, Incident Response
+- Each rule matched to the workflow class that should use it
+
+#### Scope Escalation Guards
+
+- **Added** scope escalation guard to coordinator anti-patterns: "scope creep is low risk" → stop + reclassify
+
+#### Minimal Loading Discipline
+
+- **Added** per-class loading rules to `skills/great_cto/memory-index.md` — load only what the active workflow needs; per-class breakdown (QUESTION, SIMPLE CODE Tiny, INCIDENT)
+
+### ag-kit patterns: coordinator, skillify, memory index (v2.24.1 content shipped in v2.25.0)
+
+- **Added** `agents/coordinator.md` — multi-agent orchestrator with DECOMPOSE→CLASSIFY→DISPATCH→MONITOR→SYNTHESIZE→VERIFY lifecycle, Work Packet List format, Fork vs Spawn semantics
+- **Added** `commands/skillify.md` — interactive 6-question interview to capture repeating patterns as SKILL.md files
+- **Added** `skills/great_cto/memory-index.md` — 200-line cross-session knowledge index template with 3-level compression protocol
+- **Added** Request classifier section to `CLAUDE.md` — 8-class routing (QUESTION/SURVEY/SIMPLE CODE/COMPLEX CODE/DESIGN/SLASH CMD/INCIDENT/COORDINATE)
+- **Updated** dispatch semantics in `skills/great_cto/SKILL.md` — Fork vs Spawn, Never Delegate Understanding, concurrency safety
+- **Updated** context compression protocol in `commands/save.md` — micro-compact, phase summary, checkpoint levels
+- **Updated** validation hierarchy reference in `commands/doctor.md` — 7-layer priority (Security → Schema → Tests → Lint → Performance → UX/A11y → SEO)
+- **Updated** all 13 SKILL.md files — added `effort: low | medium | high` frontmatter field
+
+- _Add one bullet per shipped feature._
+- _Cite ADRs introduced (if any)._
+- _Mention test counts and opt-out flags._
+
+---
+
+## v2.24.0 — 2026-05-28
+
+### OpenSRE patterns: l3-support upgrade + user guardrails
+
+Inspired by [Tracer-Cloud/opensre](https://github.com/Tracer-Cloud/opensre) (Apache 2.0).
+
+#### l3-support agent upgrades
+
+- **Added** Alert Source → Tool Routing table: when an alert fires from grafana/datadog/cloudwatch/EKS/PostgreSQL/RabbitMQ/etc., the agent now calls the matching integration tools first and in parallel — eliminates the "start from scratch" investigation pattern
+- **Added** Root Cause Taxonomy: structured 8-category classification (database / infrastructure / code_bug / configuration / network / performance / healthy / unknown) applied at triage time and carried through to postmortems, Beads tasks, and lessons.md
+- **Added** Structured RCA output to postmortem template: `validated_claims`, `non_validated_claims`, `validity_score` (0.0–1.0), `investigation_path`, `breakthrough_tool`, `dead_ends` — machine-readable postmortems
+- **Added** Parallel tool execution mandate: explicit instruction to call all primary integration tools simultaneously in each investigation round
+- **Updated** lessons.md format: now includes `category` and `validity_score` fields per entry
+
+#### agentshield: user-configurable guardrails
+
+- **Added** user-defined guardrail rules via `~/.great_cto/guardrails.yml` — loaded and merged with built-in rules on every scan
+- **Added** `action: block | audit | redact` field to user rules (inspired by OpenSRE guardrails engine)
+- **Added** `loadUserRules()` and `userGuardrailsPath()` exports from agentshield public API
+- **Added** `~/.great_cto/guardrails.yml` template generation during `great-cto init` with inline documentation and examples
+- **Added** `userDefined: boolean` flag on Rule type to distinguish user vs built-in rules
+- **Added** 4 new tests covering user guardrails: load/parse/merge/error-resilience (189/189 passing)
+
+---
+
+## v2.23.0 — 2026-05-28
+
+### Spec Driven Development integration
+
+Inspired by [FredAntB/Spec-Driven-Development](https://github.com/FredAntB/Spec-Driven-Development).
+
+#### New: `/spec` command
+
+- **Added** `/spec` command — SDD interview workflow that generates `requirements.md`, `design.md`, and `tasks.md` before any code is written
+- Interview is conversational: one question at a time, not a form
+- Four required answers: what the project does, tech stack, deployment target, AI tools used
+- **Gate enforced**: no file generated until all four answers are in hand
+- **Retrofit mode**: `/spec retrofit` scans existing codebase and infers specs from what already exists
+- After generation: auto-updates `CONTEXT.md` and runs `great-cto adapt`
+
+#### New: Cross-AI config generation (`great-cto adapt`)
+
+- **Added** `ai_tools:` field to `PROJECT.md` template — declare all AI coding tools used on the project
+- `great-cto adapt` now generates configs for **all declared AI tools** from the same source of truth:
+  - `AGENTS.md` + `CLAUDE.md` — Claude Code (existing)
+  - `.cursorrules` — Cursor AI (new)
+  - `.github/copilot-instructions.md` — GitHub Copilot (new)
+  - `.windsurfrules` — Windsurf (new)
+  - `.aider.conf.yml` — Aider (new)
+- **Added** "Project Constitution" block to all generated configs — universal hard constraints that prevent AI agents from contradicting each other
+
+#### New: `CONTEXT.md` session resume file
+
+- **Added** `CONTEXT.md` generation during `great-cto init`
+- Standard resume block: current task, last session date, session log table, open questions
+- All AI tools read `CONTEXT.md` at session start — enables seamless handoff between Claude Code, Cursor, Copilot, etc.
+
+---
+
+## v2.22.2 — 2026-05-28
+
+### Fix board JS syntax errors after leash removal
+
+- **Fixed** orphaned leash JS fragments (802 lines) left after Security tab removal — caused `SyntaxError` in browser
+- **Fixed** broken `import {` block in `server.mjs` (missing closing `} from './leash-adapter.mjs'`) that prevented board from starting
+- **Fixed** broken `<input>` element in Cmd-K search modal (raw style attribute visible as text in header)
+- **Fixed** board version-sorting bug — server was loading from old cached v2.9.5 instead of v2.22.1 due to lexicographic sort
+- Board JS now passes `node --check` syntax validation with 0 errors
+
+---
+
+## v2.22.1 — 2026-05-28
+
+### Publish cleanup
+
+- Removed stale `dist/leash.js` from npm package (leftover compiled artifact from deleted `leash.ts`)
+- No functional changes vs v2.22.0
+
+---
+
+## v2.22.0 — 2026-05-23
+
+### Remove runtime governance proxy integration
+
+- **Removed** Security board tab and all proxy UI (sessions, spend, threats, HITL, rate limits)
+- **Removed** `great-cto leash` CLI subcommand and `tryInstallLeash()` auto-install
+- **Removed** postinstall auto-clone of governance proxy
+- **Removed** leash-related env vars (`LEASH_TENANT_ID`, `LEASH_SESSION_PREFIX`, `NODE_OPTIONS`) from session init hook and PROJECT.md template
+- **Removed** `LEASH_AGENT_NAME` env export from all built-in agent definitions
+- **Removed** ai-leash-reviewer agent from routing table
+- **Simplified** `postinstall.mjs` to a no-op placeholder
+- Zero breaking changes to core init / board / agents pipeline
+
+---
+
+## v2.21.0 — 2026-05-23
+
+### Flow Compiler UX
+
+- **Compiled flow summary** — `npx great-cto init` now prints a user-facing "Compiled flow:" block (product title + jurisdiction, agents, gates, compliance, cost range) instead of internal debug steps. Internals (`archetype`, `pack`, `jurisdiction`) become routing implementation details, not user-facing choices.
+- **FLOW.md artifact** — every `great-cto init` writes `.great_cto/FLOW.md` — a single file agents read to orchestrate the SDLC pipeline (agents, gates, compliance, cost, `_routing` block for power users / debugging).
+- **flow.ts module** — new pure `compileFlow()` function composes `reviewersFor`, `gatesFor`, `suggestPackReviewers`, `suggestJurisdictionReviewers` into one `FlowResult`. No breaking changes to existing modules.
+- **README repositioning** — hero section leads with "describe project → get pipeline" value prop. Ingredient counts (57 agents, 25 archetypes, etc.) moved to `<sub>` line.
+
+---
+
+## v2.20.0 — 2026-05-23
+
+### Added — Detection v2: 12 jurisdictions, infra signals, word-boundary matching, pack hints
+
+**Jurisdiction coverage: 8 → 12**
+
+- **Canada (CA)** — PIPEDA · Quebec Law 25 / Bill 64 · CASL · OSFI B-10 (fintech).
+  Gates: `gate:pipeda-pia`, `gate:quebec-law25-consent`.
+- **Japan (JP)** — APPI 2022 · PPC Guidelines · My Number Act · FISC (fintech).
+  Gates: `gate:appi-third-party-transfer`, `gate:appi-ppc-registration`.
+- **China (CN)** — PIPL 2021 · DSL 2021 · MLPS 2.0 · CBDT · CAC regulations.
+  Gates: `gate:pipl-consent-framework`, `gate:mlps-classification`, `gate:pipl-data-localisation`.
+- **South Korea (KR)** — PIPA · ISMS-P certification · Network Act · FSC.
+  Gates: `gate:pipa-isms-p`, `gate:pipa-consent-framework`.
+
+**Infra-signal detection (`mineInfraKeywords`)**
+
+- Scans Terraform / YAML / JSON files (depth ≤ 4) for AWS/GCP/Azure region strings.
+- Reads `.env.example` / `docker-compose.yml` for `AWS_REGION=` and `TZ=` timezone hints.
+- Maps `package.json` `homepage` TLD (`.de` → eu, `.jp` → jp, `.cn` → cn, `.kr` → kr, `.ca` → ca, etc.).
+- `infraKeywords[]` added to `DetectionResult`; consumed by `suggestJurisdictions()`.
+
+**Word-boundary matching (`matchesKeyword`)**
+
+- Single-token keywords use lookbehind / lookahead regex.
+- Prevents false positives: `"india"` no longer matches `"indiana"` / `"indianapolis"`.
+
+**Pack hints for niche archetypes (`inferPackHints`)**
+
+- `suggestedPacks?: string[]` added to `ArchetypePick`.
+- Surfaces specialist packs for low-signal niche domains: `robotics-pack`, `climate-pack`,
+  `clinical-trials-pack`, `drug-discovery-pack`, `hr-ai-pack`, `lending-pack`,
+  `voice-pack`, `em-fintech-pack`, `api-platform-pack`.
+
+**Tests: 179/179 pass** (37 jurisdiction tests, +19 new covering CA/JP/CN/KR + infra signals + word-boundary cases)
+
+---
+
+## v2.19.0 — 2026-05-23
+
+### Added — Token economy Phase 1+2: artifact summaries + memory filter
+
+Two-phase token-economy initiative (`docs/plans/PLAN-token-economy-2026-q2.md`).
+Combined expected savings: 35-55% LLM tokens per agent start.
+
+**Phase 1 — Artifact summaries (30-50% savings on artifact reads)**
+
+- **`scripts/generate-summary.mjs`** — Generates `.summary.md` (≤ 250 tokens) for every
+  `ARCH-*.md` / `PLAN-*.md` / `ADR-*.md` / `PHASE-*.md` / `QA-*.md` / `SEC-*.md` /
+  `TM-*.md` / `RELEASE-*.md` / `PERF-*.md`. Uses Anthropic Haiku → OpenRouter (Kimi K2) →
+  deterministic heuristic. Idempotent. CLI: `--all`, `--check`, `--force`.
+- **`scripts/hooks/summary-enforce.mjs`** — PostToolUse hook: auto-generates `.summary.md`
+  whenever an artifact is written. Fire-and-forget. Opt-out: `GREAT_CTO_DISABLE_SUMMARY=1`.
+- **`scripts/hooks/pre-push.sh`** — Blocks pushes with stale summaries.
+  Bypass: `GREAT_CTO_SKIP_SUMMARY_CHECK=1`.
+- **`agents/_shared/artifact-summary-contract.md`** — Producer/consumer contract.
+- **13 tests** in `tests/hooks/summary-enforce.test.mjs`.
+
+**Phase 2 — Task-aware memory filter (≥25% savings on agent startup context)**
+
+- **`scripts/memory-filter.mjs`** — Filters `lessons.md` / `decisions.md` to the top-k
+  entries most relevant to the current task. Same provider chain as Phase 1.
+  Cost: < $0.0001/call. Latency: ~50ms heuristic, ~200ms Haiku.
+  CLI: `node scripts/memory-filter.mjs "<task>" <file> [--k=5] [--heuristic] [--stats]`.
+- **`agents/_shared/memory-filter-prompt.md`** — Prompt contract + integration table.
+- **`agents/architect.md`** — Replaces `tail -100` / `awk|head -60` with filtered injection.
+- **`agents/senior-dev.md`** — Replaces `tail -50` / `grep|head -40` with filtered injection.
+- **18 tests** in `tests/memory-filter.test.mjs`. Opt-out: `GREAT_CTO_DISABLE_MEMORY_FILTER=1`.
+
+---
+
+## v2.18.0 — 2026-05-22
+
+### Added — bd upgrade + Bundled Adversarial Critics
+
+**`great-cto upgrade [plugin]`** — force re-clone companion plugins (superpowers, beads) to
+their latest semver tag, then re-apply critic overlays. Safe to run any time — idempotent
+if already on latest.
+
+- **`packages/cli/src/upgrade.ts`** — `upgradePlugin()`, `upgradeAll()`
+- **`packages/cli/src/overlay.ts`** — `applyOverlays()`, `copyCriticFiles()`, `patchSkillFiles()`
+  — idempotent critic installer called on every `init` and `upgrade`
+- **`packages/cli/assets/skills/`** — 4 adversarial critic prompt files bundled as package assets:
+  - `brainstorming/spec-critic-prompt.md` — attacks specs before planning
+  - `writing-plans/arch-critic-prompt.md` — attacks file structure before tasks are written
+  - `finishing-a-development-branch/schema-critic-prompt.md` — attacks DB migrations before ship
+  - `finishing-a-development-branch/api-critic-prompt.md` — attacks API changes before ship
+
+---
+
+## v2.15.0 — 2026-05-22
+
+### Added — Jurisdiction Detection
+
+Third detection axis alongside `archetype` and `packs`: auto-detects applicable
+compliance frameworks from project geography signals in README.
+
+- **`packages/cli/src/jurisdictions.ts`** — new module: `JurisdictionCode` (8 codes),
+  `JURISDICTION_SIGNALS`, `suggestJurisdictions()`, `suggestJurisdictionReviewers()`,
+  `suggestJurisdictionGates()`, `listJurisdictions()`
+- **`detect.ts`** — geo/legal keyword terms added to `mineReadmeKeywords()` (80+ terms)
+- **`bootstrap.ts`** — `jurisdiction:` field auto-populated in PROJECT.md
+- **`agents/gdpr-reviewer.md`** — GDPR Art.5/6/9/25/32/35 + EU AI Act + NIS2
+- **`agents/us-privacy-reviewer.md`** — CCPA/CPRA + US state privacy matrix (VA/TX/FL/CO/CT)
+- **`agents/dpdpa-reviewer.md`** — DPDPA 2023 + IT Act + RBI data localisation
+- 20 new tests in `packages/cli/tests/jurisdictions.test.mjs`
+
+---
+
+
+## v2.14.0 — 2026-05-21
+
+### Digital health pipeline — wearable · mental health AI · nutrition AI · physician HITL
+
+- **`digital-health-reviewer` agent** — new specialist reviewer for mHealth / digital health products. Covers FDA General Wellness vs SaMD classification, HIPAA applicability matrix (consumer wellness vs employer/provider deployment), GDPR Article 9 special-category health data (DPIA required), CCPA/CPRA Sensitive Personal Information tier, wearable platform API rules (Apple HealthKit, Google Health Connect, Garmin, Samsung Health), drug-supplement interaction safety gates, physician HITL workflow design (trigger matrix, SLA, escalation path), mental health crisis protocol (AFSP Safe Messaging compliance, 988/116-123 crisis routing), EU AI Act Annex III healthcare classification. Outputs `TM-digital-health-{slug}.md`.
+- **`digital-health-pack`** — new domain pack: chains `digital-health-reviewer` → `ai-clinical-reviewer` (on SaMD signal) → `healthcare-reviewer` (on HIPAA scope). Adds 5 human gates: `gate:wellness-vs-samd`, `gate:hitl-design`, `gate:wearable-api-access`, `gate:supplement-safety`, `gate:mental-health-protocol`. Ships 8 EVAL suites (hitl-boundary, supplement-safety, safe-messaging, refuse-to-diagnose, etc.) and a wearable integration checklist for senior-dev pre-ship.
+- **`packs.ts`** — registered `digital-health-pack` with detection signals: wearable stack tokens (`healthkit`, `health-connect`, `samsung-health`, `fitbit`, etc.) and README keywords (`wearable`, `apple watch`, `mental health`, `garmin`, `samsung health`, `fitness ai`, `nutrition ai`, `supplement recommendation`, `personalised training`, `physician review`, `physician hitl`, `wellbeing`, `mindfulness ai`, and 20+ more).
+- **`TYPE_MAP.md`** — added 6 new type entries: `digital-health`, `wearable-platform`, `nutrition-ai`, `clinical-hitl`, `digital-therapeutics`, each mapping to `agent-product` or `regulated` archetype with appropriate compliance tags and pack overlays.
+- **`SKILL.md`** — added routing row for wearable/mental health/nutrition/physician HITL triggers → `digital-health-reviewer`.
+- **`adapt.ts`** — routing table updated with digital-health-reviewer dispatch row.
+- **Tests** — `tests/packs.test.mjs` (17 tests): pack trigger detection, reviewer chain composition, gate firing, false-positive guard for generic web projects.
+- **README** — updated to 51 agents · 16 domain packs · 27 archetype reviewers.
+
+---
+
+## v2.13.0 — 2026-05-21
+
+### AI-native self-improvement loop
+
+- **Self-improving loop** — `session-end` hook now auto-triggers `continuous-learner` agent when `GREAT_CTO_AUTO_LEARN=1`; writes `.great_cto/.last-auto-learn` marker on each run
+- **Decision scoring** — new `decision-scorer` agent (Sonnet) scores architectural alternatives across 5 weighted dimensions; `decision-eval` skill wires it into the `architect` workflow automatically after 2+ ADR variants
+- **Evals Runner (CI)** — `tests/eval/runner.mjs` runs 38 EVAL-*.md scenario files through a two-agent LLM judge (Sonnet actor → Opus judge) using `ANTHROPIC_API_KEY`; GitHub Actions workflow fires on every PR touching `agents/**` or `tests/eval/**`
+- **`/crystallize` skill** — distils repeating patterns from session logs into draft `skills/{domain}/SKILL.md` files; session-end hook suggests running it every 10 sessions; `knowledge-extractor` agent (Opus) does the deep clustering analysis
+
+---
+
+## v2.12.1 — 2026-05-18
+
+---
+
+---
+
+
+## v2.11.0 — 2026-05-18
+
+### Cost per feature
+- **"Top features by AI spend"** section in the cost panel — bar list showing
+  which features consumed the most LLM budget. Sourced from `feature=X` tags
+  in verdict lines (agents that use `log-verdict.sh` get this for free).
+- `/api/cost` now returns `by_feature: [{feature, llm, runs}]` sorted desc,
+  top 10. Available via API for integrations.
+
+### MCP — 4 new board tools
+`great-cto mcp` now exposes **9 tools** total (was 5). New board tools:
+
+| Tool | What it does |
+|---|---|
+| `project_status` | Open gates, blocked tasks, P0 incidents |
+| `cost_summary` | LLM spend, daily burn, top features |
+| `pipeline_stages` | Pipeline stage list with status + last verdict |
+| `recent_verdicts` | Last N agent verdicts with timestamps and costs |
+
+Board tools require `great-cto board` running. Configure via `GREAT_CTO_PORT`
+(default 3141). Claude Code agents can now call `cost_summary()` before
+spawning expensive tasks to check the budget.
+
+### Daily digest notification
+- New cron fires **Mon–Fri at 08:00 UTC** via the existing email + push
+  infrastructure.
+- Summary: yesterday's AI spend, tasks shipped, blocked tasks, open gates,
+  and top-3 features by cost.
+- Skips days with zero activity — no noise on quiet weekends.
+- Idempotent via date-keyed dedupe (won't re-send on board restart).
+
+### Per-project verdict attribution
+- `log-verdict.sh` now writes verdicts to `<project>/.great_cto/verdicts/`
+  only (dropped global `~/.great_cto/verdicts/` write).
+- Adds `project=<slug>` tag to every verdict line for cross-project queries.
+- `readVerdicts(cwd)` prefers per-project dir; falls back to global lines
+  tagged with the matching slug. Fixes "all projects show $93" bug.
+- `scripts/migrate-verdicts-to-projects.mjs` — one-shot migration for
+  historical global verdicts (dry-run by default, `--apply` to write).
+
+---
+
+## v2.9.8 — 2026-05-18
+
+### Board dashboard
+
+- **Period selector** — 1D / 7D / 30D / 90D / 1Y chip toolbar above the
+  sprint metrics. Choice persists in localStorage. All hero tiles, cost
+  panel, and chart re-scope to the chosen window.
+- **Honest cost model** — "AI spend" tile shows real LLM tokens from
+  verdict logs (was: time-based estimate). "Cost savings vs FTE" uses
+  human estimate = tasks × 4h × $150/hr (industry baseline).
+- **Active-day denominator** — daily-avg / daily-burn now divide by days
+  with actual spend (was: divided by full window, making 90D look 12×
+  cheaper than 30D for the same work).
+- **Race condition fix** — sequence-guarded fetches for `/api/metrics` and
+  `/api/cost` so stale init responses can't overwrite newer period clicks.
+- **Cache-Control headers** — HTML/JS served with `no-cache` to prevent
+  stale board UI between iterations.
+
+### Share report (public link)
+
+- **Lifetime numbers** — share reports always show lifetime totals (this
+  is a marketing/social-proof artifact, not an internal dashboard).
+- **Visual upgrade**:
+  - Hero big number (92px serif) + 30-day sparkline
+  - Cost bar chart (humans red, AI green) + big "Nx cheaper" headline
+  - 30-day activity heatmap (GitHub-style)
+  - Agent bubble chart (size=time, color by category)
+- **Auto-republish** — fires after every gate approval and daily at 09:00
+  UTC. Manual "Republish" button removed.
+- **Per-project scope fix** — toggle now correctly publishes data for the
+  selected project (previously fell back to server cwd).
+
+### Backend
+
+- `/api/metrics?days=N` — accepts 1–365 day window
+- `getMetrics()` returns `tasks.done_in_window` for period-scoped reports
+- Verdict cost totals (`real_llm_usd`) now filtered by window timestamp
+- Cost history always computes human cost (was: skipped when verdict data
+  existed, leaving "vs Human team" at $0)
+- Per-task time cap at 8h to filter wall-clock idle noise from agents_cost
+
+---
+
+## v2.9.7 — 2026-05-18
+
+### Improvements
+
+- **board/share** — public report now auto-republishes on every gate approval
+  and daily at 09:00 UTC. Manual "Republish" button removed.
+
+---
+
+## v2.9.6 — 2026-05-18
+
+### Bug fixes & improvements
+
+- **board/notifications** — bell icon in topbar now opens the notification
+  drawer. Red badge shows unread count. Previously the drawer had no trigger.
+- **board/nav badge** — nav Notifications badge correctly shows `on` when
+  email or push channel is active (was always `off` when no unread items).
+
+---
+
+## v2.9.5 — 2026-05-18
+
+### Bug fixes
+
+- **board/push toggle** — visual state now correctly reflects subscription
+  status: fixed CSS class (`active` → `on`) so the toggle moves when clicked.
+  Added `_pushBusy` lock to prevent async double-fire on rapid clicks.
+  Added `stopPropagation` on inner checkbox to prevent bubbled duplicate calls.
+- **board/security** — per-project tenant filtering for Budgets panel;
+  corrected config file path displayed in footer.
+- **plugin.json** — replaced `null` matcher / statusMessage values with empty
+  strings to pass `claude plugin validate` (contributed by @ajayd942).
+
+---
+
+## v2.9.3 — 2026-05-17
+
+### Web Push + in-app notification history
+
+`great-cto board` now ships two new notification channels alongside the
+existing email-alert relay.
+
+**Browser push (Web Push / VAPID)**
+
+- Zero-dep VAPID implementation using Node built-ins only (`node:crypto`,
+  `node:https`) — no extra npm packages.
+- P-256 ECDH key pair auto-generated on first start, stored in
+  `~/.great_cto/vapid-keys.json`. Push subscriptions persist to
+  `~/.great_cto/push-subscriptions.json`.
+- Service Worker (`/sw.js`) receives empty-body pushes, fetches the latest
+  unread notification from the server, and shows a native desktop alert.
+- New endpoints: `GET /api/push/vapid-key`, `POST /api/push/subscribe`,
+  `DELETE /api/push/subscribe`.
+- Toggle in board → Notifications → **Browser push** card.
+- Fires for the same 5 triggers as email (incident.p0, gate.stale,
+  gate.blocked, cost.threshold, digest.weekly).
+
+**In-app notification history**
+
+- Ring-buffer of the last 100 alerts, persisted to
+  `~/.great_cto/notif-history.json` across restarts.
+- SSE broadcasts a `notification` event to all connected board tabs — new
+  alerts appear as toasts instantly without a page refresh.
+- Notification drawer slides in from the nav "Notifications" item —
+  shows title, body, timestamp, project, unread dot, and a Mark all read button.
+- Inline history table inside the Notifications panel (last 20 entries).
+- New endpoints: `GET /api/notif-history`, `POST /api/notif-history/read`.
+
+**Other**
+
+
+---
+
+## v2.9.0 — 2026-05-16
+
+### Telemetry opt-IN promo (aggressive but honest)
+
+Telemetry remains **opt-IN by default**. The change in this release is **how the
+question is asked**.
+
+**Before:** users could opt in via `GREAT_CTO_TELEMETRY=on` or by editing
+`~/.great_cto/telemetry.json` — but nothing in `init` told them this was
+possible. Total telemetry-opted-in users: 3.
+
+**Now:** at the end of a successful interactive `init`, we ask once, with a
+fully transparent preview of the exact payload that would be sent:
+
+```
+Help great_cto learn from how you use it?
+
+Anonymous usage data (default: off). Helps cross-project
+lessons promote to a global pattern library.
+
+Here is exactly what would be sent — one event per command:
+
+  {
+    "version": "2.9.0",
+    "command": "init",
+    "archetype": "fintech",
+    "node": "22.19.0",
+    "os": "darwin",
+    "exit_code": 0,
+    "duration_ms": 1234,
+    "anon_id": "852b0564"   // 8 hex chars, not reversible
+  }
+
+No code, no repo names, no file paths, no PII.
+Toggle anytime: npx great-cto telemetry off
+
+Enable anonymous telemetry? [y/N]
+```
+
+### Honest defaults
+
+- Default answer: **N**. The prompt makes opt-IN visible, not pre-checked.
+- The prompt **never re-asks**: once the user decides (yes OR no), the answer
+  is persisted to `~/.great_cto/telemetry.json` and we move on. No nag.
+- Skipped automatically when: `--yes`/`-y` flag, non-TTY, CI environment,
+  `DO_NOT_TRACK=1` set, or user previously decided either way.
+
+### Reversible
+
+```bash
+npx great-cto telemetry on       # opt in
+npx great-cto telemetry off      # opt out
+npx great-cto telemetry status   # check current state + endpoint + anon_id
+npx great-cto telemetry whoami   # print your 8-hex anon_id
+```
+
+Subcommand was already in `telemetry.ts` but not wired to the main dispatch
+table — fixed in this release.
+
+### Install-ping coverage
+
+When telemetry is enabled (either via the new prompt or via env var), every
+`init` run now fires one install-ping. Lets us count re-runs after upgrades
+toward WAU/MAU — previously only fired the very first time a user opted in.
+
+### What is NOT changing
+
+- Default is still off. We did not flip to opt-OUT.
+- Payload schema unchanged: `{ts, version, command, archetype, node, os,
+  exit_code, duration_ms, anon_id}`. No PII added.
+- `DO_NOT_TRACK=1` still wins over everything.
+- Existing opt-in users (3) keep their state untouched.
+
+---
+
+## v2.8.4 — 2026-05-15
+
+### 10 more bugs fixed (security + analytics) since v2.8.3
+
+Continued bug-hunting after v2.8.3. **2 Critical, 3 High, 5 Medium.**
+No breaking changes.
+
+**🔴 Critical (security)**
+
+- **Localhost CSRF on /api/projects/register** (BH-23, PR #43) —
+  `CORS: *` + text/plain simple-request let any web page register
+  attacker-controlled paths under HOME. Now: Origin check + path
+  must live inside HOME + 403 on bad origin.
+- **`{{PAUSED}}` literal placeholder shipped to share-report cloud
+  worker** (BH-22, PR #43) — SyntaxError if worker forgot to
+  post-process. Now: replaced at server before publish, never
+  serialised as literal.
+
+**🟠 High (data integrity)**
+
+- **Attribute-XSS via task titles** (BH-26, PR #43) — `esc()` didn't
+  escape `"` or `'`, so a malicious task title could break out of
+  `href="..."` / `title="..."` attributes. Now: esc() handles all
+  five HTML special chars.
+- **Silent 1000× cost truncation in PLAN-*.md parsing** (BH-25,
+  PR #43) — `.replace(',', '')` (no `/g` flag) silently turned
+  `"$1,234,567"` into `1234`. Cost reports under-reported by 3
+  orders of magnitude. Now: `/g` flag.
+- **/api/share crashed on malformed JSON** (BH-24, PR #43) — bare
+  `JSON.parse` in async handler caused unhandled rejection + hung
+  request. Now: catch → 400 with structured error (matches PR #40
+  pattern for /tasks, /status, /gates).
+
+**🟡 Medium**
+
+- **Resume render crashed on null verdict** (BH-27, PR #43) —
+  `d.verdict.toLowerCase()` lacked null guard. Now: safe-coerce.
+- **Gate tasks inflated velocity** (BH-28, PR #43) —
+  closed-gate tasks counted as "shipped tasks" in velocity tile.
+  Now: excluded from done.length / velocity counts.
+- **Dashboard hid actual verdict cost behind time-based estimate**
+  (BH-21, PR #44) — hero tile showed `$2.44` (estimate) but verdict
+  logs had `$6.42` (actual). Now: hero trend shows
+  `actual: $X.XX` when divergence > 10%.
+- **`velocity.this_week` misleading label** (BH-22, PR #44) — math
+  is rolling 7d/30d, not calendar week. Now: explicit `last_7d` /
+  `last_30d` keys; old aliases kept until v3.0.
+- **`great-cto report --type=X` rejected with misleading error**
+  (BH-26, PR #44) — only positional form worked. Now: positional +
+  `--type X` + `--type=X` all accepted.
+
+**Test pyramid**
+
+- 53 automated tests (was 51 in v2.8.3) — +2 BH-22/26 regressions.
+- 36 archetype detection fixtures + 456 pack assertions still pass.
+- **545 verified contracts total.**
+
+### Upgrade
+
+```bash
+npx great-cto@2.8.4 init
+```
+
+Restart Claude Code afterwards. No breaking changes; `velocity.last_7d`
+is additive; `esc()` enhancement only changes HTML output (no API
+surface).
+
+---
+
+## v2.8.3 — 2026-05-15
+
+### 10 production bug fixes + monitoring observability
+
+All discovered via systematic bug-hunting of the live admin board. Each
+has a regression test. No breaking changes.
+
+**Server hardening (BH-3 through BH-16)**
+
+- **BH-3**: `unknown` agent (15 runs) no longer dominates `/api/metrics`.
+  Non-canonical verdict logs (`backend.log`, `frontend.log`, etc.) now
+  bucketed separately into `legacy_agent_runs` so real specialists
+  (`architect: 8`) become the top entry, as intended.
+- **BH-4**: `/api/cost?days=999` clamped to 365 (was 1000 buckets,
+  memory bloat); `?days=abc` / `?days=-5` fall back to 30. Same pattern
+  applied to `/api/decisions?limit`.
+- **BH-5**: `?project=<unknown>` now sets explicit
+  `X-Project-Fallback: requested='<slug>' served='cwd'` response
+  header. Previously silent fallback meant users couldn't tell if they
+  were viewing the right project's data.
+- **BH-6/7/8**: `POST /api/tasks` validates input — invalid JSON → 400
+  (was 500), title > 500 chars → 400 (was 500 from bd argv overflow),
+  `priority=99` → 400 (was 200 silently ignored, hiding typos like
+  `priority: 11` meant for `P1`).
+- **BH-10**: 5 `bd` write spawnSync calls now have `timeout: 5000ms`.
+  Previously a hung `bd` blocked the server thread indefinitely.
+- **BH-12**: serialised all `bd` writes through `bdWriteSerialised()`
+  promise queue. Concurrent writes used to deadlock on stale
+  `.beads/.lock`; now 10 parallel POSTs succeed cleanly.
+- **BH-14**: `/status`, `/priority`, `/gates` endpoints now catch
+  JSON.parse errors → 400 (was 500). Structured error bodies (`error`,
+  `received`, `message` fields).
+- **BH-16**: concurrent `approve+reject` on the same gate no longer
+  double-writes `decisions.md` (audit log corruption). Wrapped in
+  `bdWriteSerialised`.
+
+**Cost dashboard cleanup**
+
+- Metrics + report use 30-day windows (was inconsistent: 7d sometimes,
+  all-time elsewhere).
+- Suppressed tautological "savings" when LLM cost equals human cost
+  (no actual savings to report).
+- Dropped global-verdict fallback in `getMetrics()` that produced
+  cross-project pollution.
+
+**Observability**
+
+- New `/api/metrics.server.{sse_clients, bd_cache_entries}` counters.
+- `X-Project-Resolved` response header (`'cwd' | 'path' | 'slug' |
+  'fallback'`) exposes routing decisions on the wire.
+- New `docs/operations/MONITORING.md` — diagnostic recipes, healthy
+  ranges, stale-lock recovery procedure.
+
+**Frontend — clickable resume rows (PR #34, already in 2.8.2)**
+
+(No additional UI changes in this release.)
+
+**Test pyramid**
+
+- 51 automated tests (was 45 in v2.8.2) — +6 BH regression cases.
+- 36 archetype detection fixtures + 456 pack assertions still pass.
+- **543 verified contracts total.**
+
+### Upgrade
+
+```bash
+npx great-cto@2.8.3 init     # new install
+# or
+npx great-cto@latest init    # if you typically pin to latest
+```
+
+Restart Claude Code afterwards. The board's `X-Project-Fallback` header
++ `legacy_agent_runs` field are additive; existing clients see no
+breaking change.
+
+---
+
+## v2.8.2 — 2026-05-14
+
+### Board UX + new `/board` slash command
+
+**New: `/board` slash command** (PR #33)
+
+Closes a UX gap: previously the only way to open the admin dashboard
+was running `great-cto board` in a terminal. Now `/board` from Claude
+Code:
+- Detects if board already running (0.1s curl check)
+- Starts it via `nohup ... & disown` if not (survives command exit)
+- Opens browser via `open` (macOS) / `xdg-open` (Linux)
+- Logs to `~/.great_cto/board.log`
+- Flags: `--port N` `--no-open` `--restart`
+
+**Board UI: clickable "Pick up where you left off" rows** (PR #34)
+
+Recent Verdicts + Decisions columns are now interactive. Click a row →
+opens a detail modal with:
+- Agent · verdict · timestamp header
+- Raw verdict line (monospace, preserved)
+- Parsed metadata chips (feature, task, cost)
+- Artefact buttons (`arch=`, `plan=`, `tm=`, `qa=`, etc.) → click opens
+  the path via `vscode://file/` URL scheme (works for VS Code, Cursor,
+  Windsurf, Claude Code)
+
+Decisions rows route to the linked bd task side-panel when known.
+
+Esc or backdrop click closes the modal.
+
+**Notes:**
+- No breaking changes
+- All 45 automated tests + 36 archetype fixtures + 456 pack assertions
+  still pass (537 verified contracts)
+
+---
+
+## v2.8.1 — 2026-05-14
+
+### Bug fixes + test pyramid expansion
+
+**Bug fixes (production board):**
+- **BH-1**: `readVerdicts()` now correctly parses pipe-separated verdict log
+  lines (`<ts> | agent | APPROVED | …`). Previously `verdict='|'` was returned
+  for the pipe form, breaking `/api/pipeline` status display for any agent
+  writing in that format. 3 of 8 stages on the live board were affected.
+- **BH-2**: `/api/cost.savings_x` now returns `null` when there's no human
+  estimate, distinguishing "no estimate available" from "computed zero
+  savings". UI can show `—` for the null case.
+
+**Test coverage expansion (+18 cases, +2 files):**
+- `tests/openrouter-pack-overlays.mjs` (NEW) — 10/10 v2.8.0 domain packs
+  validated through 5-stage real-LLM pipeline ($1.84/run)
+- `tests/packs-integration.test.mjs` (NEW, 5 cases) — pack-registry
+  consistency (reviewer files, gate naming, harness ↔ registry parity)
+- `tests/pipeline-contracts.test.mjs` (+2 BH regressions)
+- `tests/openrouter-multi-archetype.mjs` extended with optional 8-stage
+  flow via `OR_DOWNSTREAM=1` (qa-engineer → security-officer → devops →
+  l3-support added after archetype-reviewer)
+
+**Test pyramid (full coverage):**
+- 45 automated cases (cost / gate / pipeline / resume / parity / contracts /
+  agent-integrity / pack-integrity) at $0
+- 36 archetype-detection fixtures + 456 pack assertions at $0
+- Real-LLM tiers: $0.10 reviewers → $1.84 packs → $4-9 full archetype pipeline
+
+**README:** added "Test pyramid" section documenting 537 verified contracts.
+
+---
+
+## v2.8.0 — 2026-05-14
+
+### 10 domain packs + 15 new reviewers (Pioneer Fund portfolio coverage)
+
+Major expansion of domain coverage. Overlay packs activate on top of the
+existing 25 archetypes when CLI detects pack-specific signals.
+
+**New reviewer agents (15):**
+- `voice-ai-reviewer` — TCPA, STIR/SHAKEN, state recording-consent, EU AI Act Art. 50, deepfake laws
+- `ai-clinical-reviewer` + `fda-reviewer` — GMLP-10, PCCP, SaMD classification (510(k) / De Novo / PMA), IEC 62304, ISO 14971
+- `hr-ai-reviewer` — NYC LL 144 AEDT, EEOC, Illinois AIVIA, Colorado SB 205, EU AI Act Annex III
+- `api-platform-reviewer` — rate-limit, OAuth 2.1, webhooks (HMAC + replay), idempotency, RFC 8594 Sunset
+- `lending-credit-reviewer` — ECOA / Reg B, FCRA, NMLS state matrix, MLA, BISG fair-lending
+- `clinical-trials-reviewer` + `bio-data-reviewer` — ICH-GCP E6(R3), 21 CFR Part 11, CDISC, FHIR R5, OMOP, DICOM, de-id
+- `robotics-safety-reviewer` — ISO 10218 / ISO TS 15066 (cobot) / IEC 61508 (SIL), HARA, SROS2, sim-to-real
+- `emerging-markets-fintech-reviewer` — India DPDP/RBI, Nigeria CBN, Brazil BCB/LGPD, MAS, OJK, BSP + local rails
+- `climate-mrv-reviewer` + `biosecurity-reviewer` — GHG Protocol, Verra/Gold Standard, CBAM, NIH DURC, IGSC HSP v2
+- `drug-discovery-ml-reviewer` + `glp-glab-reviewer` + `lab-automation-reviewer` — ChEMBL/BindingDB versioning, AD bounds, ALCOA+, SiLA2, IQ/OQ/PQ
+
+**Pack auto-detection:**
+- `packages/cli/src/packs.ts` — `suggestPacks(detection)` returns matched packs
+- 26 new stack signals in `detect.ts` (twilio, livekit, deepgram, elevenlabs, hume, razorpay, paystack, flutterwave, mercadopago, fastify, trpc, graphql, openapi, dicom, ros 2 via package.xml)
+- 80+ pack-specific README terms emitted as raw tokens
+
+**Pipeline integration:**
+- 19 new human-gate types (gate:voice-compliance, gate:samd-class, gate:aedt-audit, gate:fair-lending, gate:hara-signoff, gate:durc-signoff, gate:model-card-signoff, …)
+- 15 TM-template files (skills/great_cto/templates/TM-*.md)
+- 10 pack-overlay files (skills/great_cto/packs/*-pack.md)
+- 15 new `/commands` (/voice-compliance, /samd-classify, /aedt-bias-audit, /api-contract-review, /fair-lending-audit, /part11-audit, /biodata-conformance, /hara, /em-fintech-review, /carbon-mrv, /dna-screen, /drug-ml-review, /glp-audit, /iq-oq-pq, /clinical-compliance)
+
+**Reference EVAL suites (38):**
+- tests/eval/EVAL-*.md — golden-set templates for each pack's critical scenarios
+- Cross-referenced to TM templates + human gates + reviewer agents
+
+**Testing:**
+- 10 new fixture dirs (tests/fixtures/voice-twilio, clinical-ai, clinical-trial-edc, hr-ai-recruiting, api-platform-stripe, lending-bnpl, robotics-ros2, em-fintech-india, climate-mrv-verra, drug-discovery-rdkit)
+- E2E archetype suite extended with `packs` assertion — 36/36 fixtures pass with correct archetype + pack attachment
+- 2 new structural validators: `test_new_reviewers.py`, `test_eval_pack_mapping.py`
+- 181 total tests passing across CLI unit + E2E + structural
+
+**Coverage:** ~90% of Pioneer Fund Future of Health portfolio + ~65% of total Pioneer portfolio (voice-AI, clinical, HR-AI, lending, API platform, clinical trials, robotics, EM-fintech, climate/biosec, drug-discovery patterns).
+
+Full overlay matrix: [skills/great_cto/ARCHETYPES.md](skills/great_cto/ARCHETYPES.md#domain-overlays-wave-1-3-specialised-reviewers).
+
+49 agents · 0 lint errors · 0 warnings.
+
+---
+
+## v2.7.1 — 2026-05-14
+
+### `/help`, welcome banner, and heavy-context-safe `/digest` + `/inbox`
+
+Three small UX fixes prompted by first-install feedback:
+
+1. **New `/help` command.** A compact reference card listing all 22
+   commands grouped by area (Daily / Pipeline / Ops / Memory / Agents),
+   plus the admin board URL (`http://localhost:3141`) and the
+   "first-time? run /start" pointer. Topic routing supported:
+   `/help commands`, `/help board`, `/help agents`. Static card lives at
+   `docs/help-card.md` so the slash command body stays tiny — works even
+   on heavy-context sessions.
+
+2. **Welcome banner on first install.** SessionStart hook now calls
+   `scripts/hooks/welcome.sh` which prints a one-time banner with the
+   command groups, the admin board URL, and a `/help` pointer. Marker
+   file `~/.great_cto/.welcomed-<MAJ.MIN>` makes it idempotent — silent
+   on every subsequent session, re-prints after a minor version bump.
+
+3. **`/digest` and `/inbox` no longer trip `Prompt is too long`.** The
+   old flow piped 300 lines of helper output straight into the model's
+   prompt via `bash ... | head -300`. On sessions with large tool/skill
+   lists, that pushed total tokens over the limit. New flow writes
+   helper output to `.great_cto/cache/{digest,inbox}-out.txt` and tells
+   the agent to `Read` the file — agent controls paging, prompt stays
+   bounded.
+
+No agent or pipeline changes. Pure UX.
+
+---
+
+## v2.7.0 — 2026-05-09
+
+### Cross-prompt consistency rules + model-tier policy
+
+v2.6.0 shipped a structural linter (14 rules) that catches frontmatter
+drift, missing sections, and stale paths. v2.7.0 closes the next gap:
+**semantic consistency across the 18 reviewer agents and 8 pipeline
+agents**.
+
+Three new linter rules (all `warn` for soft-launch, promoted to `error`
+in v3.0):
+
+| Rule | What it locks in |
+|---|---|
+| **CONS-MODEL** | model tier matches the agent's role (architect ∈ {opus, sonnet}, continuous-learner ∈ {haiku}, …) |
+| **CONS-OUTPUT** | every reviewer declares a `docs/<dir>/<PREFIX>-{slug}.md` output file |
+| **CONS-SIGNOFF** | every reviewer references `sign-off` / `gate:` / `HANDOFF` semantics |
+
+The policy lives in `MODEL_TIER_POLICY` (single source of truth) inside
+`scripts/agent-prompt-lint.mjs`. New agents added without a tier
+assignment get a warning at PR time instead of leaking opus-cost into
+production.
+
+Why this matters:
+- **Cost control** — prevents `continuous-learner` accidentally on opus
+  ($5/run for a task that takes haiku 30¢).
+- **Quality floor** — prevents `architect` accidentally on haiku
+  (shallow ADRs, missed cross-cutting concerns).
+- **Reviewer contract** — board API + senior-dev handoff break silently
+  if a reviewer skips its TM-{slug}.md output. Now caught at lint time.
+
+Pipeline: 61 → 62 tests (linter rule count: 14 → 17). 0 errors, 1
+pre-existing warning across all 34 agents — clean baseline.
+
+### ADR
+- **[ADR-002](docs/adr/ADR-002-model-tier-policy.md)** — model-tier
+  policy with per-role tier table + cost analysis + migration path.
+
+### Files
+- `scripts/agent-prompt-lint.mjs` — +3 rules + `MODEL_TIER_POLICY` map
+- `docs/adr/ADR-002-model-tier-policy.md` — new
+- `docs/AGENT-LINT-RULES.md` — CONS-* section + updated roadmap
+
+### Roadmap deferred to v3.0
+- **CONS-MODEL → error** after one minor cycle of warn-level catalogue
+- **CONS-ARCHETYPE** — archetype-specific reviewer ↔ `archetypes.ts` mapping
+- **EVAL-*** — LLM-as-judge (requires API key, opt-in)
+- **BEH-*** — behaviour tests via real Claude Code SDK (CI cost)
+
+---
+
+## v2.6.0 — 2026-05-09
+
+### Agent prompt linter — structural validation for all 34 agents
+
+We had **60 pipeline tests for the plumbing** (CLI, hooks, board API,
+sync, cost math) but **zero tests for the 34 markdown files in `agents/`**
+that drive the SDLC pipeline. Prompt regressions (deleted phase-task
+section, malformed frontmatter, stale path references) only surfaced as
+"the agent didn't do X" months after landing.
+
+This release closes that gap with a Node-based structural validator.
+
+**`scripts/agent-prompt-lint.mjs`** — runs the rule set below against
+every `agents/*.md`. Exits 1 on errors, 0 on clean (warnings allowed).
+
+### Rule set v1 (14 rules)
+
+| Category | Rules | Coverage |
+|---|---|---|
+| **FM-***  (Frontmatter) | FM-001 parses, FM-002 description, FM-003 model tier, FM-004 tools list | All agents |
+| **STR-*** (Structure)   | STR-001 has ## heading, STR-002 ≤50KB | All agents |
+| **PHASE-*** (Phase task)  | PHASE-001 has section, PHASE-002 references helper, PHASE-003 correct slug | 8 pipeline agents only |
+| **MEM-***  (Memory paths) | MEM-001 lessons.md in shell, MEM-002 decisions.md in shell | All agents |
+| **OUT-***  (Output contract) | OUT-001 explicit output | Pipeline + reviewer agents |
+| **DEPS-*** (Cross-platform) | DEPS-001 superpowers HOST guard | All agents |
+
+Full spec: `docs/AGENT-LINT-RULES.md`.
+
+### Audit results — clean baseline
+
+After running against all 34 prompts:
+- **0 errors**
+- **1 warning** (architect.md = 55KB, exceeds 50KB context-warning threshold —
+  acceptable for the longest prompt in the system)
+
+The rule set caught **2 false-positive errors** during development that
+were rule bugs, not prompt bugs:
+- FM-003 originally rejected `claude-haiku-4-5` (full model name) — fixed
+  to accept both short tier (`haiku`) and fully-qualified form
+- MEM-001/002 originally flagged narrative `lessons.md` mentions — fixed
+  to only flag shell-command operations on bare paths
+
+Both regex refinements are documented in `AGENT-LINT-RULES.md`.
+
+### CI integration
+
+`scripts/test-pipeline.sh` L1 adds a new check:
+
+```
+✓ agent-prompt-lint: 0 errors across all agents/
+```
+
+Pipeline test count: 60 → **61**. Run before each release.
+
+### What's NOT in v2.6.0
+
+Deferred to v2.7.0+ (each needs its own ADR):
+
+- **CONS-*** cross-prompt consistency (all reviewers use same gate schema)
+- **EVAL-*** LLM-as-judge mode (requires API key + cost budget)
+- **BEH-*** behaviour tests via real Claude Code SDK (CI cost)
+- **CONS-MODEL** model-vs-task fit heuristics
+
+---
+
+## v2.5.10 — 2026-05-09
+
+### `phase-task.sh` close fix + 5 new pipeline tests + validation checklist
+
+**Bug:** `bd close <id>` refuses when the task has an open dependency
+(e.g. linked to gate via `bd dep add`). The phase-task helper was using
+plain `bd close` → all phase tasks remained `in_progress` after the
+agent finished. Pipeline UI showed tasks but wrong status.
+
+**Fix:** `phase-task.sh` close path now uses `bd close --force` (with
+fallback to plain close for older Beads). Phase task represents "agent
+X did its work" — that fact stands regardless of gate aggregation.
+
+**Validation:** `scripts/test-pipeline.sh` adds **L4b — Phase task
+lifecycle** with 5 checks:
+- Helper creates labelled task
+- Open is idempotent (re-open returns same id)
+- Close --verdict ok closes despite open gate dependency
+- Close --verdict fail marks blocked
+- 8-stage simulation produces 8 closed phase tasks
+
+Total: 55 → **60** pipeline tests.
+
+**Manual checklist:** `docs/validation/PHASE-TASKS-CHECKLIST.md` documents
+the 3 real-session validation paths users should run before trusting v2.5.7+
+in production:
+- Test 1: happy path (`/start "feature"` → 6+ phase tasks closed)
+- Test 2: QA fail/remediate cycle (blocked + new task on rerun)
+- Test 3: bd-unavailable fallback (writes to `.great_cto/tasks.md`)
+
+Plus failure-mode table for diagnosing "phase tasks not appearing" symptoms
+(usually agent prompt too long → instruction context-trimmed).
+
+---
+
+## v2.5.9 — 2026-05-09
+
+### Honest cost ratio — 7500× → 500× (LLM rate corrected)
+
+User report: COST SAVINGS VS FTE tile showed `7638×` — not believable. The
+underlying constant `LLM_RATE_PER_HR = $0.02` was a placeholder that didn't
+reflect actual Sonnet 4.6 / Haiku 4.5 economics.
+
+**Cost model audit:**
+- Sonnet 4.6: $3/1M input + $15/1M output → typical agent task ($0.165) /
+  30 min → **$0.33/AI-hour**
+- Haiku 4.5: $1/1M input + $5/1M output → ~$0.055/task → **$0.11/AI-hour**
+- Mixed pipeline (architect Sonnet, qa Haiku, etc.): **~$0.30/AI-hour**
+
+**Fix:** default `LLM_RATE_PER_HR` raised from $0.02 → $0.30. Ratio drops
+from 7500× (hype-tier) to 500× — still a huge advantage, but defensible.
+
+**New env var overrides:**
+- `GREATCTO_LLM_RATE_PER_HR=0.50` (e.g. all-Sonnet pipeline)
+- `GREATCTO_HUMAN_RATE_PER_HR=200` (SF senior engineer fully-loaded)
+
+### Verdict-cost overlay — supplementary, not headline
+
+Earlier code preferred sum-of-verdict-costs over time-based estimate when
+verdicts had `cost=$X` tags. Problem: verdict data is often synthetic
+test fixtures or partial coverage (only some agents log cost), which
+produced `25,864×` ratios on test projects with $0.05 fake values.
+
+**Fix:** time-based estimate is now the canonical headline number. Real
+verdict cost is exposed as `cost.real_llm_usd` (and per-agent
+`agents_cost[].real_llm_usd`) for transparency, but doesn't drive the
+savings ratio. v2.6.0+ may re-engage the overlay when coverage ≥50% AND
+implied hourly rate ≥$0.05/hr.
+
+### UI: honest tile sub-text
+
+`Cost savings vs FTE` tile now reads:
+
+> `500× faster, est. at $0.30/AI-hr · $150/human-hr`
+
+instead of the generic "X× cheaper than human (rough est.)".
+
+### Tests
+
+Pipeline assertion `metrics math: human/llm ratio ≈ 7500×` updated to
+`≈ 500×` (470-530 tolerance for per-agent rounding drift). 55/55 pass.
+
+---
+
+## v2.5.8 — 2026-05-09
+
+### CI hardening + plugin cache hygiene
+
+Three operational warts visible to anyone browsing the repo, all addressed.
+
+**1. Removed dead `UI e2e (Playwright)` workflow**
+
+`tests/ui/` is fully gitignored — never committed to the repo. The
+`ui-e2e.yml` workflow tried to install deps from a non-existent
+`tests/ui/package.json` and failed on every push. **Result before:** ✗
+red badge on every release. **Now:** workflow deleted (zero noise).
+
+When real e2e tests get committed, a fresh workflow can be added with
+correct cache paths.
+
+**2. `tests/structural/validate.py` already passing**
+
+Recent runs (post v2.5.7 commits) show ✓ — the CMD-loop sync is now
+correct for all 22 commands. Earlier failures were the validator
+**correctly** flagging missing entries; we addressed those by listing
+new commands in the SessionStart bash one-liner.
+
+**3. Plugin cache cleanup — `--keep 3` policy in SessionStart**
+
+Users updating via `npx great-cto@latest` accumulate plugin caches at
+`~/.claude/plugins/cache/local/great_cto/{1.0.x, 2.0.0, 2.1.0, ...}`.
+SessionStart syncs the latest but never cleaned up — typical install had
+7+ stale dirs (~70 MB).
+
+The SessionStart bash one-liner now ends with:
+
+```bash
+ls -d "$HOME"/.claude/plugins/cache/local/great_cto/*/ 2>/dev/null \
+  | sort -V \
+  | awk -v k=3 '{a[NR]=$0} END {for (i=1; i<=NR-k; i++) print a[i]}' \
+  | xargs -I{} rm -rf {} 2>/dev/null || true
+```
+
+- `sort -V` — semver-aware ordering
+- `awk` (BSD/GNU portable) instead of GNU-only `head -n -3`
+- `|| true` — cleanup failure never breaks SessionStart
+- Keeps the 3 most recent (rollback-safe)
+
+After SessionStart on a 9-version install, only 3 newest remain.
+Verified: 9 → 3 (drops oldest 6) on a synthetic test.
+
+### Full QA pass — 10 bugs fixed (label `qa-2026-05`)
+
+A full QA run against v2.5.7 (per `docs/qa/TEST-PLAN-FULL.md`) found 10
+bugs across pipelines, board API, metrics, and reports. All 10 closed in
+this release. Full report: `docs/qa/runs/2026-05-09/REPORT.md`. E2E trace:
+`docs/qa/runs/2026-05-09/E2E-SAAS-PIPELINE.md`.
+
+**Cost pipeline (P1)** — cost dashboard was permanently zero in production:
+- `/api/cost` skipped every verdict because real verdicts didn't carry a
+  `cost=$X` tag. (QA-006)
+- `/api/metrics.cost` only used PLAN files or task-estimate sources;
+  verdict cost was ignored entirely. (QA-007)
+- **Fix:** `scripts/log-verdict.sh` — canonical helper writing verdict line
+  with mandatory `cost=$X` tag and tee'ing `<ts> <agent> <usd>` to
+  `cost-history.log` as fallback source. `getMetrics()` now picks among 3
+  sources by priority: plans → verdicts (new) → task estimate; each path
+  tags `source` so the UI distinguishes real from estimated.
+- **Doc:** `agents/_shared/verdict-format.md`.
+- **Verified:** $0.50 + $1.25 + $0.30 → `/api/cost.total_llm = $2.05, runs = 3`.
+
+**Board UX (P1)** — admin UI returned raw 500 from `bd` for predictable cases:
+- `POST /api/tasks` and `POST /api/gates/<id>` failed with `no beads
+  database found` when project lacked `.beads/`. (QA-002, QA-004)
+- **Fix:** `checkBeadsAvailable(cwd)` helper returns
+  `409 { error: "beads_not_initialized", message, cwd, hint }` so the UI
+  can show "Initialize this project" instead of an opaque error.
+
+**Metrics integrity (P2)** — agent attribution and runtime config:
+- `/api/metrics.agents` listed phantom agents like `test-agent`, `backend`
+  pulled from verdict text without cross-checking the installed list. A
+  typo created a phantom forever. (QA-008)
+  - **Fix:** `getCanonicalAgents()` reads `~/.claude/agents/great_cto-*.md`
+    once per 30s; unknown names bucketed under `unknown`.
+- `/api/tasks/<bad-id>/history` returned 200 with `{events: []}` for any
+  string. (QA-005)
+  - **Fix:** pre-check via `getTasks(cwd)`; non-existent IDs return
+    `404 { error: "task_not_found", id }`.
+- `PORT` env-var was hardcoded — only `BOARD_PORT` was respected. (QA-009)
+  - **Fix:** `PORT = BOARD_PORT || PORT || 3141`.
+
+**Structural validation (P1)** — `validate.py:97` regex `[a-z\s]+?`
+choked on hyphenated commands (`agent-review`, `agent-retire`), falsely
+reporting all 22 commands as missing from the SessionStart sync list.
+(QA-001) — **Fix:** regex changed to `([a-z][a-z0-9\s\-]*?);\s*do`.
+
+**Sub-agent sandbox (P1)** — closed as documented design constraint, not
+a fixable bug. (QA-010)
+- Claude Code sub-agents launched via the `Agent` tool are isolated by
+  design; `additionalDirectories` does not propagate.
+- **Doc:** `agents/_shared/sandbox-cwd-policy.md` — full constraint
+  explanation + workarounds (inline-mode, settings.local.json pre-grant).
+- **Template:** `.claude-plugin/settings.example.json` for users who need
+  `additionalDirectories`, with caveat about subagent isolation.
+- **`commands/start.md`** — pre-flight `cwd` check; CTO must confirm the
+  cwd is the intended project root before pipeline starts. Prevents the
+  silent "agents wrote nothing because path was wrong" failure.
+
+**`/api/memory ?project=<slug>`** (QA-003) — closed as already-supported.
+The existing global cwd resolver at `server.mjs:1065` already routes
+`?project=` to the registered project's path.
+
+### Other changes
+
+- `docs/plans/PLAN-v2.5.8-ci-hardening.md` — plan for this release
+- `docs/qa/TEST-PLAN-FULL.md` — comprehensive plan for full QA passes
+- E2E pipeline trace on a SaaS fixture (architect → enterprise-saas-reviewer
+  → pm → senior-dev → qa-engineer → security-officer) verified end-to-end
+  with all artefacts persisted and verdict trail complete.
+
+---
+
+## v2.5.7 — 2026-05-09
+
+### Pipeline phase tasks — agents now create per-stage Beads tasks
+
+Codex Test review surfaced that great_cto's `/start` flow created only
+**epic + gates** in Beads. None of the actual work stages (architect,
+senior-dev, QA, security, code review, devops) were tracked. Effect:
+the board UI showed "27 tasks shipped" but zero visibility into what
+agent did what.
+
+**Fix:** new helper `scripts/phase-task.sh` provides 4 actions:
+- `open <agent> <feature>` — creates a labelled phase task (idempotent —
+  re-running returns the existing id, so the protocol is safe to retry)
+- `start <id>` — moves to in_progress
+- `close <id> --verdict ok|fail|blocked` — closes or marks blocked
+- `latest <agent>` — most-recent open phase task for that agent
+
+Each pipeline agent prompt (architect / pm / senior-dev / qa-engineer /
+security-officer / performance-engineer / devops / l3-support — 8 agents)
+now includes a "Phase task tracking (mandatory)" section that invokes
+the helper at start + end of its phase.
+
+Falls back to `.great_cto/tasks.md` when Beads is unavailable. Never
+blocks the actual phase work — observability is best-effort.
+
+After this change, the board's `/api/tasks` shows real per-stage
+progress: `architect: stripe-subs` (closed), `senior-dev: stripe-subs`
+(in_progress), `qa-engineer: stripe-subs` (open) — instead of just the
+two gates.
+
+### Cost-history off-by-one window bug
+
+`getCostHistory(days=30)` built only 30 buckets covering `[today-29 ...
+today]` instead of the inclusive `[today-30 ... today]` window users
+expected. On a project where a batch of tasks closed exactly 30 days
+back, those tasks fell out of the history overnight (visible jump in
+`active_days` from 5 → 4 + `total_runs` from 16 → 10 between sessions).
+
+**Fix:** loop `<= days` instead of `< days` → 31 buckets, includes
+day-30. Verified math invariants: `total_llm/30 ≈ daily_avg`,
+`daily_avg*30 ≈ projected_monthly`, sum(series.llm) === total_llm.
+
+### Test runtime: production-readiness plan
+
+`Test/docs/plans/PLAN-runtime-production-readiness.md` — concrete v0.4.0
+plan for the Codex-reviewed agent runtime. Two pieces (~3h LLM-agent /
+~1.5 weeks human):
+
+1. **Typed tool result schema** — `ToolResult` + `ToolMetadata` (cost,
+   tokens, cached, truncated, source). Backwards-compat adapter for
+   legacy `Callable[[str], str]` tools.
+2. **OpenTelemetry tracing hooks** — span hierarchy (run → plan →
+   execute → tool.\<name>) with canonical attributes (`agent.*`, `tool.*`).
+   Default off; opt-in via `init_tracing()`.
+
+Memory / policy engine / eval harness / async deferred — each needs its
+own ADR before implementation.
+
+---
+
+## v2.5.6 — 2026-05-09
+
+### Cursor + Codex UX hardening — six operational issues from real-user dogfooding
+
+Codex test report against great_cto running in Cursor surfaced six UX issues
+that were technically "working as designed" but read as broken. All addressed:
+
+**1. CLI shows hint when slash-only commands are tried as `npx great-cto X`**
+- Previously `npx great-cto start "build feature"` failed with cryptic
+  "unknown argument" errors. Users reasonably expected slash commands to
+  also work via CLI.
+- Now: trying any of `start / audit / inbox / digest / review / doctor /
+  burn / save / resume / learn / agent-review / agent-retire / rfc /
+  release / ownership / oncall / sec / poc / promote / crystallize / migrate`
+  via CLI prints a clear redirect:
+  ```
+  error: 'start' is a chat slash command, not a CLI subcommand.
+  To run it, open Claude Code, Cursor, or any AI assistant with great_cto
+  installed and type:  /start [args]
+  The CLI surface only exposes: init · scan · ci · mcp · adapt · serve · ...
+  ```
+
+**2. `init` refuses to run in `$HOME` (no project context)**
+- First-time users tried `npx great-cto init` from `~` (no project), got
+  greenfield/low-confidence detection. Looked broken.
+- Now: explicit refusal with `cd /path/to/project` instructions:
+  ```
+  error: refusing to initialize great_cto in $HOME (/Users/foo).
+  great_cto is meant to run inside a project repository, not your home directory.
+  ```
+
+**3. `init` clearer message when `.great_cto/` exists**
+- Previously: "Aborted." — looked like an error.
+- Now: explains exactly which command achieves what:
+  ```
+  .great_cto/ already exists in this directory.
+  To preserve existing config: nothing to do, you're already initialized.
+  To start fresh: back up .great_cto/ first, then re-run with --force:
+      npx great-cto init --force
+  To override the detected archetype without re-init:
+      npx great-cto init --force --archetype agent-product
+  ```
+- Also: user-initiated abort now exits 0 (not 1) — it's not a failure.
+
+**4. `ci` archetype-drift error includes resolution paths**
+- Previously: `archetype drift: declared=greenfield, detected=ai-system`
+- Now: tells user exactly how to resolve:
+  ```
+  archetype drift: declared=greenfield, detected=ai-system (high). Either:
+    • run 'npx great-cto adapt --platform <yours>' to refresh configs
+    • run 'npx great-cto init --force --archetype ai-system' to align PROJECT.md
+    • pass '--no-archetype' to ci to skip this check
+  ```
+
+**5. README documents board API schema explicitly**
+- Codex smoke scripts assumed `/api/projects` returned `{projects: [...]}`
+  — actually returns array directly. Same for `/api/tasks`.
+- New "Board API surface" section in README with the exact return shape
+  for every endpoint plus a Python/curl gotcha example.
+
+**6. `agent-product` archetype detection broadened**
+- Codex's hand-built agent runtime (no LangChain, no vector DB, just
+  `agent_runtime/`, `tools.py`, `planner.py`) was classified as greenfield.
+- Detection now also weighs project-shape signals: `agent-runtime`,
+  `tool-calling`, `tool-use`, `planner`, `tool-allowlist`, `mcp-server`,
+  `mcp-client`, `agent-loop`, `deterministic-agent`, etc. (3+ matches → +5,
+  2 → +3, 1 → +1). Plus pattern `agent-(runtime|product|loop|kit|sdk)`
+  in stack names → +2.
+
+---
+
+## v2.5.5 — 2026-05-09
+
+### Critical: `/inbox` and `/digest` failed with "Prompt is too long"
+
+`commands/inbox.md` was 30 KB, `commands/digest.md` was 46 KB — those entire
+files get sent to the LLM as the slash-command prompt. With any reasonable
+session context already loaded, both commands hit Anthropic's prompt limit
+before doing any work. Users saw `API Error: Prompt is too long`.
+
+**Fix:** moved all bash data-collection logic to two helper scripts:
+
+- `scripts/cmd-data/inbox-data.sh` (23 KB) — emits labelled sections
+  (OPEN_GATES / STALE_GATES / P0_OPEN / BLOCKED / RECENT_ACTIVITY /
+  SLO_BURN / DORA_CFR / GATE_DRIFT / COST_ALERT / ON_CALL / RFC_OVERDUE)
+- `scripts/cmd-data/digest-data.sh` (32 KB) — emits DORA / RELIABILITY /
+  DELIVERY / TEAM / COST / OPS / AGENTS sections with delta arrows
+
+`commands/inbox.md` and `commands/digest.md` now just describe the helper's
+output contract and how to format it (2.6 KB and 4.0 KB respectively —
+**12× smaller**). The agent invokes the helper, parses sections, formats
+the response.
+
+### Codex bugfix: closed gates appeared as P0_open in `/api/inbox`
+
+`packages/board/server.mjs` `mapStatus()` checked the `gate` label before
+checking the `closed` status:
+
+```js
+if (labels.includes('gate') || issue_type === 'decision') return 'gate';
+case 'closed': return 'done';
+```
+
+Effect: a closed gate task got `status: 'gate', raw_status: 'closed'`. The
+P0/Pending-decisions/Active-pipeline aggregates that filter on `status !==
+'done'` then counted those closed gates as still-open work — Codex test
+report showed 3 closed gates appearing as `P0 open: 3`.
+
+**Fix:** terminal status (`closed`, `blocked`) takes precedence over gate
+classification:
+
+```js
+if (status === 'closed') return 'done';
+if (status === 'blocked') return 'blocked';
+if (labels.includes('gate') || issue_type === 'decision') return 'gate';
+// ...
+```
+
+---
+
+## v2.5.4 — 2026-05-09
+
+### Cross-platform host detection — env-var-first
+
+v2.5.3 used filesystem-only detection (`~/.claude` / `~/.codex` / etc). Bug:
+power users have multiple tools installed simultaneously, and the order of
+filesystem checks then determined which host "won" — wrong answer when the
+user is currently running in tool A but has tool B also installed.
+
+**Fix:** detection now uses runtime env vars first (set by the host process
+that actually invoked the skill), filesystem markers only as fallback when
+env is empty (manual invocation, CI):
+
+| Host | Detection signal |
+|---|---|
+| Claude Code | `$CLAUDECODE=1` or `$CLAUDE_CODE_ENTRYPOINT` |
+| OpenAI Codex CLI | `$CODEX_HOME` or `$CODEX_SESSION` |
+| Cursor | `$CURSOR_TRACE_ID` or `$TERM_PROGRAM=Cursor` |
+| Aider | `$AIDER_VERSION` |
+| Continue | `$CONTINUE_GLOBAL_DIR` |
+| Generic | (none of the above) |
+
+Verified: real Claude Code session (with both `~/.claude` and `~/.codex` on
+disk) now correctly resolves to `HOST=claude-code` via `$CLAUDECODE=1`.
+
+### Cursor extension polish
+
+- Added 128×128 marketplace icon (converted from `docs/screenshots/logo.svg`)
+- Trimmed keywords from 6 → 5 (marketplace only indexes first 5)
+- VSIX now 12.56 KB (was 7.11 KB) with icon embedded
+- Ready for `vsce publish` once the publisher account + PAT are configured
+
+### Strategic note
+
+v2.5.4 closes the cross-platform gap: every supported host now resolves
+correctly to its native classification, so dependency checks, brainstorming
+fallbacks, and platform-specific behaviours all fire as designed.
+
+---
+
+## v2.5.3 — 2026-05-09
+
+### Codex / Cursor / Aider compatibility — host detection + Beads write-test
+
+Findings from a real Codex installation test:
+
+**Issue 1: `DEPS_MISSING: superpowers` on non-Claude hosts**
+- The dependency check in `SKILL.md` searched `~/.claude/skills/superpowers/`
+  unconditionally. In Codex, Cursor, Aider, Continue this directory doesn't
+  exist — emit'ed false-alarm "missing dependency" warning.
+- **Fix:** added host detection (`HOST` = claude-code | codex | cursor | aider |
+  generic, derived from filesystem markers like `~/.codex`, `~/.cursor`,
+  etc.). The superpowers check now runs only on Claude Code. On other hosts,
+  the brainstorming step uses an inline 5-question discovery built into the
+  architect agent — no plugin dependency.
+- **New diagnostic levels:** `DEPS_MISSING_HARD` (Beads — required everywhere)
+  vs `DEPS_MISSING_SOFT` (superpowers — Claude Code only). Soft missing
+  doesn't block, just warns once.
+
+**Issue 2: weak Beads check returned BEADS_OK on empty dir**
+- Old: `bd list 2>/dev/null | head -1` returns success on empty dir because
+  `bd list` outputs nothing and exits 0. False positive — `bd init` never
+  runs even when no DB exists.
+- **Fix:** new check is `[ -d .beads ] && bd ready >/dev/null 2>&1`. `bd ready`
+  requires a usable DB and fails cleanly when uninitialized. Also added a
+  **post-init write-test:** `bd create` a probe issue, capture the ID via
+  `grep -oE 'bd-[a-z0-9-]+ '`, then `bd close` it. Catches the case where
+  `bd init` exited 0 but the DB ended up unwritable (read-only filesystem,
+  permission errors, etc.).
+
+### Strategic note
+
+great_cto v2.5.0 claimed cross-platform support but the SKILL.md still had
+Claude-Code-isms baked into the bootstrap. v2.5.3 closes the gap — Codex
+users get DEPS_OK (clean start) instead of a confusing DEPS_MISSING warning.
+
+Tested in `~/development/Test` against Codex per real-user dogfooding report.
+
+---
+
+## v2.5.2 — 2026-05-09
+
+### Distribution materials
+
+- `packages/cursor-ext/great-cto-cursor-2.5.0.vsix` — packaged Cursor extension
+  ready for marketplace upload (`vsce publish`)
+
+### Strategic note
+
+v2.5.0 → v2.5.2 closed the loop on the multi-platform pivot:
+- v2.5.0 added the features (webhooks, SSE, reports, Cursor stub, ADR)
+- v2.5.1 fixed a critical bug in the security scanner found by E2E testing
+- v2.5.2 added distribution prep
+
+---
+
+## v2.5.1 — 2026-05-09
+
+### Critical bugfix: scan/ci missed findings on relative paths
+
+`great-cto scan ./vulnerable.ts` and `great-cto ci ./vulnerable.ts` returned
+**0 findings** when the path was relative — even on the canonical fixture
+that should produce 5 findings. Absolute paths worked correctly. Discovered
+during E2E testing of v2.5.0.
+
+**Root cause:** `fileMatchesGlobs()` in `scanner.ts` used a sentinel-based
+multi-pass replace to convert globs to regex (`**` → SOH → `.*`). The pattern
+for `**/*.ts` produced `.*/[^/]*\.ts` which **requires** a slash. Files at
+the root of cwd (`vulnerable.ts`) have no slash → pattern rejects them →
+all rules skipped → 0 findings.
+
+**Fix:** rewrote glob-to-regex with token-based walker. `**/` now correctly
+becomes `(?:.*\/)?` (zero-or-more path segments) so `vulnerable.ts` matches
+`**/*.ts`. Regex anchored to suffix (`(?:^|/)<pattern>$`) for correctness.
+
+This bug existed since v2.0.0 (when AgentShield merged into the CLI). All
+prior versions affected. Recommend immediate upgrade.
+
+### Impact
+
+Anyone running `npx great-cto scan` or `npx great-cto ci` on a relative
+path containing files at the cwd root saw false-clean results. CI workflows
+that ran `great-cto ci ./` before this release silently passed even with
+critical findings.
+
+---
+
+## v2.5.0 — 2026-05-09
+
+### Production-grade webhooks + MCP SSE + reports + Cursor extension
+
+Five major additions extending the multi-platform foundation laid in v2.4.0.
+Single biggest release since v2.0.
+
+**1. Webhooks production-grade — HMAC + retry + DLQ + outbound**
+
+- HMAC-SHA256 verification on incoming webhooks (constant-time comparison via
+  \`crypto.timingSafeEqual\`)
+- Three native handlers: GitHub (\`X-Hub-Signature-256\`), Sentry
+  (\`X-Sentry-Signature-256\`), generic (configurable)
+- Outbound dispatcher with exponential-backoff retry (1s → 4s → 16s → 64s,
+  4 attempts) and dead-letter queue at \`~/.great_cto/webhook-dlq.log\`
+- Format adapters: Slack incoming-webhook, Discord, PagerDuty Events API v2,
+  generic JSON POST
+- Config persisted at \`~/.great_cto/webhooks.json\`
+- New subcommand:
+  \`\`\`bash
+  great-cto webhook list
+  great-cto webhook add-incoming github --secret <hmac>
+  great-cto webhook add-outgoing ops-slack --url <slack-url> --format slack \\
+                                            --triggers pr.opened,incident.p0
+  great-cto webhook test ops-slack
+  great-cto webhook remove ops-slack
+  \`\`\`
+- Insecure mode (\`great-cto serve --insecure\` or
+  \`GREATCTO_WEBHOOK_INSECURE=1\`) only for local development
+- Server endpoints: \`/webhook/github\`, \`/webhook/sentry\`,
+  \`/webhook/generic\`, \`/events\`, \`/dlq\`, \`/healthz\`
+
+**2. MCP SSE mode — multi-client / remote**
+
+\`great-cto mcp --sse --port 8765\` runs a long-running HTTP server with the
+standard MCP SSE transport:
+
+- \`GET /sse\` opens an event stream and emits the per-session endpoint
+- \`POST /message?sessionId=<id>\` accepts inbound JSON-RPC
+- Multiple clients can connect concurrently
+- Same 5 tools as stdio mode (\`scan\`, \`list_rules\`, \`detect_archetype\`,
+  \`estimate_cost\`, \`query_decisions\`)
+
+**3. \`great-cto report\` — shareable HTML/JSON artifacts**
+
+Three report types, two output formats. HTML output is fully self-contained
+(no external CSS/JS) — emailable, attachable, hostable as GitHub Pages:
+
+\`\`\`bash
+great-cto report cost --period 30d > cost.html       # CFO-friendly
+great-cto report agents --period 7d --format json    # CI / scripts
+great-cto report compliance --archetype fintech      # board / audit
+\`\`\`
+
+Embeds inline SVG charts (no JS dependencies). Dark mode via
+\`prefers-color-scheme\`.
+
+**4. Cursor extension stub — \`packages/cursor-ext/\`**
+
+VS Code / Cursor extension scaffold (TypeScript + vsce-ready). Four commands
+in the command palette:
+
+| Command | Action |
+|---|---|
+| \`great_cto: Generate Cursor config\` | \`great-cto adapt --platform cursor\` |
+| \`great_cto: Scan workspace\` | \`great-cto scan\` in terminal |
+| \`great_cto: Run pre-merge CI gate\` | \`great-cto ci .\` |
+| \`great_cto: Generate cost report\` | \`great-cto report cost\` → opens HTML |
+
+Status-bar shield icon for one-click scan. Extension is a thin wrapper —
+shells out to npx so updates flow through npm.
+\`packages/cursor-ext/README.md\` documents marketplace publish flow.
+
+**5. ADR-001: Multi-tenant board — path to managed SaaS**
+
+\`docs/adr/ADR-001-multi-tenant-board.md\` lays out the architectural
+decision (deferred to v2.6.0+) for going multi-tenant: DB-per-tenant
+SQLite for self-hosted, RLS-Postgres for managed SaaS, OAuth-only auth,
+proposed pricing tiers ($20/seat Starter → $50/seat Growth → custom
+Enterprise). Implementation guarded by demand validation gates.
+
+### Pipeline tests
+
+\`scripts/test-pipeline.sh\` extended from 48 → **55 checks** (added 7 covering
+webhook config, HMAC verification, MCP SSE, all 3 report types). Full run
+in ~16 sec.
+
+### Strategic note
+
+v2.5.0 cements great_cto as **"AI orchestration layer for any AI-coding
+tool"**. Cursor extension closes the loop on the 4M-MAU Cursor user base.
+Webhooks transform the local board into a control plane that reacts to
+external events (GitHub PRs, Sentry alerts) and broadcasts notifications
+(Slack, PagerDuty). Reports give CFO/compliance officers a read-only window
+into AI engineering ROI without cloning a single repo.
+
+---
+
+## v2.4.0 — 2026-05-09
+
+### Multi-platform support — works in Codex, Cursor, Aider, Continue, Claude Code
+
+great_cto is no longer Claude-Code-only. The npm package becomes the universal
+adapter that works with **any** AI-coding tool that supports either AGENTS.md
+(de-facto cross-platform standard) or MCP (Model Context Protocol). Four new
+subcommands ship together:
+
+**`great-cto adapt --platform [claude|codex|cursor|aider|continue|all]`**
+- Generates platform-native config files derived from `.great_cto/PROJECT.md`
+- AGENTS.md (cross-tool spec used by Codex CLI + most others)
+- CLAUDE.md (Claude Code)
+- .cursorrules + .cursor/rules/great-cto.mdc (Cursor)
+- .aider.conf.yml + CONVENTIONS.md (Aider)
+- .continue/rules.md (Continue)
+- All variants share the same AGENTS.md core, so editing PROJECT.md updates
+  every consumer with one re-run
+
+**`great-cto ci`** — single-command CI gate
+- Runs scan + archetype-validate + budget-check
+- Auto-emits GitHub Actions \`::error\` annotations when \`\$GITHUB_ACTIONS=true\`
+  → findings appear inline on PR diffs
+- Optional SARIF (\`--sarif\`) for GitHub Security tab
+- Optional JUnit XML (\`--junit\`) for test reporters
+- Exit codes: 0 clean, 1 findings, 2 setup error
+- Drop-in for any GitHub Actions workflow:
+  \`\`\`yaml
+  - run: npx great-cto@latest ci ./ --sarif results.sarif
+  - uses: github/codeql-action/upload-sarif@v3
+    with: { sarif_file: results.sarif }
+  \`\`\`
+
+**`great-cto mcp`** — MCP server (stdio mode)
+- Exposes 5 tools: \`scan\`, \`list_rules\`, \`detect_archetype\`,
+  \`estimate_cost\`, \`query_decisions\`
+- Hand-rolled JSON-RPC over stdio (no SDK dependency, ~200 LOC)
+- Compatible with Claude Desktop, Cursor, Continue, any MCP-aware host
+- Add to Claude Desktop config:
+  \`\`\`json
+  { "mcpServers": { "great-cto": { "command": "npx", "args": ["great-cto", "mcp"] } } }
+  \`\`\`
+
+**`great-cto serve`** — webhook receiver (preview)
+- Endpoints: \`POST /webhook/github\`, \`POST /webhook/generic\`,
+  \`GET /events\`, \`GET /healthz\`
+- Persists events to \`~/.great_cto/webhook-events.log\` (JSONL)
+- Foundation for v2.5.0 — full GitHub PR scan-on-open, Sentry alert routing,
+  signature verification, retry/DLQ. **v2.4.0 is scaffolding only**.
+
+### Strategic shift
+
+This release reframes great_cto from "Claude Code plugin" to "universal AI
+engineering management layer". The Claude Code plugin remains the richest
+consumer, but Cursor (~4M MAU), Codex CLI, and Aider users now get the same
+archetype detection, security scanning, ADR query, and cost estimation
+through MCP — without installing Claude Code.
+
+### Pipeline tests
+
+\`scripts/test-pipeline.sh\` extended from 41 → **48 checks** (added 7 covering
+new subcommands). Still runs in ~12 sec.
+
+### Files
+
+- New: \`packages/cli/src/{adapt,ci,mcp,serve}.ts\` (~900 LOC)
+- New: \`docs/plans/PLAN-npm-multi-platform.md\` (architectural plan)
+- Updated: \`packages/cli/src/main.ts\` (subcommand dispatch + help)
+- Updated: \`scripts/test-pipeline.sh\` (7 new checks)
+
+---
+
+## v2.3.4 — 2026-05-08
+
+### `scripts/test-pipeline.sh` — automated pre-merge gate
+
+Single command that runs Levels 1–5 of the pipeline test plan in ~10 sec:
+
+```
+scripts/test-pipeline.sh             # all 41 checks (L1 → L5)
+scripts/test-pipeline.sh --quick     # L1 + L2 only (~5 sec, 12 checks)
+scripts/test-pipeline.sh --skip-l4   # skip board (no port)
+scripts/test-pipeline.sh --verbose   # show command output on failure
+```
+
+**Levels covered:**
+- **L1** — npm test (112 unit), archetype regression (28 cases), syntax checks
+- **L2** — CLI smoke: `--version`, `list-rules` (24 rules), scan fixtures, SARIF
+- **L3** — All 4 hooks (secret-scan, format-check, cost-guard, session-end)
+- **L4** — All 11 board API endpoints, math invariants (7500× ratio sanity),
+  11 memory layers, 34 installed agents
+- **L5** — Plugin sync: 22 commands + 34 agents present, plugin.json valid
+
+Exit code = number of failed checks. Coloured output. Per-check ✓/✗ and a
+failure list at the end with `--verbose` hint.
+
+Use this in pre-commit hook, CI, or by hand before any release. Replaces
+ad-hoc "check that it works" with a structured 41-point gate.
+
+---
+
+## v2.3.3 — 2026-05-08
+
+### Money formatting — space separator instead of comma
+
+Cost tiles previously rendered `$195,960` via `toLocaleString()` — but the
+comma is read as a decimal separator in EU/RU/many other locales, so users
+saw "195.96" and reported it as a bug. Switched to SI / ISO 80000-1 standard:
+non-breaking thin space (U+202F) as thousands separator → `$195 960`.
+
+Affects: `vs Human team` tile, "saved $X" sub-text, "vs humans" trend line
+on the LLM SPEND hero tile.
+
+---
+
+## v2.3.2 — 2026-05-08
+
+### Memory panel — surfaces all 11 layers
+
+Previously the Memory tab showed only 5 files (PROJECT / CODEBASE / brain /
+lessons / HANDOFF) plus global patterns. After dogfooding it became clear
+several documented memory layers were invisible:
+
+**Project-local additions** (`.great_cto/`):
+- `ARCHETYPES.md` — archetype catalogue synced from plugin (L1)
+- `SKILL.md` — pipeline skill definition (L1)
+- `local.md` — project-local notes, gitignored (L3)
+
+**Cross-project additions** (`~/.great_cto/`):
+- `decisions.md` — append-only ADR log written on every gate approval (L4)
+- `preferences.md` — user-level CTO preferences / defaults (L4)
+- `lessons.md` — cross-project lessons promoted from project-local L3 (L4)
+
+The sidebar now groups files into two sections — `PROJECT-LOCAL · .great_cto/`
+and `CROSS-PROJECT · ~/.great_cto/` — so it's clear which scope each file
+lives at. Files that don't exist yet stay listed with "not yet written"
+hints so users see what `/audit`, `/learn`, `/crystallize` etc. would
+produce.
+
+---
+
+## v2.3.1 — 2026-05-08
+
+### Board admin polish — metrics, bars, logs
+
+Bugfixes after v2.3.0 dogfooding on a real fintech project.
+
+**Metrics tiles populate from tasks when no PLAN-\*.md / verdict-cost data exists**
+- `LLM SPEND`, `COST SAVINGS VS FTE`, `LAST 30 DAYS`, `VS HUMAN TEAM`, `DAILY BURN`,
+  `PROJECTED MONTH` previously showed `—` / `$0` until a `docs/plans/PLAN-*.md`
+  was written. Now derived from `bd` tasks with assigned agents using the same
+  $0.02/AI-hr × $150/human-hr model as `agents_cost`.
+- Tile labels surface the source: `(est. from tasks)` / `(rough est.)` so the
+  fallback is transparent. Real plan-derived data still wins when present.
+
+**Cost-history bug: multiple tasks closed on the same day**
+- `getCostHistory` had a `b.runs === 0` guard meant to prevent double-count,
+  but it also skipped subsequent tasks closing the same day. On a project with
+  15 tasks closed on 2026-04-09, only 1 was counted → `LAST 30 DAYS` showed
+  $4.48 instead of the correct $5.72. Fixed: fallback engages all-or-nothing
+  across the whole series, no per-bucket guard.
+
+**Agent utilization & cost bars rendering empty**
+- `<span class="fill">` lacked `display: block`, so inline `<span>` ignored
+  the `width: N%` set by JS — bars rendered as empty rails. Fixed: added
+  `display: block` + `min-width: 2px` so even sub-1% bars stay visible.
+
+**Logs panel synthesizes from verdicts when no /save logs exist**
+- Previously empty until first `/save` invocation. Now falls back to
+  day-grouped entries built from `~/.great_cto/verdicts/*.log` — every
+  project with agent activity gets useful Logs immediately.
+- Auto-entries marked `· auto` in the list and "auto-synthesized from
+  verdicts" in the detail view.
+
+**QA pass-rate regex broadened**
+- Old regex `verdict.*pass` only matched a narrow format. Now accepts any of
+  "verdict / status / result" + "✅ / ✓ / pass / passed" (and the equivalents
+  for fail / blocked).
+
+### Time-estimate phrasing — LLM-agent vs human-team
+
+Throughout README and landing the time estimates now distinguish:
+- **LLM-agent time** — wall-clock from `/start` to ship-ready PR (e.g. ~45min)
+- **Human-team equivalent** — one mid-level engineer at ~6 productive hrs/day
+  including reviews, meetings, context switches (e.g. 2–3 days)
+
+Updated:
+- README "scale" table — added LLM-agent time + human-team equivalent columns
+- README `/start` example — `LLM agent: ~45min  (human team: 2–3 days)`
+- Landing hero terminal, before/after split, FAQ — same framing throughout
+
+---
+
+## v2.3.0 — 2026-05-08
+
+### Agent workforce management — Phase 5 of v2 plan
+
+Reframes great_cto from "dev pipeline tool" to "management layer for your AI
+engineering team". Adds three commands covering the agent lifecycle.
+
+**`/agent-review [name]`** — performance scorecard for LLM agents
+- List mode (no args): table of all agents with invocations / pass-rate / cost / last-seen
+- Detail mode (\`<name>\`): full scorecard with verdicts breakdown, cost outliers,
+  top 3-5 failure modes, prompt-tuning suggestions, comparison to previous window
+- Flags: \`--top-cost\` (sort), \`--idle\` (retire candidates), \`--since 90d\` (window)
+- Saves scorecard to \`~/.great_cto/agent-reviews/<name>-<date>.md\` for trend analysis
+- Uses Haiku via Task tool for failure-mode clustering (~\$0.05 per detail review)
+
+**`/agent-retire <name>`** — graceful deprecation flow
+- \`--list-candidates\`: show agents with 0 invocations in last 90 days
+- Confirmation prompt requires typing the agent name (prevents fat-finger)
+- Archives \`agents/<name>.md\` → \`agents/_retired/<name>.md\` with retirement marker
+- Removes from \`plugin.json\` SessionStart sync list automatically
+- Logs to \`~/.great_cto/decisions.md\` with reason + reversibility note
+- **Preserves verdicts** in \`~/.great_cto/verdicts/<name>.log\` for audit trail
+- Reversible: \`mv agents/_retired/<name>.md agents/<name>.md\` + restore plugin.json
+- Built-in safeguard for core pipeline agents (architect, pm, senior-dev, etc.)
+
+**`/cost feature <slug>`** — ROI per shipped feature
+- Total LLM cost broken down by agent (invocations, cost, avg/inv)
+- Comparison to human-equivalent at \$150/hr × 12h estimate (override via env vars)
+- ROI multiplier (e.g. "195x")
+- Cross-reference: top 5 similar features in same archetype (mean cost benchmark)
+
+**`/cost agent <name>`** — lighter per-agent cost summary
+- Total invocations, total cost, avg/invocation
+- Pointer to full \`/agent-review <name>\` for detailed analysis
+
+### Wired in plugin.json
+
+SessionStart sync list extended with \`agent-review\` and \`agent-retire\`
+slash commands (now 22 commands synced to \`~/.claude/commands/\`).
+
+### Strategic positioning shift
+
+Previous: "GreatCTO is 33 specialist agents that handle architecture, review,
+QA, security, and deploy" — a *dev pipeline tool*.
+
+New: "GreatCTO is the management layer for your AI engineering team —
+hire (\`/template install\`), review (\`/agent-review\`), route (cost-per-feature),
+retire (\`/agent-retire\`)." Sets up clear differentiation vs Cursor/Aider
+and creates a defensible positioning ("AI engineering ops").
+
+### Files
+
+\`\`\`
+commands/agent-review.md       NEW   ~150 lines
+commands/agent-retire.md       NEW   ~140 lines
+commands/cost.md               EDIT  +110 lines (feature + agent subcommands)
+.claude-plugin/plugin.json     EDIT  sync list +2 commands
+README.md                      EDIT  Three-commands table + What's new
+\`\`\`
+
+No new automated tests — these are slash commands tested via manual
+smoke tests on real session data.
+
+### Deferred to Phase 6
+
+- \`/agent-discover\` (L, 30h) — marketplace integration with template-broker
+- Multi-model routing (L, 40h) — needs careful eval framework first
+- Agent A/B testing harness (M, 25h) — needs prompt-versioning infrastructure
+- Token economy / caching dashboard (M, 25h) — needs Anthropic API caching telemetry
+- Agent drift detection (M, 20h) — month-over-month verdict quality compare
+
+---
+
+## v2.2.0 — 2026-05-08
+
+### 3 new archetypes — `edtech`, `gov-public`, `insurance` + 3 specialist reviewers
+
+Adds three high-value archetypes covering markets underserved by existing tooling.
+
+**`edtech`** — education technology with child-safety obligations
+- Detection: `canvas-lms`, `moodle-api`, `schoology-sdk`, `google-classroom`, `lti`, `scorm`, `clever-sdk` + README keywords (`student`, `classroom`, `k-12`, `coppa`, `ferpa`, `parental consent`)
+- Reviewer agent: `agents/edtech-reviewer.md` — COPPA verifiable parental consent (5 FTC-approved methods), FERPA student-data handling, GDPR-K geo-detection (13/14/15/16 per member-state), Section 508 + WCAG 2.2 AA accessibility, state student-privacy laws (SOPIPA-CA, NY 2-D)
+- Compliance auto-attached: `coppa`, `ferpa`, `gdpr-k`, `wcag-2.2-aa`, `section-508`, `sopipa-ca`
+
+**`gov-public`** — government / civic tech with FedRAMP/NIST burden
+- Detection: `login-gov-sdk`, `id-me-sdk`, `usds-design-system`, `uswds`, `uk-gov-design-system`, `gov-uk-frontend` + README keywords (`fedramp`, `fisma`, `nist 800-53`, `section 508`, `ato`, `government`, `federal`, `agency`)
+- Reviewer agent: `agents/gov-reviewer.md` — FedRAMP authorization-boundary scoping (Moderate/High/Tailored), NIST 800-53 Rev 5 control mapping (18 control families), FISMA, Section 508 + VPAT prep, PIA draft for E-Government Act §208, CJIS for law-enforcement, StateRAMP
+- Compliance auto-attached: `fedramp`, `nist-800-53`, `fisma`, `section-508`, `pia`, `ato`, `cjis`, `stateramp`
+
+**`insurance`** — InsurTech with multi-state regulatory burden
+- Detection: `acord-standards`, `naic-schemas`, `drools-rules`, `solvency2-calc`, `guidewire-cloud`, `duck-creek`, `majesco-sdk` + README keywords (`policy`, `underwriting`, `premium`, `claim`, `actuarial`, `naic`, `insurtech`, `solvency`)
+- Reviewer agent: `agents/insurance-reviewer.md` — NAIC 50-state filing matrix, Solvency II SCR/MCR/ORSA, IFRS 17 contract measurement (GMM/PAA/VFA), ACORD message validation, ASOP 41/56 actuarial documentation, anti-discrimination pricing analysis (disparate impact, ZIP-code proxies), bordereau reporting for reinsurance, NYDFS 23 NYCRR 500 if NY-in-scope
+- Compliance auto-attached: `naic`, `solvency-ii`, `ifrs-17`, `gdpr`, `ccpa`, `anti-discrimination-pricing`, `actuarial-asops`, `state-doi`
+
+### Detection logic
+
+- `packages/cli/src/archetypes.ts` — 3 new `Archetype` types, 3 new scoring rules, updated `TIE_BREAK_PRIORITY`, expanded `suggestCompliance()` with 3 new mapping blocks
+- `packages/cli/tests/archetypes.test.mjs` — 9 new tests (3 per archetype) — 50/50 archetype tests passing
+
+### Plugin wiring
+
+- `.claude-plugin/plugin.json` — SessionStart sync list extended with `edtech-reviewer`, `gov-reviewer`, `insurance-reviewer` (now 33 agents synced on session start)
+
+### Board UI
+
+- `packages/board/public/index.html` — 3 unique SVG icons in `ARCHETYPE_ICONS`:
+  - `edtech` — graduation cap (`#0ea5e9` cyan)
+  - `gov-public` — capitol building (`#1e3a8a` navy)
+  - `insurance` — protective shield (`#d97706` amber)
+
+### Documentation
+
+- README — archetype count 22 → 25, agent count 30 → 33, comparison-table + ASCII diagram updated
+- 3 new landing pages generated via `site/for/_generate.mjs` (local-only, gitignored)
+
+### Test status
+
+```
+141 / 141 tests passing
+  CLI suite (incl. archetype tests): 112 / 112  (+9 new)
+  Hooks suite:                        29 /  29
+```
+
+---
+
+## v2.1.0 — 2026-05-08
+
+### Merged `agentshield` into `great-cto/cli` (refactor)
+
+The standalone `@great-cto/agentshield` package (introduced in v2.0.0) is now a built-in `scan` subcommand of `great-cto`. Removes the need for a separate npm org / JSR scope / publish workflow while preserving every feature.
+
+**New CLI subcommands:**
+- `npx great-cto scan ./` — AI-specific security scan (OWASP LLM Top 10 + 24 rules)
+- `npx great-cto scan --severity high --json` — CI-friendly output
+- `npx great-cto scan --sarif file.sarif` — GitHub Code Scanning integration
+- `npx great-cto list-rules` — print rule catalog
+
+**Migration:**
+- `packages/agentshield/src/*` → `packages/cli/src/agentshield/`
+- `packages/agentshield/rules/*.yaml` → `packages/cli/agentshield-rules/`
+- `packages/agentshield/tests/*` → `packages/cli/tests/agentshield/`
+- Deleted: `packages/agentshield/`, `.github/workflows/publish-agentshield.yml`, tag `agentshield-v0.1.0`
+
+**Why:** maintenance ceremony of a separate package wasn't justified for the v2.0 launch — single install / single version is cleaner. Functionality unchanged. `agents/ai-security-reviewer.md` updated to invoke `npx great-cto scan` instead.
+
+---
+
+## v2.0.0 — 2026-05-08
+
+### Phase 3 of v2 plan — `@great-cto/agentshield` AI-security scanner (later merged into v2.1.0)
+
+Standalone npm package for AI-specific security scanning. Pure regex over text, zero deps, boots in <1s. Works with any LLM SDK (Claude/OpenAI/Anthropic/etc.).
+
+**5 scanners, 24 rules:**
+- `prompt-injection` (PI-001..005, OWASP LLM01) — template-literal injection, Python f-string injection, tool URL injection, override-language detection, eval-on-output
+- `secrets-in-prompts` (SP-001..004) — hardcoded API keys, DB connection strings, .env piped to model, CONFIDENTIAL markers
+- `ssrf-in-tools` (SS-001..004, OWASP LLM07) — URL fetch without allowlist, file-path without sandbox, exec/spawn user-controlled, file:// gopher:// scheme bypass
+- `rag-poisoning` (RAG-001..005, OWASP LLM01-indirect) — retrieved chunks in system prompt, no source provenance, user ingest, embeddings without truncation, unbounded topK
+- `cost-runaway` (CR-001..006, OWASP LLM06) — LLM in unbounded loop, public endpoint without rate-limit, recursive agents, missing max_tokens, missing AbortSignal, flagship-model for trivial tasks
+
+**Output formats:** Human-readable (color-coded), JSON, SARIF 2.1.0 for GitHub Code Scanning. 10/10 scanner tests pass.
+
+**Note:** v2.0.0 was the last release of the standalone package. Merged into `great-cto/cli` at v2.1.0 — see migration above.
+
+---
+
+## v1.2.0 — 2026-05-08
+
+### Phase 2 of v2 plan — continuous learning loop
+
+Two-tier memory system that captures session patterns and re-uses them across sessions and projects.
+
+**New agent — `agents/continuous-learner.md`** (Haiku, ~$0.05/run)
+Reads session transcript + git + verdicts + cost log; extracts ≤3 lessons matching one of 5 shapes (reviewer-catch, cost-outlier, repeated-mistake, discovery-miss, tool-decision); writes to `.great_cto/lessons.md`. Strict quality gates: silence > noise.
+
+**New command — `commands/learn.md`** (slash command `/learn`)
+Manual trigger for focused extraction (`/learn cost`, `/learn security`, `/learn architecture`).
+
+**New script — `scripts/lessons-merge.mjs`**
+Aggregates `~/.great_cto/projects/*/lessons.md` by pattern slug. Promotes any pattern with ≥3 distinct projects to `~/.great_cto/decisions.md`. Tracks already-promoted slugs; supports `--dry-run` and `--force`. 8/8 tests pass.
+
+**Updated agents to read `lessons.md` + `decisions.md` at session start:**
+- `architect.md` — reads `~/.great_cto/decisions.md` + `lessons.md` FIRST before any architecture decision; filtered by archetype
+- `senior-dev.md` — consults lessons for known anti-patterns before claiming a task; cites in commit messages
+- `pm.md` — calibrates cost estimates against cost-outlier lessons (shape B)
+
+**Updated `scripts/hooks/session-end.mjs`** — now registers project as symlink in `~/.great_cto/projects/<slug>/` and spawns `lessons-merge` in background after each session.
+
+**ADRs:**
+- ADR-015 — learning loop architecture (two-tier rationale, threshold=3, Haiku rationale, subagent vs inline)
+- ADR-016 — privacy guardrails (what learner MUST NOT capture, default-local)
+- ADR-017 — skill candidate promotion criteria (locked spec for v1.4.0)
+
+**User-facing docs:** `docs/LEARNING.md` — config, opt-out, inspection, reset.
+
+---
+
+## v1.1.0 — 2026-05-08
+
+### Phase 1 of v2 plan — Claude Code hooks foundation
+
+Four new hooks fill gaps in existing Claude Code lifecycle coverage.
+
+**`scripts/hooks/secret-scan.mjs`** (PreToolUse for Edit/Write/MultiEdit)
+Blocks writes containing AWS Access Key IDs, AWS Secret Keys, GitHub PATs (classic + fine-grained + OAuth), Stripe live/restricted keys, OpenAI keys, Anthropic keys, Google API keys, Slack tokens, PEM private keys, JWT bearers. 13-pattern catalog, severity-tiered (block vs warn), test/fixtures allowlist, opt-out via `GREAT_CTO_DISABLE_SECRET_SCAN=1` env or `# great_cto:allow-secrets` comment.
+
+**`scripts/hooks/format-check.mjs`** (PostToolUse for Write/Edit/MultiEdit)
+Auto-format on save: prettier (JS/TS/JSON/MD/YAML), ruff/black (Python), gofmt (Go), rustfmt (Rust). Non-blocking — logs failures to `.great_cto/format.log`.
+
+**`scripts/hooks/cost-guard.mjs`** (UserPromptSubmit)
+Cost-cap awareness: warns when prompt triggers expensive operation (`/start`, `/audit`, "architect this", large refactor). Reads `cost-cap-usd-month` from `PROJECT.md` and recent spend from `cost-history.log`.
+
+**`scripts/hooks/session-end.mjs`** (SessionEnd)
+Phase 1 stub: writes session snapshot to `.great_cto/logs/session-*-end.md`. Phase 2 (v1.2.0) plugs in continuous-learner.
+
+**ADRs:**
+- ADR-013 — hook execution model (Node.mjs over bash, blocking rules)
+- ADR-014 — secret detection patterns (what, why, allowlist rationale)
+
+**User-facing docs:** `docs/HOOKS.md` — full reference of every hook.
+
+All hooks honor `GREAT_CTO_DISABLE_<NAME>=1` opt-out env vars. Tests: 21 hook tests passing.
+
+---
+
+## v1.0.184 — 2026-05-07
+
+### JSR mirror + expanded README badges
+
+- Added `packages/cli/jsr.json` — enables JSR auto-publish on tag (mirrors npm)
+- New badges on README: JSR, npm downloads, GitHub issues, last commit, Socket.dev, Snyk Advisor
+- Released `@avelikiy/great-cto@1.0.184` on JSR (live at https://jsr.io/@avelikiy/great-cto)
+- New workflow `.github/workflows/jsr-publish.yml` — auto-publish to JSR on every `v*` tag
+
+---
+
+## v1.0.183 — 2026-05-07
+
+### Mandatory minimum-discovery + corrected LLM cost estimates
+
+**Hard-gate for high-risk archetypes** — Architect now refuses to proceed without 4 mandatory answers (mode, team-size, cost-cap, geo) for `fintech`, `healthcare`, `regulated`, `enterprise-saas`, `commerce`, `web3`. Prevents silent assumptions like "$4,500/mo Aurora multi-region for a hackathon prototype" (real bug caught during neobank PoC test).
+
+**Mandatory discovery in `/start`** — added Step 2.5 (4-question batch) before PROJECT.md write, even when archetype is detected with high confidence. Skip via explicit `--skip-questions` flag (writes `discovery-defaults-applied: true` to PROJECT.md as audit trail).
+
+**Updated LLM cost estimates** in `pm.md` with measured 2026 rates:
+- architect: $2–4 (was $0.50, severely underestimated)
+- pci-reviewer / regulated-reviewer / oracle-reviewer / ai-security-reviewer: $0.40–0.80 (new)
+- devops: $0.10–0.30 (was $0.02)
+- senior-dev: $0.50–1.20 per task
+- Mode budgets revised: PoC > $5, MVP > $25, Full > $100 (was $1/$5/$20)
+
+Pricing table added: Opus $15/$75, Sonnet $3/$15, Haiku $0.80/$4 per 1M tokens.
+
+---
+
+## v1.0.182 — 2026-05-07
+
+### Pipeline-blocker fixes (board + senior-dev)
+
+Discovered during full-pipeline neobank PoC test that exposed multiple blockers.
+
+**Senior-dev fallback** — fixed `isolation-fallback: none` → `cwd` so the agent works on non-git projects (`/tmp/` test dirs). Eliminated tool-denial errors when worktree creation fails.
+
+**Board task sync** — added `parseTasksMd()` parser + Beads-fallback chain. Board now reads both `.great_cto/tasks.md` markdown format AND Beads JSON, fixing zero-tasks-displayed bug for projects without Beads initialized.
+
+**Project registration** — added `POST /api/projects/register {path}` endpoint. Board can now discover projects outside `~/development/` (e.g. `/tmp/neobank-test`).
+
+**Archetype extraction** — implemented 3-pattern regex fallback (`archetype:` → `primary:` → `- Primary:`) + 20+ alias normalizer. Fixed all-projects-defaulting-to-`web-service` bug. Default changed from `'web-service'` to `'unknown'`.
+
+**Archetype icons** — added 11 unique SVG icons in board's project switcher: `enterprise-saas`, `cms`, `cli-tool`, `marketplace`, `streaming`, `healthcare`, `mlops`, `devtools`, `data-engineering`, `greenfield`, `unknown`. Each with distinct color and symbol.
+
+---
+
+## v1.0.181 — 2026-05-07
+
+### Board logs tab + agents status + archetype badge + plugin polish
+
+- Board: added `/api/logs` endpoint + new "Logs" tab in UI (live SSE stream from `.great_cto/agent-writes.log`)
+- Board: agent status grid shows idle/running/blocked/done with last-active timestamp
+- Board: archetype badge on each project card
+- Plugin: `/save` and `/resume` commands shipped as built-ins; PROJECT.md template gained 3-Layer Query Rule for context-efficient memory usage
+- Plugin: minor SessionStart resilience fixes for nonexistent helper files
+
+---
+
+## v1.0.180 — 2026-05-04
+
+### 5 new archetypes — 17 → 22 archetypes / 24 → 29 specialist agents
+
+Added 5 of the most-requested missing pipelines (analysis identified them as top-5 gaps with combined coverage of 25-40% of real-world projects).
+
+- **`enterprise-saas`** + `enterprise-saas-reviewer` — multi-tenant B2B SaaS. Covers tenant isolation (RLS / schema-per-tenant / DB-per-tenant), SSO + SAML + SCIM, immutable audit log, data residency, tier / entitlements, admin impersonation safety, SOC2 Type 2 readiness. Detects via `workos`, `auth0`, `okta`, `samlify`, `passport-saml`, `@scim2/core` + multi-tenant README keywords.
+- **`mlops`** + `mlops-reviewer` — model training & lifecycle (distinct from `ai-system` inference). Covers dataset lineage (DVC / LakeFS), training cost budgets, model registry (MLflow / W&B), drift detection (Evidently / WhyLabs), bias / fairness audit, shadow + canary serving, EU AI Act high-risk classification + Article 9 / 13 docs. Detects via `mlflow`, `wandb`, `dvc`, `kubeflow`, `bentoml`, `seldon`, `kserve`, `sagemaker`, `vertex-ai`, `ray`.
+- **`streaming`** + `streaming-reviewer` — event-driven / real-time (distinct from batch `data-platform`). Covers exactly-once semantics, idempotency proofs, ordering, backpressure, DLQ + poison-message handling, Schema Registry compat, stateful checkpoint storage, p99 latency budgets, CDC fidelity. Detects via `kafkajs`, `rdkafka`, `kinesis`, `pulsar`, `flink`, `beam`, `debezium`.
+- **`marketplace`** + `marketplace-reviewer` — two-sided platform (distinct from single-merchant `commerce`). Covers Stripe Connect / Adyen MarketPay payouts, seller KYC + KYB (Persona / Onfido / Sumsub), OFAC + sanctions screening, marketplace facilitator tax (Wayfair v. SD), 1099-K, escrow, dispute mediation, EU DSA + P2B Regulation. Detects via `stripe-connect`, `adyen-marketpay`, `persona`, `onfido`, `sumsub` + marketplace README keywords.
+- **`cms`** + `cms-reviewer` — content / publishing platform. Covers schema.org structured data, Core Web Vitals (LCP / INP / CLS), DMCA workflow + registered agent, UGC moderation (CSAM hash + NCMEC), image pipeline (AVIF / WebP), SEO hygiene, WCAG 2.2 AA, EU DSA Article 16. Detects via `sanity`, `contentful`, `strapi`, `payload`, `ghost`, `gatsby`, `eleventy`.
+
+Total agents: **24 → 29**. Total archetypes: **17 → 22**. New archetype detection signals added to `detect.ts` + Rule scoring in `archetypes.ts` with TIE_BREAK_PRIORITY updated. New compliance keywords integrated into `suggestCompliance()`.
+
+### Landing — 5 new `/for/<archetype>` pages
+
+Generated via existing `site/for/_generate.mjs` template — `enterprise-saas`, `mlops`, `streaming`, `marketplace`, `cms`. Same structure: hero → before/after split → 4 specialist agents → install CTA. All 22 cards on landing now link to dedicated pages.
+
+---
+
+## v1.0.170 — 2026-05-04
+
+### 7 new specialist reviewers — coverage 71 → 88 average
+
+Added dedicated pre-implementation reviewers for archetypes that previously fell back to generic agents. Each follows the same pattern as `pci-reviewer` / `regulated-reviewer`: outputs `docs/sec-threats/TM-{slug}.md`, signs off Critical/High mitigations before senior-dev claims tasks.
+
+- **`mobile-store-reviewer`** — App Store / Play Store policy, IAP receipt validation, privacy nutrition labels, universal-link verification. Fixes README ↔ reality drift (was promised, didn't exist).
+- **`library-reviewer`** — semver enforcement via api-extractor / cargo-public-api / pyright, backward-compat matrix, CHANGELOG discipline, OpenSSF Scorecard ≥ 7.
+- **`infra-reviewer`** — tfsec / checkov / cdk-nag pre-apply, IAM least-privilege via Access Analyzer, public-S3 hard-block, KMS rotation, rollback-path enforcement, drift detection.
+- **`cli-reviewer`** — shell-injection sweep (argv arrays only), destructive-op gate (--yes / interactive confirm), CLI UX checklist (--help / --json / NO_COLOR / exit codes), cross-platform path handling.
+- **`game-reviewer`** — COPPA under-13 detection, ESRB / PEGI / IARC alignment, loot-box odds disclosure (BE / NL banned, DE / China explicit), WCAG 2.2 + game-a11y guidelines.
+- **`data-platform-reviewer`** — PII inventory + classification, retention codification, OpenLineage / dbt docs lineage, SAR / Article 17 erasure scripts, Spark / Airflow / dbt log redaction, cross-border SCC declaration.
+- **`devtools-reviewer`** — Sigstore signing + SLSA L3 provenance, telemetry-leak sweep (no paths / no usernames / no source), reproducible builds, auto-update signature verification.
+
+Total agents: **17 → 24** (8 universal + 16 specialist).
+
+### Landing — dedicated `/for/<archetype>` for all 17 archetypes
+
+Previously only `/for/agent-product`, `/for/fintech`, `/for/healthcare` existed; remaining 14 cards on landing rendered as non-clickable `<div>` even though they implied detail pages. Generated via `site/for/_generate.mjs` from a single template + per-archetype data array — covers `web-service`, `ai-system`, `commerce`, `mobile-app`, `cli-tool`, `library`, `browser-extension`, `game`, `web3`, `data-platform`, `devtools`, `iot-embedded`, `infra`, `regulated`. Each page: hero → before/after split (5 archetype-specific bugs) → 4 specialist agents → install CTA.
+
+### Public-repo cleanup
+
+Removed `workers/` (Cloudflare Workers — infra stays private), `tests/ui/` and `tests/e2e/` (internal tooling), `enforcement/` (moved `prose-deny.txt` → `agents/_shared/`), `demo/`, `docs/marketplace/`, `docs/design/`, `docs/README-old.md`. Kept `tests/eval/` (LLM golden-set) and `tests/fixtures/` (archetype detection examples). Expanded `.gitignore` to prevent `node_modules`, `dist`, `.wrangler` re-commit.
+
+### Stats widget removed from landing
+
+Removed `installs/week`, `installs/month`, `total installs`, `npm DL/week` widget — early stage, numbers detract from message.
+
+---
+
+## v1.0.160 — 2026-05-01
+
+### Dark emerald theme across admin + report + landing
+
+Full visual redesign — admin board and public report flipped from light "Ghibli" theme to **dark emerald** matching the new `greatcto.systems` landing.
+
+- **Admin** (`packages/board/public/index.html`): Geist + Geist Mono fonts, `#0a0e0c` background with subtle radial-gradient emerald glows, all cards on `#11161a`, status pills + p0/p1/p2 colors mapped to dark equivalents. Removed Ghibli landscape SVG (replaced with pure CSS gradient).
+- **Report** (`packages/board/public/share.html`): same emerald palette, brand mark unified with admin (6-stroke bold asterisk SVG).
+- **Brand mark**: redrawn favicon + nav-logo as 6-stroke bold asterisk (was 12-pointed thin star — illegible at 16×16). Same path used in admin sidebar, report header, browser favicon.
+
+### Gate approval logic — `raw_status` fix
+
+Closed gates were still showing Approve/Reject buttons because `mapStatus()` returns `'gate'` for any gate-labeled card regardless of bd's actual status. `getTasks()` now exposes `raw_status` (the bd-native open/in_progress/closed/blocked field), and both `cardHTML` and `openSide()` use it to determine `isOpenGate`.
+
+### Pipeline SSE realtime
+
+`/api/sse` now streams `pipeline` and `inbox` events in addition to `tasks` whenever:
+- `.beads/interactions.jsonl` changes (per-project, debounced)
+- `~/.great_cto/verdicts/*.log` changes (any agent emitting a verdict)
+
+Client subscribes to all three event types — Active pipeline track + Inbox summary + Kanban update without polling.
+
+### Markdown rendering — marked.js + DOMPurify
+
+Replaced ~50-line hand-rolled `mdToHtml` regex parser with `marked@14.1.3` + `DOMPurify@3.1.7` (both SRI-pinned via CDN). Memory tab now renders proper GFM tables, autolinks, nested lists, code blocks. Falls back to escaped `<pre>` if CDN blocked.
+
+### Playwright e2e + CI
+
+`tests/ui/board.spec.mjs` — 11 specs covering sidebar, Inbox (gates / summary / 7-stage pipeline), Kanban (cards + descriptions), side panel, ⌘K search, Metrics (Cost panel + agent util + activity), Memory tab, Share toggle, full API contract.
+
+`tests/ui/setup-fixture.mjs` — bootstraps isolated bd-fixture project on port 3146, spawns server.mjs from this repo (not npm cache).
+
+`.github/workflows/ui-e2e.yml` — runs on PR + push to `packages/board/**` or `tests/ui/**`. Installs bd from source, runs Playwright with chromium, uploads trace + report on failure.
+
+### Landing site (greatcto.systems)
+
+- Removed live-iframe section + screenshot PNGs (light-theme PNGs clashed with dark page) → replaced with **DOM-rendered mockups** in the same emerald-dark palette. Pixel-perfect visual continuity, smaller payload, always in sync.
+- Migrated GH Pages → **Cloudflare Pages** (300+ edge nodes vs ~10, ~30ms TTFB vs ~80ms). `_headers` + `_redirects` shipped in repo for CF native config.
+- `great_cto-site` repo flipped to private (CF Pages serves private repos via GitHub App).
+
+---
+
+## v1.0.159 — 2026-05-01
+
+### Board admin: Inbox + Memory + Cost panel + inline gate approval
+
+- **Inbox tab** (default home) — time-aware greeting, summary pills (gates / P0 / blocked / stale > 48h), pending decisions list with inline Approve/Reject buttons, "Active pipeline" 7-stage track (architect → senior-dev → reviewers → qa → security → devops → l3-support).
+- **Memory browser tab** — 4-layer memory viewer (PROJECT.md / CODEBASE.md / brain.md / lessons.md / HANDOFF.md) + cross-project global patterns (`~/.great_cto/global-patterns/`), inline minimal markdown renderer.
+- **Cost panel** in Metrics — 30-day daily-burn bar chart from `docs/plans/PLAN-*.md` mtime + verdict `cost=$X` tags. 4 summary cells: last-30d / projected-month / vs-human / daily-avg. Monthly-budget alert if projected > `monthly-budget` in PROJECT.md.
+- **Inline gate approval** — Approve/Reject buttons on gate-labelled Kanban cards, in Inbox rows, and in side-panel detail. POST `/api/gates/:id` with `bd update --status closed/blocked + --notes`, SSE rebroadcast.
+- **Per-archetype icons** in project switcher / breadcrumbs / dropdown — 16 archetypes mapped to lucide-style stroke icons with brand colors (web-service → layers, ai-system → brain, web3 → diamond, etc.).
+- **⌘K topbar search** — filters tasks across title / id / agent / labels / status, switches to Board tab when typing.
+- **Project switcher dropdown** — multi-project navigation with archetype + description, query filter.
+- **Task descriptions** in side-panel + card preview — gates show context before approval.
+
+### Public report: AI vs Human compare card
+
+- New compare panel: `AI agents $X vs Human team $Y · Nx cheaper` (explicit comparison).
+- Hero stats reordered: **Tasks shipped / AI time / LLM cost** (was: shipped / spend / FTE).
+- Compact paddings + brand mark unified with admin (`✱ greatcto` Space Grotesk 600).
+
+### Landing site (greatcto.systems)
+
+- New sections: **Two decisions per feature** pipeline schema · **12-angle code review** chip grid · **Memory + 94% MTTR** with 4-layer cards · **Pricing transparency** ($34/month breakdown).
+- Hero now embeds **live iframe** of the public report demo (proves the product works).
+- Font swap: Fraunces serif → **Space Grotesk** (technical/geometric across landing + admin + report).
+- Mobile responsive: H1 sizing, nav nowrap, CTA stack, dashboard preview hidden < 800px.
+- Brand: SVG logo (cream star + greatcto) + favicon family + apple-touch-icon.
+
+### README
+
+Compacted from 503 → 242 lines. Multica-style structure: hero / what is / two decisions / features / quick install / cost / vs comparison / collapsed details (memory / archetypes / MCP / triggers / limitations).
+
+### Server endpoints (`packages/board/server.mjs`)
+
+- `GET /api/inbox` — pending_gates / blocked / p0_open / stale_in_progress + summary
+- `GET /api/memory` + `GET /api/memory-pattern?id=GP-XXX`
+- `POST /api/gates/:id` — `{ action: "approve"|"reject", reason? }` → bd update + SSE
+- `GET /api/cost?days=N` — daily series, projected monthly, budget comparison
+- `GET /api/pipeline` — current 7-stage SDLC pipeline state
+- `getTasks` exposes `description / design / acceptance / notes` from bd
+- Verdict parser supports `cost=$X` tag (stripped from raw, exposed as `cost_usd`)
+
+---
+
+## v1.0.158 — 2026-04-30
+
+### Light-theme redesign + new landing page
+
+Full Ghibli-inspired light-theme redesign — replaces the dark Linear/Notion aesthetic across all surfaces.
+
+- **New `site/`** — public landing page deployed to GitHub Pages (already wired via `.github/workflows/pages.yml`). Hero with hand-drawn SVG landscape (dawn variant), dashboard preview, "How it works" 3-step, six headline metrics, founder/VP-eng quotes, 17-agent table, terminal CTA. Pure static HTML/CSS — no build step.
+- **`packages/board/public/index.html`** — board admin rewritten in light theme. Sidebar with project switcher + nav (Tasks/Metrics/Share/Agents), Fraunces-serif headings, soft pastel landscape background, kanban columns with ring/half/filled status dots, redesigned Metrics page (3 hero + 4 secondary cards + agent utilization + activity feed), Share tab with toggle. All `/api/tasks`, `/api/metrics`, `/api/share`, `/api/sse` wiring preserved.
+- **`packages/board/public/share.html`** — public report on light landscape background, glass card with serif headline, three hero stats (Tasks shipped / LLM spend / vs FTE) + three secondary (AI time / QA pass rate / In progress), recently shipped list, paused state. Server template placeholders (`{{PROJECT}}`, `{{DATE}}`, `{{METRICS_JSON}}`, `{{TASKS_JSON}}`, `{{PAUSED}}`) unchanged — server.mjs and Cloudflare worker unaffected.
+
+Stack: vanilla HTML/CSS/JS — zero deps for client install.
+
+---
+
+## v1.0.157 — 2026-04-30
+
+### great_cto board — Kanban + CTO Dashboard + Shareable report URL
+
+**New: `great-cto board` command**
+
+```bash
+great-cto board              # opens localhost:3141 in browser
+great-cto board --port 4000  # custom port
+great-cto board --no-open    # headless server
+```
+
+**`packages/board/server.mjs`** — local HTTP server
+- Reads Beads tasks via `bd list --json --all --include-gates`
+- `/api/tasks` → tasks with Kanban column mapping
+- `/api/metrics` → velocity, cost savings, QA/security stats, agent utilization
+- `/api/sse` → Server-Sent Events: live updates via `.beads/interactions.jsonl` watch
+- `/api/share` GET/POST → toggle shareable report URL on/off
+
+**`packages/board/public/index.html`** — self-contained SPA (zero deps)
+- **Kanban tab**: 5 columns (Gates · Backlog · In Progress · Done · Blocked), live SSE updates, click → side panel with task details + close reason
+- **Dashboard tab**: 6 stat cards (features shipped, avg completion, cost savings, QA%, security), agent utilization bars, verdict timeline
+- **Share tab**: toggle on/off, copy URL, private link management
+
+**`packages/board/public/share.html`** — shareable report template
+- Executive-friendly: project name, date, 6 metrics, recently shipped features
+- `{{PAUSED}}` placeholder → Worker serves paused state without deleting data
+- No source code, no private data — aggregated metrics only
+
+**`workers/share/index.js`** — Cloudflare Worker + R2
+- `POST /r/` → publish report, returns `{ url, hash, expires_at }`
+- `GET /r/{hash}` → serve HTML (or paused page if disabled)
+- `POST /r/{hash}` `{ enabled }` → toggle on/off (preserves data)
+- TTL 30 days, auto-delete from R2, `X-Robots-Tag: noindex`
+
+---
+
+## v1.0.156 — 2026-04-30
+
+### Agent audit: tool gaps fixed + 3 new specialist subagents
+
+**Tool fixes (9 agents)**
+
+| Agent | Added tools |
+|---|---|
+| pm | `Edit`, `advisor_20260301`, `memory_20250929` |
+| ai-prompt-architect | `Edit`, `Bash`, `advisor_20260301` |
+| ai-eval-engineer | `Edit`, `WebFetch`, `WebSearch` |
+| l3-support | `Edit`, `advisor_20260301`, `memory_20250929` |
+| web-store-reviewer | `Bash`, `advisor_20260301` |
+| project-auditor | `Edit`, `advisor_20260301`, `memory_20250929` |
+| qa-engineer | `WebSearch` |
+| devops | `WebSearch`, `memory_20250929`, `mcp__great_cto_llm_router__ask_kimi` |
+| security-officer | `mcp__great_cto_llm_router__ask_kimi` |
+
+**Skill fixes (skill-discover.sh)**
+- `pm._default`: + `risk-register`
+- `ai-prompt-architect._default`: + `secure-sdlc`
+- `project-auditor._default`: + `vendors`, `cost-model`, `risk-register`
+
+**New subagents**
+
+- **`regulated-reviewer`** — pre-impl specialist for `regulated`/`fintech`. Covers DORA ICT (Art. 5 & 16), NIS2 Art. 21, ISO 27001 SoA, SOX ITGC (Access, Change Mgmt, Computer Ops, SoD), HIPAA PHI. Outputs `TM-*.md`. Blocks senior-dev on Critical/High findings.
+- **`performance-engineer`** — SLO contract design, k6 load tests, latency regression, N+1 detection, capacity planning. Outputs `docs/performance/PERF-*.md`. Active when `performance-sla:` set or archetype=data-platform/enterprise/commerce.
+- **`db-migration-reviewer`** — migration safety: lock duration analysis, zero-downtime patterns (CONCURRENTLY, nullable-first, shadow table), rollback verification, PII column detection. Outputs `docs/migrations/MIGRATE-*.md`. Blocks deploy if no rollback path.
+
+---
+
+## v1.0.155 — 2026-04-29
+
+### Safeguards: non-negotiable invariants wired across the pipeline
+
+**`skills/great_cto/templates/ARCH-default.md`** — `## Safeguards` section added
+- 4 categories: Data integrity · Security · Performance · API contracts
+- Archetype hints: commerce, ai-system, web3, iot-embedded, regulated
+
+**`skills/great_cto/templates/ARCH-ai.md`** — AI-specific `## Safeguards` section added
+- LLM safety (input sanitisation, no PII in prompts, hard token cap, output filter)
+- Cost & abuse (per-user spend cap, BudgetTracker, anomaly threshold)
+- Data isolation (tenant_id scoping, tool output sanitisation)
+- Auditability (tool call logging, ≥3 EVAL-*.md eval gate)
+
+**`agents/architect.md`** — Proof Loop extended
+- 2 new checks: Safeguards section present + archetype-appropriate
+- Safeguards generation guidance section added (3 sources: archetype defaults, feature-specific, anti-patterns)
+
+**`agents/senior-dev.md`** — Safeguards pre-flight added (Step 0b)
+- Reads `## Safeguards` from ARCH doc before writing any code
+- Every unchecked `- [ ]` must be implemented or blocked — no silent skips
+
+**`agents/security-officer.md`** — Safeguards cross-check added (CSO Proof Loop 5c)
+- New Proof Loop item: `ARCH ## Safeguards cross-check: all items verified?`
+- Bash block verifies each `- [ ]` item; unimplemented → P1 minimum; ai isolation/cost-cap → P0
+
+---
+
+## v1.0.154 — 2026-04-29
+
+### Rename: tech-lead → architect + new skills/tools
+
+**`agents/architect.md`** (renamed from `agents/tech-lead.md`)
+
+- Agent renamed: `tech-lead` → `architect` across all 66 source files (agents, commands, skills, templates, tests, demos, site)
+- `CHANGELOG.md` preserved as-is (historical record)
+- `plugin.json` stale-cleanup loop now removes `great_cto-tech-lead.md` from old installs
+
+#### New tools for Architect
+- `advisor_20260301` — Opus 4.7 advisor escalation for hard architectural reasoning
+- `mcp__great_cto_llm_router__ask_kimi` — consult external LLM (Kimi) on contested trade-offs
+
+#### New skills for Architect (frontmatter)
+- `anthropic-skills:system-architect` — system architecture methodology
+- `anthropic-skills:adr` — ADR writing methodology
+- `well-architected` — AWS/MSFT Well-Architected lens
+- `discovery` — project discovery phase
+
+#### New skills in AGENT_SKILLS `_default`
+- `cost-discipline` — cost-aware architecture decisions
+- `decision-log` — architect logs every significant decision
+- `secure-sdlc` — promoted from archetype-specific to `_default` (security is a universal architecture concern, not just for high-risk archetypes)
+
+`secure-sdlc` was previously duplicated in 5 archetype-specific entries; now single entry in `_default` inherited by all.
+
+---
+
+## v1.0.152 — 2026-04-29
+
+### PM agent: LLM cost model + human comparison
+
+**`agents/pm.md`** + **`skills/great_cto/references/pm-planning.md`**
+
+PM agent now estimates projects in **LLM agent terms** (token cost) and shows a side-by-side
+comparison with human developer cost.
+
+#### What changed
+
+**`pm-planning.md` additions:**
+- Human equivalent cost model: role rates (architect $200/h, backend $150/h, QA $80/h, security $200/h, etc.)
+- Human hours per task type table (12 task types × optimistic/pessimistic range)
+- Cost comparison formula: `savings_ratio = human_total / llm_total`
+- Expected savings benchmarks: PoC ~3,000–10,000x, MVP ~3,000–10,000x
+- PLAN-*.md schema updated: task breakdown now includes `Token cost` + `Human equiv` columns
+- New `## Cost comparison` section in every PLAN document
+
+**`agents/pm.md`** Step 4 expanded:
+- LLM cost: per-agent breakdown (tech-lead Opus, pm/senior-dev/security Sonnet, qa/devops Haiku)
+- Human equivalent: task → role → hours → USD (mid-senior US, +30% coordination overhead)
+- Savings ratio computed and shown in both PLAN file and CTO summary
+
+**Step 10 CTO presentation** now includes:
+```
+── Cost breakdown ────────────────────────────────
+LLM agents:  $X.XX – $X.XX
+Human team:  $X,XXX – $X,XXX  (+30% coordination)
+Savings:     ~XXXx cheaper  (~$X,XXX saved)
+```
+
+**Proof Check** (Step 8) gains 2 new items:
+- LLM cost estimate computed (per task + total)?
+- Human equivalent cost + savings ratio shown?
+
+---
+
+## v1.0.151 — 2026-04-29
+
+### New agent: PM (Project Manager)
+
+**`agents/pm.md`** + **`skills/great_cto/references/pm-planning.md`**
+
+New agent in the pipeline: **tech-lead → PM → (gate:plan) → senior-dev**.
+
+#### What PM does
+
+1. Reads the latest ARCH doc after `gate:arch` approval
+2. Extracts every task (SCHEMA/API/SVC/UI/INFRA/LLM/SEC/TEST/CSO) from the architecture
+3. Builds a dependency graph (text tree showing sequential vs. parallel)
+4. Estimates duration per task using the estimation table in `pm-planning.md` (by task type × mode)
+5. Applies buffer: PoC 0%, MVP +25%, Full +40%
+6. Identifies parallel-safe tasks (disjoint file ownership)
+7. Allocates agents: N concurrent senior-devs + qa-engineer + security-officer
+8. Generates a Mermaid Gantt diagram + ASCII fallback table
+9. Writes `docs/plans/PLAN-<slug>.md`
+10. Creates `gate:plan` — human approval required before any senior-dev starts
+11. Handles CTO adjustments: fewer agents, PoC mode, re-collapse parallel pools
+
+#### Project modes
+
+| Mode | Trigger | Task limit | Goal |
+|------|---------|------------|------|
+| `poc` | `project_size: nano` or `.great_cto/poc-mode.active` | ≤10 | ≤3 days |
+| `mvp` | `project_size: small` | ≤30 | ≤4 weeks |
+| `full` | `medium/large/enterprise` | unlimited | honest estimate |
+
+#### Skills
+
+PM uses: `pm-planning`, `pre-mortem`, `cost-model`, `anti-patterns` + archetype packs.
+AGENT_SKILLS matrix: 15 agents × 110 archetype entries (222 skill references, all resolving).
+
+#### Pipeline wiring
+
+- `agents/tech-lead.md` Step 7 Report: now mentions PM handoff + when to skip (nano)
+- `skills/great_cto/SKILL.md` Step 1b: PM inserted between gate:arch and senior-dev
+- `GATE:PLAN` described in SKILL.md with 72h expiry and adjustment protocol
+
+---
+
+## v1.0.150 — 2026-04-29
+
+### Fixed — project-auditor: deduplication, self-fix guard, risk/vendor scaffolding
+
+Three gaps surfaced from a real PoC run producing 8 duplicate ticket pairs.
+
+#### Deduplication — `bd_create_if_new` helper (Phase 8)
+
+Re-running `/audit` on the same repo created duplicate Beads tasks for every finding.
+Root cause: `bd create` was called unconditionally — no check against open tasks.
+
+Added `bd_create_if_new <keyword> <title> [flags]` shell function to Phase 8:
+- Runs `bd search <keyword>` before creating
+- If any open/in-progress match → prints `SKIP (duplicate)` and returns
+- If no match → creates the task normally
+- All example `bd create` calls in Phase 8 updated to use this pattern
+- Also applied to cost-cap tasks in Phase 4b (LLM spend exceeded / approaching)
+- Phase 9 report now shows `[N created, M skipped — duplicates]`
+
+#### Self-fix guard
+
+Auditor was filing tickets for issues it had already auto-fixed in the same run
+(e.g. updating `infra: fly.io → render.com` in PROJECT.md then creating a task for it).
+
+Added explicit **Self-fix guard** section in Phase 8: if the fix is already applied
+in this run, emit `AUTO-FIXED:` log line and skip `bd create`.
+
+#### Risk / vendor directory scaffolding
+
+`docs/risks/RISK-REGISTER.md` and `docs/vendors/` only exist after running `/start`
+with tech-lead. Pure `/audit` on an existing repo silently skipped all risk and vendor
+management (commands read these with `[ -f ... ]` guards).
+
+Added scaffolding block before the caching layer in project-auditor's pre-flight:
+- Creates `docs/risks/RISK-REGISTER.md` with header table if missing
+- Creates `docs/vendors/.gitkeep` if missing
+- Idempotent — never overwrites existing content
+
+---
+
+## v1.0.149 — 2026-04-29
+
+### Fixed — LLM router infrastructure: secrets.env template, doctor hint, pre-flight check
+
+Root cause: `mcp__great_cto_llm_router__ask_kimi` always returned `"OPENROUTER_API_KEY not set"`
+even when users had the key. `~/.great_cto/secrets.env` was never created by the
+installer — so the MCP server's layered loader (env → .env.local → secrets.env) always
+fell through to None.
+
+The MCP server config passes `"OPENROUTER_API_KEY": "${OPENROUTER_API_KEY}"` — when the
+shell env var is unset, Claude Code passes empty string, which is falsy, so the server
+correctly falls through to file lookup. But since the file didn't exist, it got None →
+fallback.
+
+**Fixes:**
+
+1. **`packages/cli/src/main.ts`** — installer now creates `~/.great_cto/secrets.env`
+   template on first install (or when missing). Never overwrites an existing file.
+   Template contains commented instructions + key placeholder. Logged as:
+   `created ~/.great_cto/secrets.env (add OPENROUTER_API_KEY for LLM router)`
+
+2. **`commands/doctor.md` Check 8b** — "not configured" message upgraded from `ℹ` to `⚠`,
+   now shows both locations explicitly:
+   - Global: `echo 'OPENROUTER_API_KEY=...' >> ~/.great_cto/secrets.env` (preferred)
+   - Per-project: `echo 'OPENROUTER_API_KEY=...' >> .env.local`
+
+3. **`commands/start.md` Step 5c pre-flight** — added LLM router check block. Reads key
+   from all 3 locations. If missing: creates `~/.great_cto/secrets.env` template with
+   commented placeholder so user knows exactly where to add it.
+
+**How to activate now (existing installs):**
+```bash
+echo 'OPENROUTER_API_KEY=sk-or-v1-...' >> ~/.great_cto/secrets.env
+# Then restart Claude Code — no reinstall needed.
+```
+
+---
+
+## v1.0.148 — 2026-04-29
+
+### Fixed — PoC field-test: bd fallback, worktree graceful degradation, Python buffering, pytest-timeout
+
+Four gaps surfaced during a real-world Agent Company Factory PoC run.
+
+#### P0 — bd CLI without Dolt backend: silent degradation → explicit fallback
+
+`bd init` silently succeeds even when the Dolt binary is missing (CGO not compiled).
+All subsequent `bd list/add/create` calls fail without any user-visible error — the
+entire task-tracking pipeline breaks invisibly.
+
+**Fixes:**
+- `/start` Step 3: `bd init` now checks if backend actually works with `bd list --status open`. On failure: creates `.great_cto/tasks.md` (markdown fallback table) and prints a clear warning with fix instructions.
+- `/start` Step 5c (**new pre-flight block**): checks `bd`, worktree hooks, and git state. Outputs `⚠` lines surfaced in Step 6 confirmation. Never blocks — always warns.
+- `agents/senior-dev.md`: added explicit `**If bd unavailable**: write to .great_cto/tasks.md` note to step 11 (was already there, now more prominent).
+
+Fix for bd: `CGO_ENABLED=1 go install github.com/steveyegge/beads/cmd/bd@latest` or download pre-built from releases.
+
+#### P0 — senior-dev `isolation: worktree` hard-fails without hooks
+
+`Agent(subagent_type="senior-dev")` with `isolation: worktree` throws:
+`Cannot create agent worktree: not in a git repository and no WorktreeCreate hooks are configured`
+
+This kills every parallel implementation task even for valid git repos that simply
+haven't configured the hooks.
+
+**Fixes:**
+- `agents/senior-dev.md`: added `isolation-fallback: none` frontmatter.
+- Added **Worktree isolation** section explaining: if worktree fails → continue without isolation, prefix output with `⚠`, commit frequently as checkpoints.
+- Included copy-paste `settings.json` snippet for WorktreeCreate/WorktreeRemove hooks.
+- `/start` pre-flight (Step 5c) now checks for `WorktreeCreate` in settings.json and warns if missing.
+
+#### P1 — Python stdout buffering when tests run in background
+
+`pytest ... & ; sleep 5; tail /tmp/out.log` returns empty file — Python buffers
+stdout when not in a TTY. `tail` reads the empty buffer.
+
+**Fixes:**
+- `agents/senior-dev.md`: all pytest examples now use `PYTHONUNBUFFERED=1 pytest -x -v`.
+- Added background pattern: `PYTHONUNBUFFERED=1 pytest > /tmp/test-out.log 2>&1 &`.
+- `agents/senior-dev.md` and `agents/qa-engineer.md`: all `pytest 2>/dev/null` fallback invocations updated to `PYTHONUNBUFFERED=1 pytest --timeout=30 2>/dev/null`.
+
+#### P2 — No pytest-timeout in Python project bootstrap
+
+Tests can hang indefinitely (network calls, deadlocks, infinite loops in LLM agents).
+No default timeout means CI/CD pipelines and PoC runs block forever.
+
+**Fix:**
+- `agents/senior-dev.md` Stack Detection section: added Python project bootstrap snippet with `[tool.pytest.ini_options]` including `timeout = 30` and `timeout_method = "thread"`. Triggered when no `pyproject.toml`/`pytest.ini` exists.
+
+---
+
+## v1.0.147 — 2026-04-28
+
+### Fixed — sort correctness, integration tests, doctor check, /migrate command, hook extraction
+
+Closes gaps A7, A12, A20/A25 (partial), A22, and M1+ identified in the v1.0.146 gap audit.
+
+#### A7 — Lexicographic `sort | tail -1` on numbered docs (CRITICAL)
+
+`ls ARCH-*.md | sort | tail -1` uses lexicographic order, so `ARCH-10.md` sorts
+before `ARCH-9.md` — the wrong document is loaded. Fixed **13 sites** across 7 files
+to use `sort -V | tail -1` (version-aware natural sort):
+
+- `agents/devops.md` (4 sites: QA report, CSO report, ARCH doc, changelog FEATURE grep)
+- `agents/qa-engineer.md` (FEATURE_SLUG extraction)
+- `agents/security-officer.md` (latest QA read)
+- `agents/senior-dev.md` (2 sites: ARCH doc hint, Requirements Checklist)
+- `commands/digest.md` (2 sites: latest AUDIT, latest REVIEW)
+- `commands/inbox.md` (latest AUDIT)
+- `commands/doctor.md` (`find_latest` helper)
+- `skills/great_cto/SKILL.md` (3 sites: LAST_PM, PREV_QA, PREV_CSO)
+- `.claude-plugin/plugin.json` SessionStart (QA + CSO phase-context reads)
+
+#### A12 — Integration test: agent × archetype → skill path resolution (NEW)
+
+Added `tests/structural/test_agent_skills.py`. Parses the AGENT_SKILLS matrix in
+`scripts/skill-discover.sh` and verifies every bundled skill name resolves to a real
+`.md` file under `skills/great_cto/`. Currently validates 201 skill references across
+14 agents × 93 archetype entries (2 external `superpowers:*` skills skipped).
+
+Run: `python3 tests/structural/test_agent_skills.py`
+
+#### M1+ — Check 2c in `/doctor`: archetype confidence validation
+
+Added **Check 2c** to `commands/doctor.md`. Reads `archetype_confidence:` from
+`PROJECT.md` and warns when the value is `medium` or `low` (detector uncertain) or
+missing (old install). Shows alternatives and recommends `/audit` or `/migrate`.
+
+#### A25 — New `/migrate` command
+
+Added `commands/migrate.md`. Appends missing `PROJECT.md` fields to existing installs
+without touching current values. Fields migrated: `archetype_confidence`,
+`archetype_alternatives`, `archetype_rationale`, `security_tier`, `project_size`.
+Supports `--dry-run` to preview changes.
+
+#### A22 — Extract UserPromptSubmit inline Python to external script
+
+Moved the 10-line inline Python from the `UserPromptSubmit` hook in `plugin.json` to
+`scripts/hooks/user-prompt-submit.py`. Hook now calls
+`python3 "${PLUGIN_DIR}/scripts/hooks/user-prompt-submit.py"`.
+Easier to test, diff, and extend.
+
+---
+
+## v1.0.146 — 2026-04-28
+
+### Fixed — pipeline gap audit triggered by real-world test on AI agent project
+
+Field-test on `/tmp/great-cto-test/ai-agent-demo` (Anthropic SDK + Node) surfaced
+a regression that has been live since v1.0.89 plus several smaller leaks. This
+release closes 7 gaps grouped by impact tier.
+
+#### G1 — `find … | head -1` resolves to **stale** plugin version (CRITICAL)
+
+When multiple plugin versions are cached at `~/.claude/plugins/cache/local/great_cto/<v>/`,
+`find … | head -1` returns the first match in filesystem order — not the latest version.
+Result: agents read `ARCHETYPES.md` / `TYPE_MAP.md` / `agent-security.md` from
+v1.0.88 even though v1.0.145 is installed. **Every agent change between v1.0.89 →
+v1.0.145 was silently invisible at runtime when v1.0.88 happened to be present.**
+
+Fixed in **12 call sites** across:
+- `agents/`: tech-lead, senior-dev (impl), qa-engineer (×2), security-officer (×3),
+  devops (×2), project-auditor (×2)
+- `commands/`: start (×2), crystallize (×1)
+
+Pattern: `find … | head -1` → `find … | sort -V | tail -1` (semver-aware).
+Variant with `-exec dirname {} \;` rewritten to
+`find … | sort -V | tail -1 | xargs dirname`.
+
+The 3 remaining `find . .great_cto … | head -1` sites are **project-local fallback
+lookups** (single-file scope, no version risk) — left unchanged.
+
+#### G2 — `applies_to` not exposed in skills-registry.json (CRITICAL)
+
+`skill-discover.sh` was scoring presence of `applies_to:` for quality (15pt)
+but not extracting the values. Open-world skill discovery (v1.0.142+) instructed
+agents to scan tier2/tier3 by `summary` keywords with no archetype tags to filter
+by — making the registry's per-skill metadata invisible.
+
+Fixed: `emit_entry()` now extracts `applies_to:` (both flow-style
+`[a, b]` and block-style `- a\n  - b` YAML) and emits a JSON array per skill.
+
+Result: **60/62 tier-1 skills** now expose `applies_to`. Open-world discovery
+becomes structured matching (`if archetype in skill["applies_to"]`) instead of
+substring match on summary.
+
+#### M3 — `README.md` in `templates/` polluted scoring
+
+`templates/README.md` was meta-documentation but indexed as a skill at score 20.
+Fixed: skip files matching `README` or starting with `_` during tier-1 scan.
+
+#### M4 — backfill `references/` frontmatter (29 files)
+
+All 29 reference files (`agent-security`, `agent-style`, `anti-patterns`,
+`board-narrative`, `burn-rate`, `cost-discipline`, `cost-model`, `decision-log`,
+`deprecations`, `discovery`, `dora`, `gate-health`, `grafana-ops`,
+`incident-patterns`, `knowledge-extraction`, `llm-router`, `onboarding`,
+`phases`, `poc-mode`, `pre-mortem`, `quarterly-review`, `reliability`,
+`risk-register`, `sec-metrics`, `secure-sdlc`, `security-tiers`,
+`skills-architecture`, `vendors`, `waivers`) now ship with canonical
+SKILL.md frontmatter (`name` / `description` / `when_to_use` / `applies_to`).
+
+**Result: tier-1 quality avg 22 → 99.4** (v1.0.143 → v1.0.146).
+Zero skills below score 50.
+
+#### G3 + G4 — extend AGENT_SKILLS matrix (8 archetypes added)
+
+`agent_skills` map in `skill-discover.sh` was missing per-archetype entries for
+**iot-embedded, fintech, data-platform, mobile-app, library, enterprise, web-app,
+marketing-site, devtools, infra**. Cross-archetype agents (devops, l3-support,
+project-auditor) had only `_default`.
+
+Coverage matrix now (out of 17 archetypes):
+- tech-lead: **17/17**
+- senior-dev: 16/17
+- qa-engineer: 13/17
+- security-officer: 10/17 (purposefully selective — no marketing-site/library/etc.)
+- devops: 9/17
+- l3-support: 8/17
+- project-auditor: 6/17
+
+Specific additions: regulated archetype now pulls full compliance pack
+(DORA-ICT, DORA-third-party, NIS2, ISO27001-SoA, SOX-ITGC, TISAX, 21CFR11);
+fintech pulls PCI-DSS-SAQ-D + DORA + SOX; commerce gains PCI-DSS-SAQ-A.
+
+#### M1 — persist detection confidence in PROJECT.md
+
+Previously `confidence: medium` was printed once at install and lost. Now
+`bootstrap()` writes:
+
+```yaml
+archetype_confidence: medium
+archetype_alternatives: [library]
+archetype_rationale: AI/LLM tooling detected (Anthropic SDK)
+```
+
+`/inbox` v1.0.146 surfaces a banner whenever `archetype_confidence != high &&
+!= user-specified` so the user can override before the pipeline commits.
+
+#### M2 — force registry refresh on plugin version mismatch
+
+CLI bootstrap now compares `skills-registry.json` `plugin_version` against the
+just-installed version. On mismatch (typical on upgrade), the stale registry is
+deleted and `skill-discover.sh` re-runs against the new plugin tree. Versions
+are sorted with proper semver compare (not lexicographic — fixes the
+`1.0.10 < 1.0.9` lexicographic bug).
+
+#### Site — landing + agents page
+
+- Hero stats line (`14 agents · 14 archetypes · …`) now `text-align:center` —
+  was left-aligned in centered container.
+- `agents.html` was showing **11 cards** ("14 agents" badge above). Added
+  the 3 specialist subagents shipped in v1.0.143:
+  - `pci-reviewer` (commerce — PCI-DSS scope, SCA, idempotency)
+  - `oracle-reviewer` (web3 — oracle strategy, MEV, upgradeability, L2)
+  - `firmware-reviewer` (iot-embedded — OTA, ETSI EN 303 645, secure boot)
+
+Total cards now **14/14**.
+
+---
+
+## v1.0.145 — 2026-04-28
+
+### Changed — backfill canonical SKILL.md frontmatter in tier-1 packs/templates
+
+v1.0.144 shipped quality scoring; tier-1 average came in at **22/100** because most packs and templates predated the SKILL.md frontmatter convention. This release backfills the convention across all in-scope artefacts.
+
+#### Files updated (31)
+
+**Packs (13)** — `skills/great_cto/packs/`:
+agent-pack, ai-pack, browser-extension-pack, commerce-pack, data-pack, devtools-pack, enterprise-pack, game-pack, infra-pack, library-pack, mobile-pack, web-pack, web3-pack
+
+**Templates (18)** — `skills/great_cto/templates/`:
+ARCH-ai, ARCH-browser-extension, ARCH-default, ARCH-defi-protocol, ARCH-game, THREAT-MODEL-AI, EVAL-template, ADR-LLM, ADR-PROMPT, PCI-DSS-SAQ-A, PCI-DSS-SAQ-D, DORA-ICT-risk-assessment, DORA-third-party-register, NIS2-article21-controls, 21CFR11-checklist, TISAX-VDA-ISA-results, ISO27001-SoA, SOX-ITGC-checklist
+
+Each file now opens with:
+
+```yaml
+---
+name: <skill-name>
+description: <one-sentence purpose>
+when_to_use: <when an agent should consult this>
+applies_to:
+  - <archetype>
+---
+```
+
+#### `scripts/skill-discover.sh` — env override
+
+`PLUGIN_DIR` is now respected when set in env (`: "${PLUGIN_DIR:=…}"`). Lets developers re-score against the dev tree instead of the cached marketplace copy.
+
+### Result
+
+- **Tier-1 average quality: 22 → 61.9** (+182%)
+- **Packs**: all 13 score ≥ 80 (was 20)
+- **Templates**: 18/19 score ≥ 80 (only `README.md` left at 20 — meta, intentionally skipped)
+- Remaining low-score items are 28 `references/` (out of scope; future iteration)
+
+Why it matters: agents that scan the registry now see proper `applies_to` tags + when-to-use hints, enabling open-world skill discovery (v1.0.142+) to match by archetype reliably instead of by name alone.
+
+---
+
+## v1.0.144 — 2026-04-28
+
+### Added — auto-flow visibility + detection confidence + skill quality
+
+User feedback: "How do I trust that archetype is correct? How do I trust that skills are quality?" Plus README/landing didn't surface the auto-loading flow that v1.0.140-143 built. This release closes both gaps.
+
+#### `packages/cli/src/main.ts` — Detection confidence display
+
+When `pickArchetype()` returns `confidence: low` OR `confidence: medium` with ≥ 2 alternatives, the CLI now shows a **highlighted warning** with:
+- Top candidate + rationale
+- Alternatives list
+- Override command: `--archetype <name>` or edit PROJECT.md after install
+
+User can spot a wrong detection at install time and override before the pipeline commits to the choice.
+
+#### `scripts/skill-discover.sh` — Quality scoring per skill
+
+Every skill in the registry now has `quality_score` (0–100) computed from:
+- Frontmatter present (---) — 30 pts
+- `description:` ≥ 30 chars — 20 pts
+- `when_to_use:` or `summary:` field — 15 pts
+- `applies_to:` field (archetype tags) — 15 pts
+- Body ≥ 50 lines — 10 pts
+- File size ≥ 2 KB — 10 pts
+
+Current scores (after this release):
+- Tier 3 (personal repo) avg: **100** — `rag-cascading-search` is canonical SKILL.md format
+- Tier 2 (anthropic) avg: **67** — well-formed but lack `when_to_use` field
+- Tier 1 (great_cto built-in) avg: **22** — packs/templates lack frontmatter; surfaces real cleanup work
+
+Agents can prefer high-score skills when multiple match a task. Low scores aren't blocking — they're diagnostic for content quality work.
+
+#### `README.md` — "How auto-loading works" section
+
+New section above commands table, explaining the 3-layer auto-loading flow with ASCII flowchart:
+
+```
+Layer 1: Archetype auto-detected from repo (15 manifest signals → 14 archetypes)
+Layer 2: Agents auto-wired by archetype (commerce → +pci-reviewer, etc.)
+Layer 3: Skills auto-suggested per (agent × archetype)
+```
+
+Plus quality + override paragraphs.
+
+#### Site (`great_cto-site` repo) — same auto-loading section
+
+Three side-by-side cards on landing page after archetypes section: Layer 1 (Archetype) / Layer 2 (Agents) / Layer 3 (Skills). Site bumped to v1.0.144.
+
+#### README — agent count corrected
+
+Header line: `7 Claude Code subagents` → `14 Claude Code subagents` (was stale since v1.0.134/136/143 added specialists).
+
+### Why this matters
+
+**Confidence display** answers: "Did detection get it right?" — user sees rationale + alternatives, can override before commit.
+
+**Quality scoring** answers: "Is this skill worth consulting?" — agents make informed choices when multiple skills match a task.
+
+**Auto-flow visibility** answers: "What does this thing actually do at install?" — visitors to README/landing see the 3-layer mechanism, not just outcome.
+
+### Coverage
+
+- 14 agents (no change vs v1.0.143)
+- Registry now includes `quality_score` per skill (82 skills × scores)
+- README + site both show auto-loading explanation
+
+---
+
+## v1.0.143 — 2026-04-28
+
+### Added — three new specialist subagents (commerce / web3 / iot)
+
+Same pattern as v1.0.134 AI specialists + v1.0.136 web-store-reviewer: each archetype with high domain-specific complexity gets a pre-impl reviewer that consults its pack + templates and produces a tailored TM-{slug}.md before senior-dev claims tasks.
+
+| Subagent | Archetype | Specialises in |
+|---|---|---|
+| **`pci-reviewer`** (Sonnet 4.6) | `commerce` | PCI-DSS scope (SAQ-A vs SAQ-D), idempotency proof, webhook signature validation, refund/dispute flow, SCA / PSD2 (EU), PSP failover |
+| **`oracle-reviewer`** (Sonnet 4.6) | `web3` | Subtype block-ship gates, oracle strategy (Chainlink + Pyth + TWAP), MEV protection, upgradeability matrix (Immutable / UUPS / Diamond / Beacon), L2 resilience, custody/multisig, bug bounty TVL tier |
+| **`firmware-reviewer`** (Sonnet 4.6) | `iot-embedded` | OTA strategy (signing + A/B + auto-rollback + fleet), ETSI EN 303 645 13 provisions, secure boot, HIL test, wireless protocol security (BLE/Wi-Fi/Zigbee/Matter/LoRa) |
+
+### Wiring
+
+- `security-officer.md` pre-impl mode delegates to each new specialist for matching archetype (commerce/web3/iot-embedded)
+- `tech-lead.md` § Subagent delegation table extended with rows for new specialists
+- `plugin.json` AGENT loop adds 3 new agents (now **14** agents total)
+- `ARCHETYPES.md` § Required Agents adds new subsection for commerce/web3/iot specialists with full pipeline diagrams
+- `scripts/skill-discover.sh` adds `agent_skills` entries for the 3 new subagents
+
+### Coverage
+
+| | Before | After |
+|---|---|---|
+| Agents | 11 | **14** |
+| Specialist subagents per archetype | AI (3) + browser-extension (1) | + commerce (1) + web3 (1) + iot (1) |
+| Templates | 19 | 19 (no change) |
+| Archetypes | 14 | 14 (no change) |
+
+### Pattern parity across security-critical archetypes
+
+| Archetype | Specialist subagent | Coverage depth |
+|---|---|---|
+| `ai-system` | ai-security-reviewer + ai-prompt-architect + ai-eval-engineer | Full chain |
+| `agent-product` | same as ai-system | Full chain |
+| `browser-extension` | web-store-reviewer | Single specialist |
+| `commerce` | pci-reviewer | Single specialist |
+| `web3` | oracle-reviewer | Single specialist |
+| `iot-embedded` | firmware-reviewer | Single specialist |
+| `regulated` | security-officer pre-impl + enterprise-pack | Generic STRIDE + compliance frameworks |
+
+---
+
+## v1.0.142 — 2026-04-28
+
+### Fixed — gaps surfaced by 3 parallel field-test simulations of v1.0.140
+
+Three agent-based field tests on v1.0.140 (ai-system / commerce / cross-tier consumption) found 4 P0 bugs and several P1s. This release patches them.
+
+#### `scripts/skill-discover.sh` — broadened scan paths
+
+- **Top-level skills now scanned**: `$PLUGIN_DIR/skills/<name>/SKILL.md` for skills like `skeptical-triage`, `done-blocked`, `prose-style`, `cso`, `investigate`, `ship`, `canary` (tier1 went from 56 to 63 skills).
+- **superpowers + beads broader find**: previously matched only `superpowers/skills` directly; now matches multiple install layouts including `marketplaces/*/superpowers/`, `plugins/superpowers/plugins/superpowers/skills/`. Same for beads.
+- **Summary truncation**: 200 → 280 chars, no mid-word cuts (uses regex to trim at last whitespace before limit).
+
+#### `agents/tech-lead.md` — SECURITY_REQUIRED case fixed
+
+Line 711 case statement was missing `agent-product` and `browser-extension` — silent regression where TM hard-halt didn't fire. Fixed:
+- Added `agent-product` (multi-tenant agents need TM)
+- Added `browser-extension` (Web Store policy review needs TM)
+
+`NEED_COST` case also extended to include `agent-product` (cost-model required for production AI projects).
+
+#### Open-world skill discovery — agents instructed to scan beyond suggestions
+
+v1.0.140 agent Step 0 said "read your `_default` and decide which to Read." This was closed-world: agents would not discover relevant tier2 (anthropic) or tier3 (personal) skills not pre-listed.
+
+v1.0.142 adds explicit instruction to all 7 agents with Step 0c (tech-lead has full bash, others have one-liner reference): **scan `tier2_external` and `tier3_personal` for skills whose `summary` matches current task keywords**. Agent decides which to Read.
+
+### Why this matters
+
+**Before**: tech-lead working on "MCP integration for Linear API" would consult only suggestions in `agent_skills["tech-lead"]["agent-product"]` (5 items). Would miss `anthropic:mcp-builder` skill in tier2 (designed exactly for this).
+
+**After**: same agent now scans full registry, finds `anthropic:mcp-builder`, reads its description, decides whether to consult. Real cross-tier discovery.
+
+### Coverage (no architecture change, all incremental fixes)
+
+- Registry: 63 tier1 + 18 tier2 + 1 tier3 = 82 skills locally discoverable (was 80)
+- 7 agents updated with open-world hint
+- 1 critical regression (SECURITY_REQUIRED) fixed
+- Description quality improved (no mid-word cuts)
+
+### Skipped from field-test findings
+
+- **`pci-reviewer`, `oracle-reviewer`, `firmware-reviewer` specialist subagents** — moved to v1.0.143 (separate release, focused work)
+- **`/skills search <keyword>` command** — current bash pattern in tech-lead.md Step 0b is sufficient; new command is overkill until catalog grows past 200+ skills
+- **Smart embedding-based discovery** — deferred until tier3 grows past 20 skills
+
+---
+
+## v1.0.140 — 2026-04-28
+
+### Added — local skill catalog model: archetype → agents → agent picks skills
+
+Architecture: **archetype determines which agents run; each agent decides which skills to consult from a locally-cached catalog.** This release closes three gaps left in v1.0.139:
+
+1. Skills bootstrapped at install time (not just first SessionStart)
+2. Per-(agent × archetype) skill suggestions in registry
+3. Each of 11 agents has Step 0 guidance to consult registry
+
+#### `packages/cli/src/main.ts` — Skills bootstrap during `npx great-cto init`
+
+Added Step 4c between plugin install and PROJECT.md bootstrap:
+- Clone `anthropics/skills` → `~/.great_cto/anthropic-skills` (depth=1, 30s timeout)
+- Clone `avelikiy/ai-agent-skills` → `~/.great_cto/personal-skills`
+- Run `skill-discover.sh` to build initial registry
+
+User no longer waits for first SessionStart hook to populate catalog. Cold-cache delay shifts from session-1 to install-time (more visible, but also retry-able with `--force`).
+
+#### `scripts/skill-discover.sh` — Per-(agent × archetype) suggestions
+
+Registry now has `agent_skills` field:
+
+```json
+{
+  "agent_skills": {
+    "tech-lead": {
+      "_default": ["pre-mortem", "risk-register", "vendors", "cost-model", "anti-patterns"],
+      "ai-system": ["+ARCH-ai", "+ai-pack", "+secure-sdlc"],
+      "agent-product": ["+ARCH-ai", "+agent-pack", "+secure-sdlc"],
+      "commerce": ["+ARCH-default", "+commerce-pack", "+secure-sdlc"],
+      "web3": ["+ARCH-defi-protocol", "+web3-pack"],
+      ...
+    },
+    "ai-prompt-architect": {
+      "_default": ["ADR-PROMPT", "ai-pack", "agent-pack"]
+    },
+    ...11 agents total
+  }
+}
+```
+
+`+` prefix = additive on top of `_default`. Agent reads `agent_skills["<my-name>"]["_default"]` plus `agent_skills["<my-name>"]["<archetype>"]`, then decides which to actually `Read`.
+
+#### `scripts/skill-discover.sh` — Description extraction fix
+
+Previously most `summary` fields were empty (parser fell back to first text after `---` which often hit a blank line). Now tries 4 sources in order: frontmatter `description:`, frontmatter `summary:`/`when_to_use:`, first non-empty body paragraph (skipping headings + quotes), quote-block bold text. ~40 of 56 tier-1 skills now have meaningful summaries (up from ~5).
+
+#### Agents — Step 0 (or Step 0c) added to all 11
+
+Each agent now has a Step 0 block instructing: "read `~/.great_cto/skills-registry.json` → `agent_skills["<my-name>"][...]` → decide which SKILL.md to Read." `tech-lead.md` has the full bash pattern; the other 10 reference it briefly to avoid duplication.
+
+### Why this design
+
+- **Archetype → agents**: structural (ARCHETYPES.md Required Agents table — already worked)
+- **Agent → skills**: judgment-based, not auto-load. Agent at runtime knows what's relevant to current task; static archetype-pack mapping is too coarse. Suggestions framework: "here are the skills this combo usually needs; you decide what's actually relevant."
+
+### Coverage
+
+- 11 agents have Step 0 skill-catalog-browse guidance
+- Per-(agent × archetype) suggestions for every meaningful combination
+- Initial registry built at `npx great-cto init`, refreshed every 24h via SessionStart hook
+- Description quality improved across tier-1 skills
+
+### Skipped (deferred)
+
+- **Scheduled-tasks weekly sync** — current 7d cache pull on SessionStart is sufficient. If users want forced cron-style refresh, `/doctor --skills-refresh` exists. Adding scheduled-task overhead doesn't justify the marginal benefit.
+
+---
+
+## v1.0.139 — 2026-04-28
+
+### Added — Skills auto-discovery + 4-tier architecture
+
+For users building AI agents in great_cto-tracked projects, skills come from multiple places: built-in packs, dependency plugins (superpowers / beads), Anthropic's official catalog, and custom personal libraries. v1.0.139 makes all four discoverable from one registry, auto-refreshed at session start.
+
+#### `scripts/skill-discover.sh` (NEW)
+
+Scans 4 tiers and writes `~/.great_cto/skills-registry.json`:
+
+| Tier | Source | Update cadence |
+|---|---|---|
+| **1** | great_cto built-in (`packs/`, `templates/`, `references/`) | per plugin release |
+| **2** | external dependencies (superpowers, anthropics/skills, beads) | 7d auto-pull |
+| **3** | personal repo (default `avelikiy/ai-agent-skills`) | 24h auto-pull |
+| **4** | on-demand (`/template fetch`, MCP servers) | per-invocation, not enumerated |
+
+Run via SessionStart hook (24h cache) or manually `/doctor --skills-refresh`.
+
+#### `.claude-plugin/plugin.json` SessionStart hook updated
+
+Now clones (background, non-blocking):
+- `https://github.com/anthropics/skills` → `~/.great_cto/anthropic-skills` (7d cache)
+- `https://github.com/avelikiy/ai-agent-skills` → `~/.great_cto/personal-skills` (1d cache)
+
+Plus runs `skill-discover.sh` (24h cache) to refresh registry.
+
+#### `commands/doctor.md` — Check 8c + new flags
+
+- `/doctor` → shows skills registry summary in default output
+- `/doctor --skills` → archetype-relevant skills auto-loaded for current project
+- `/doctor --skills-refresh` → force re-scan all 4 tiers immediately
+
+#### `skills/great_cto/references/skills-architecture.md` (NEW)
+
+Full design doc: 4-tier rationale, registry schema, agent-side consumption pattern, SKILL.md format, manual control commands, what's NOT here (marketplace integration, semantic search, versioning) and why.
+
+### What ships separately (NEW external repo)
+
+[`avelikiy/ai-agent-skills`](https://github.com/avelikiy/ai-agent-skills) — personal library of AI agent development skills. Started with one example: `rag-cascading-search` (production RAG with hybrid retrieval + LLM reranking + provenance, fully worked-out cost model + anti-patterns + EVAL coverage).
+
+Users with their own AI agent projects clone this repo into `~/.great_cto/personal-skills`, write their own skills there, and great_cto auto-discovers them.
+
+### Coverage
+
+- 4 skill tiers
+- ~56 tier-1 skills auto-discovered (packs + templates + references)
+- ~12 tier-2 skills (superpowers) once cloned
+- ~20-30 tier-2 anthropic skills once cloned (Anthropic's repo)
+- 1 tier-3 starter skill (rag-cascading-search) — extend yourself
+
+### What's next (v1.0.140 — agent-side consumption)
+
+Agent Step 0 reads the registry and auto-loads packs for current archetype (currently: each agent must manually `Read` packs). After v1.0.140, agents see "you're working on `agent-product` — consult these 5 packs" automatically at session start.
+
+---
+
+## v1.0.138 — 2026-04-27
+
+### Fixed — skills frontmatter consistency across 6 agents
+
+Skills inventory audit found that 4 specialist subagents declared only `prose-style`, missing the workflow skills (`beads`, `done-blocked`, `skeptical-triage`) they actually need. Plus 2 core agents missed `superpowers:requesting-code-review` despite using it implicitly.
+
+#### Specialist subagents — added workflow skills
+
+| Subagent | Was | Added |
+|---|---|---|
+| `ai-prompt-architect` | `prose-style` | `+ skeptical-triage` (register choice + ADR triage) `+ beads` (one bd task per ADR-PROMPT) `+ done-blocked` (handoff) |
+| `ai-eval-engineer` | `prose-style` | `+ superpowers:test-driven-development` (eval = TDD by nature) `+ beads` (one task per EVAL scenario) `+ done-blocked` |
+| `ai-security-reviewer` | `prose-style` | `+ skeptical-triage` (severity calibration) `+ beads` (Critical/High threats → bd) `+ done-blocked` |
+| `web-store-reviewer` | `prose-style` | `+ skeptical-triage` (permissions justification) `+ beads` (preflight findings) `+ done-blocked` |
+
+#### Core agents — added code-review skill
+
+| Agent | Added |
+|---|---|
+| `tech-lead` | `+ superpowers:requesting-code-review` (architecture-level review before ARCH gate) |
+| `senior-dev` | `+ superpowers:requesting-code-review` (self-review before PR) |
+
+### Why
+
+Skills declared in agent frontmatter signal what the runtime should preload + which workflows the agent can invoke. With only `prose-style`, the 4 specialists couldn't enforce bd-tracking on their outputs (Critical threats, ADR-PROMPTs, EVAL scenarios, permissions findings) — those would silently end up in TodoWrite again, the same bug v1.0.131 fixed for senior-dev.
+
+This release closes the same gap for specialist subagents.
+
+### Coverage (no functional changes — declarative only)
+
+- 11 agents, all skills now consistent with workflows they execute
+- No new agents, no new templates, no new commands
+- Documentation-style fix; runtime behaviour unchanged on agents that already worked, runtime improved on subagents that previously couldn't tracker their outputs
+
+---
+
+## v1.0.137 — 2026-04-27
+
+### Added — observability layer for AI archetypes + marketplace prep
+
+After v1.0.131–136 closed enforcement gaps and shipped templates + specialist subagents, AI projects now produce real artefacts. v1.0.137 makes those artefacts visible **between** deploys: in-session signals via `/inbox` and quarterly board reporting via `/digest board`.
+
+#### `commands/inbox.md` — AI Health section (NEW)
+
+Show only when `archetype: ai-system | agent-product`. Nine cheap signals:
+
+1. **PoC deadline approaching** (≤ 7d) / overdue (P0)
+2. **Monthly LLM budget at 80%** (warning) / **exceeded** (P0) — reads `cost-history.log`, `logs/llm-cost.log`, `logs/audit.jsonl` for current-month `cost_usd` sum
+3. Eval suite stale — no `EVAL-*.md` updated in 14d
+4. Cross-user isolation test missing (P0 for `agent-product`)
+5. Threat model age > 90d (re-run ai-security-reviewer)
+6. Floating model tag in src/ (drift risk; pin via ADR-LLM)
+7. ARCH § LLM Scope roles count > ADR-PROMPT count (run ai-prompt-architect)
+8. `monthly-budget-llm-usd` not set (warning for AI archetypes)
+9. (Hooks for) prompt drift detection — sha256 in code vs ADR-PROMPT stored hash
+
+#### `commands/digest.md` — AI Operations section (NEW, board mode)
+
+When `BOARD_MODE=true` AND archetype is AI, the quarterly board report now includes an **AI Operations** table:
+
+| Metric | Source |
+|---|---|
+| Sessions this Q | `cost-history.log` `session_id` deduplicated |
+| Avg cost per session (USD) | `cost_usd` sum / sessions |
+| Total LLM spend vs budget (% of cap) | sum vs `monthly-budget-llm-usd × 3` |
+| Eval pass rate (overall) | parse `## History` table tail in each `EVAL-*.md` |
+| Prompt-injection bypass count | `EVAL-prompt-injection.md` history `BLOCK` verdicts |
+| Cross-user isolation failures | `EVAL-cross-user-isolation.md` history |
+| Models in production (pinned versions) | `grep "## Decision" docs/decisions/ADR-*-LLM-*.md` |
+| Outstanding prompt drift | re-compute sha256 of prompts in src/ vs stored hash |
+| ADR-PROMPT revisions this Q | `git log` count of ADR-PROMPT file changes |
+| Active threat model age | `stat -f %m docs/sec-threats/TM-*.md` |
+
+Surfaces for the board:
+- Cost trajectory vs cap → predict need for raise
+- Eval pass rate trend → product reliability over time
+- Bypass + isolation failures → security health (target 0, escalate if > 0)
+- Drift signals → maintenance debt accumulating
+
+#### `docs/marketplace/SUBMISSION.md` (NEW)
+
+Pre-built submission package for Claude Code Plugin Marketplace (when Anthropic opens it). Contents:
+
+- One-line description (≤ 280 chars)
+- Long description (≤ 2000 chars)
+- Categories (primary + secondary)
+- Pricing model (free, MIT)
+- Requirements (Claude Code, Node 18.17+, optional Superpowers + Beads)
+- Install command
+- Screenshots inventory + recording recipes for new ones
+- Demo video render commands (VHS script in repo)
+- Marketing copy snippets + differentiation vs alternatives (Cursor / Aider / Cline / Superpowers / Templates / tech-debt-skill / raw Claude Code)
+- Submission checklist
+- Realistic expectations (review timeline, first-week installs)
+- Source-state inventory at v1.0.137 (verified: 11 agents, 18 templates, 14 archetypes, 13 packs, 16 commands, 27 compliance keys)
+
+Will be submitted when the marketplace officially opens.
+
+### Coverage
+
+| | v1.0.136 | v1.0.137 |
+|---|---|---|
+| Agents | 11 | 11 (no change) |
+| Templates | 18 | 18 (no change) |
+| `/inbox` signals | core only | + 9 AI Health signals (when AI archetype) |
+| `/digest board` sections | 5 | 6 (added AI Operations) |
+| Marketplace prep | absent | ready (`docs/marketplace/SUBMISSION.md`) |
+
+### What this completes
+
+The retro-driven cycle that started in v1.0.131 (after the AI pipeline silently failed) is now closed end-to-end:
+
+- **v1.0.131** — Hard halts for AI archetypes (Discovery / mode / Beads enforcement)
+- **v1.0.132** — Print-without-halt fix for commerce/web3/regulated/iot/fintech
+- **v1.0.133** — 14 mandatory artefact templates + security-officer pre/post split + AI cost-cap audit
+- **v1.0.134** — 3 AI specialist subagents (prompt-architect / eval-engineer / security-reviewer)
+- **v1.0.135** — Field-test fixes (9 P0 from real-execution attempt)
+- **v1.0.136** — Non-AI ARCH templates + web-store-reviewer subagent
+- **v1.0.137** — `/inbox` AI signals + `/digest` AI metrics + marketplace prep
+
+Knowledge → enforcement → templates → specialists → fixes → coverage → observability.
+
+### What's next
+
+Field test the observability layer on a real AI project that ran through the full v1.0.131-137 chain. Or wait for marketplace to open and submit. Or pivot to a new direction (templates for non-AI specialist subagents — e.g. `pci-reviewer` for commerce, `oracle-reviewer` for defi, `firmware-reviewer` for iot-embedded).
+
+---
+
+## v1.0.136 — 2026-04-27
+
+### Added — non-AI ARCH templates + browser-extension specialist subagent
+
+v1.0.133 shipped templates for AI / compliance archetypes. v1.0.136 closes the gap for the rest: game / browser-extension / web3 (defi subtype) / default. Plus a new `web-store-reviewer` subagent for browser-extension preflight — same pattern as the v1.0.134 AI subagents.
+
+#### `skills/great_cto/templates/` — 4 new ARCH templates
+
+| Template | For archetype | Mandatory sections |
+|---|---|---|
+| `ARCH-game.md` | `game` | Engine choice, Multiplayer netcode, Anti-cheat tier, Performance budget per platform, Steam Deck Verified, Age rating + IARC, Live-service ops, PC launch milestones |
+| `ARCH-browser-extension.md` | `browser-extension` | Manifest version, Three-worlds split (SW / content / popup / offscreen), Storage decision table, Permissions justification (every entry), Web Store pre-flight checklist, Cross-browser compat |
+| `ARCH-defi-protocol.md` | `web3` (defi / bridge / lending / dex / aggregator) | Subtype + block-ship gate, Smart contract security stack, Upgradeability decision matrix, Oracle strategy, MEV protection, L2 resilience scenarios, Custody/multisig, Bug bounty (TVL-tiered), Insurance fund |
+| `ARCH-default.md` | All other archetypes (web-service / library / mobile-app / data-platform / infra) | Standard sections: Decision with alternatives / Components / API contracts / Data model / Non-goals / WPs / Cost / Risks |
+
+#### `agents/web-store-reviewer.md` (NEW, model: sonnet)
+
+Plays the role of a Chrome Web Store / Mozilla AMO / Edge Add-ons reviewer **before** submission — catches issues that get extensions rejected (1–7 day delay) or removed post-publish.
+
+- Reads ARCH § Permissions Justification, manifest.json (if exists), `browser-extension-pack.md`
+- Generates `docs/sec-threats/TM-{slug}.md` with: permissions audit, single-purpose declaration check, CSP audit, three-worlds isolation review, cross-browser compat, AI-extension cross-pack check
+- Appends Web Store pre-flight checklist to ARCH `## Security`
+- Hand-off: manifest.json fields to set, mitigations to land, tests required, reviewer-side gotchas
+- Refuses common rejection patterns: `<all_urls>` upfront (use `optional_host_permissions`), API key in extension storage, `unsafe-eval` for SDK, content script doing API calls, CDN-loaded jQuery
+
+### Changed — security-officer pre-impl delegates to web-store-reviewer
+
+For `archetype: browser-extension`, security-officer pre-impl mode spawns `web-store-reviewer` instead of running the generic STRIDE flow. Falls back to template copy if subagent unavailable.
+
+### Changed — tech-lead Step 0a documents subagent chain by archetype
+
+Subagent delegation table now covers AI archetypes + browser-extension. Pipeline for browser-extension: tech-lead → web-store-reviewer → senior-dev → qa-engineer (re-checks manifest static rules) → security-officer post-impl → devops (Web Store unlisted/internal channel).
+
+### Changed — qa-engineer Step 0b strengthens browser-extension checks
+
+- Web Store preflight TM must exist at `docs/sec-threats/TM-{slug}.md`
+- No `unsafe-eval` / `unsafe-inline` in `manifest.json` (Web Store rejection territory)
+- Points at web-store-reviewer subagent for delegation
+
+### Changed — `plugin.json` AGENT loop + `ARCHETYPES.md` Required Agents
+
+- AGENT copy loop adds `web-store-reviewer` (11 total)
+- `ARCHETYPES.md § Required Agents` gains "Browser-extension specialist subagent" subsection
+
+### Changed — `templates/README.md`
+
+Trigger → template mapping covers all archetypes now (was AI + compliance only). Including ARCH-default for everything not covered by archetype-specific templates.
+
+### Coverage
+
+- 11 agents total (was 10): added `web-store-reviewer`
+- 18 templates total (was 14): added `ARCH-game`, `ARCH-browser-extension`, `ARCH-defi-protocol`, `ARCH-default`
+- 14 archetypes, 13 packs, 27 compliance keys, 16 commands
+
+### What's next (v1.0.137)
+
+`/inbox` AI-archetype signals (PoC-deadline approaching, monthly-budget at 80%, prompt drift, eval regression) + `/digest` board mode AI metrics + marketplace listing prep.
+
+---
+
+## v1.0.135 — 2026-04-27
+
+### Fixed — field-test discovered execution-blocking bugs in v1.0.134
+
+Three parallel agent simulations on v1.0.134 (greenfield AI / CWD trap recovery / late-pipeline gates) found 27 gaps. This release fixes the **9 P0 bugs** that prevented v1.0.134 AI pipeline from actually running on real systems.
+
+#### Path fix — `docs/sec threats/` → `docs/sec-threats/`
+
+Literal space in directory path broke shell escaping across 9 files (`agents/*.md`, `commands/promote.md`, `templates/*.md`). Rewritten to `docs/sec-threats/` (hyphen). Affects: tech-lead, senior-dev, qa-engineer, security-officer, ai-prompt-architect, ai-eval-engineer, ai-security-reviewer, promote.md, ARCH-ai.md, THREAT-MODEL-AI.md, README.md.
+
+#### Portable sha256 in ai-prompt-architect
+
+`sha256sum` is Linux-only. macOS users (most Claude Code users) hit "command not found" → prompt-hash drift detection silently broken. Replaced with portable helper that tries `sha256sum`, falls back to `shasum -a 256`, halts if neither.
+
+#### Slug fallback collision
+
+`tech-lead.md` SECURITY_REQUIRED + Pre-mortem blocks fell back to `SLUG="feature"` when no ARCH file existed yet. First two AI projects in same repo overwrote each other's `TM-feature.md` / `PRE-feature.md`. Fixed: derive slug from PROJECT.md project name + date suffix as last resort.
+
+#### `mkdir -p` for new docs paths
+
+`ai-security-reviewer.md`, `tech-lead.md` Write to `docs/sec-threats/`, `docs/architecture/`, `docs/decisions/` — paths that don't exist on greenfield. Added explicit `mkdir -p` before any Write.
+
+#### ai-security-reviewer Step 0 actually copies template
+
+Previously said "from template" without `cp`. Now: `cp $PLUGIN/skills/great_cto/templates/THREAT-MODEL-AI.md $TM`, replaces `{slug}` placeholder, halts if template not found (broken plugin install).
+
+#### `/promote` flow updated for v1.0.134 (P0 — was using old semantics)
+
+Old `/promote` didn't know about: AI subagents, `monthly-budget-llm-usd`, `discovery` field, compliance artefacts, AI eval thresholds (3 → 5 → 10). New steps:
+
+- **Step 2 — Threat model**: hard halts if TM file missing OR Critical/High threats `__pending__`. For AI archetypes delegates to `ai-security-reviewer`.
+- **Step 2b — AI prompts + evals** (new, ai-system / agent-product only):
+  - ≥ 1 ADR-PROMPT-*.md required → invoke `ai-prompt-architect` if missing
+  - Eval count: ≥ 5 (ai-system) / ≥ 10 (agent-product) → invoke `ai-eval-engineer`
+  - `monthly-budget-llm-usd` must be set
+- **Step 3b — Compliance artefacts** (new): for each value in `compliance: [...]`, evidence file must exist (DORA / NIS2 / GxP / TISAX / ISO27001 / SOX / PCI-DSS).
+
+#### `agents/devops.md` — `agent-product` + `devtools` deploy strategies (P0)
+
+Previously fell through to undefined behavior. Now explicit:
+- `agent-product` → feature-flag canary 1% on staging, conversation state must persist, queue-drain on rollback (in-flight runs must complete)
+- `browser-extension` → Web Store unlisted/internal channel for review
+- `game` → Steam beta branch, console dev-kit, mobile TestFlight/Play Internal
+- `devtools` → SDK pre-release tag, API gateway canary on tenant boundaries
+
+`agent-product` and `devtools` added to canary archetype list.
+
+### Coverage
+
+- Files modified: 11
+- All space-paths replaced with hyphens
+- 9 P0 bugs from field test → fixed
+- 18 P1/P2 gaps documented for v1.0.136/137
+
+### What's next (v1.0.136)
+
+Non-AI templates (ARCH-game, ARCH-browser-extension, ARCH-defi-protocol, ARCH-default) + browser-extension subagent (web-store-reviewer for MV3 / Web Store policy preflight).
+
+### What's next (v1.0.137)
+
+`/inbox` AI-archetype signals (PoC deadline, monthly-budget at 80%, prompt drift) + `/digest` board mode AI metrics + marketplace listing prep.
+
+---
+
+## v1.0.134 — 2026-04-27
+
+### Added — three AI specialist subagents (P2 from retro)
+
+v1.0.131 + v1.0.132 enforced halts. v1.0.133 supplied the templates those halts demand. v1.0.134 ships the **specialist agents** that consume those templates so the AI pipeline doesn't fall on the main agent (which produces "magic LLM wrappers" instead of disciplined, versioned, testable artefacts).
+
+#### `agents/ai-prompt-architect.md` (NEW, model: sonnet)
+
+Designs and versions LLM system prompts. Outputs `docs/decisions/ADR-{NN}-PROMPT-{name}.md` per LLM role identified in ARCH § LLM Scope.
+
+- Reads ARCH § LLM Scope + ARCH § Failure Modes + TM § 1 Prompt Injection
+- Writes prompts grounded in those constraints (refuse-when-uncertain, scope bound, citation requirement, prompt-injection resistance lines)
+- Computes sha256 hash for CI drift detection
+- Generates ≥ 5 jailbreak test cases per prompt across 7 categories: direct override, role swap, encoding, indirect via retrieved, authority impersonation, refusal-bypass, prefix injection
+- Hands off to ai-eval-engineer with explicit list of suggested EVAL files
+- Refuses anti-patterns: "you are a helpful assistant", embedded user data, tone-only instructions, unbounded "respond in detail"
+
+#### `agents/ai-eval-engineer.md` (NEW, model: haiku)
+
+Builds and maintains the eval pipeline. Outputs `tests/eval/EVAL-*.md` files + a runner (pytest / ts / shell depending on stack).
+
+- Cross-references ARCH § Failure Modes + TM § Sections + ADR-PROMPT hand-off → eval scenario inventory
+- Enforces minimums: ≥ 3 EVAL for ai-system, ≥ 5 for agent-product (must include cross-user-isolation + prompt-injection)
+- Per scenario: golden citation, refuse-when-uncertain, output schema, prompt injection (50+ cases), budget overrun, cross-user isolation, tool misuse
+- Writes CI runner (`tests/eval/test_evals.py` for Python, `eval.test.ts` for TS, `run.sh` fallback)
+- Drift detection: prompt sha256 mismatch, model floating-tag, output schema diff
+- Records baseline + revision history in each EVAL `## History`
+- Refuses anti-patterns: substring-match assertions, unpinned model versions, temperature > 0 without sampling
+
+#### `agents/ai-security-reviewer.md` (NEW, model: sonnet, advisor: opus 4.7)
+
+AI-specific pre-impl threat modelling. Specialises in OWASP LLM Top 10 — security-officer pre-impl mode delegates to it for AI archetypes.
+
+- Reads ARCH § Trust Boundaries + § LLM Scope, packs (agent-pack, ai-pack)
+- Per-section deep dives: prompt-injection inventory (3 vectors per untrusted boundary), SSRF (if tool layer), cost-runaway, cross-user isolation (agent-product), supply chain
+- Severity rubric: Critical = full system compromise / cross-tenant exfil / regulatory breach / >$10k cost; High = single-user PII / system-prompt disclosure
+- Refuses lazy mitigations: "mitigated by good prompt" → accepted-residual not mitigated; "user won't do that" → assume hostile
+- Hands off to senior-dev with specific code-change list + EVAL file list
+
+### Changed — security-officer pre-impl delegates to ai-security-reviewer
+
+For `archetype: ai-system | agent-product`, security-officer pre-impl mode now spawns `ai-security-reviewer` instead of running the generic STRIDE flow. Falls back to template copy if subagent unavailable.
+
+### Changed — tech-lead Step 0a documents the AI subagent chain
+
+For AI archetypes, tech-lead documents the delegation chain after ARCH:
+```
+tech-lead (ARCH) → ai-security-reviewer (TM) → ai-prompt-architect (ADR-PROMPT) → ai-eval-engineer (EVAL) → senior-dev
+```
+Each subagent has an `<!-- HANDOFF -->` block in its output that the next reads.
+
+### Changed — qa-engineer Step 0b BLOCKED messages reference ai-eval-engineer
+
+When ai-system / agent-product archetype lacks the required EVAL count, qa-engineer points the user at `ai-eval-engineer` subagent for delegation instead of leaving them to write evals themselves.
+
+### Changed — `plugin.json` AGENT loop + `ARCHETYPES.md` Required Agents
+
+- AGENT copy loop in SessionStart hook adds 3 new subagents (10 total)
+- `ARCHETYPES.md § Required Agents` gains "AI specialist subagents" subsection with invocation conditions
+- Pipeline diagram for ai-system / agent-product documented end-to-end
+
+### Coverage
+
+- 10 agents total (was 7): tech-lead, senior-dev, qa-engineer, security-officer, devops, l3-support, project-auditor + ai-prompt-architect, ai-eval-engineer, ai-security-reviewer
+- 14 archetypes, 13 packs, 14 templates, 27 compliance keys
+
+---
+
+## v1.0.133 — 2026-04-27
+
+### Added — mandatory artefact templates + security-officer split + AI cost-cap (P1 from retro)
+
+v1.0.131 + v1.0.132 closed the enforcement gap (turn print-only "BLOCK" into real `exit 1`). v1.0.133 supplies the **content** that those halts demand and splits security-officer so the gates can actually be cleared.
+
+#### `skills/great_cto/templates/` — 13 mandatory artefact templates (NEW directory)
+
+| Template | When required | Used by |
+|---|---|---|
+| `ARCH-ai.md` | `archetype: ai-system | agent-product` | tech-lead writes, senior-dev reads § Security |
+| `THREAT-MODEL-AI.md` | `archetype: ai-system | agent-product` | security-officer pre-impl, blocked by senior-dev Step 0b |
+| `EVAL-template.md` | `archetype: ai-system | agent-product` | qa-engineer Step 0b checks count |
+| `ADR-LLM.md` | AI / agent picks LLM | tech-lead during ADR phase |
+| `ADR-PROMPT.md` | AI / agent writes prompt | versioned prompts; CI compares hash |
+| `DORA-ICT-risk-assessment.md` | `compliance: [dora]` | tech-lead compliance gate |
+| `DORA-third-party-register.md` | `compliance: [dora]` | tech-lead compliance gate |
+| `NIS2-article21-controls.md` | `compliance: [nis2]` | tech-lead compliance gate |
+| `21CFR11-checklist.md` | `compliance: [gxp | 21cfr11]` | tech-lead compliance gate |
+| `TISAX-VDA-ISA-results.md` | `compliance: [tisax]` | tech-lead compliance gate |
+| `ISO27001-SoA.md` | `compliance: [iso27001]` | tech-lead compliance gate |
+| `SOX-ITGC-checklist.md` | `compliance: [sox]` | tech-lead compliance gate |
+| `PCI-DSS-SAQ-A.md` | `compliance: [pci-dss-saq-a]` | tech-lead compliance gate |
+| `PCI-DSS-SAQ-D.md` | `compliance: [pci-dss]` (full scope) | tech-lead compliance gate |
+
+Plus `templates/README.md` mapping triggers → templates → destination paths.
+
+When tech-lead's compliance gate fires `BLOCKED:` for a missing artefact, it now points the user at the matching template and gives the exact `cp` command. Same for SECURITY_REQUIRED — `BLOCKED: ARCH missing ## Security` now references `templates/ARCH-ai.md § Security`, and `BLOCKED: TM missing` references `templates/THREAT-MODEL-AI.md`.
+
+#### `agents/security-officer.md` — pre-impl / post-impl modes (NEW split)
+
+Previously security-officer ran only post-implementation, which meant threats could not block ARCH or implementation. Now two modes:
+
+| Mode | When | Outputs | Halts on |
+|---|---|---|---|
+| `pre-impl` | After tech-lead writes ARCH, BEFORE senior-dev claims tasks | `TM-{slug}.md` (from `THREAT-MODEL-AI.md` template for AI; STRIDE for traditional), `ARCH § Security` appended | Critical/High threats with `__pending__` mitigations or sign-off |
+| `post-impl` | After senior-dev finishes, BEFORE devops ships | `CSO-{slug}-{date}.md`, `gate:ship` verdict | unmitigated Critical findings |
+
+Mode auto-detects: if ARCH exists but no source code yet → pre-impl. Otherwise post-impl. Manual override via `SEC_MODE=pre-impl` env var or first arg.
+
+In pre-impl mode, security-officer **copies the matching template** from `skills/great_cto/templates/` for AI archetypes, then prompts the user to fill placeholders before the threat-model file is considered complete.
+
+#### `agents/project-auditor.md` — Phase 4D AI cost-cap check (NEW)
+
+For `archetype: ai-system | agent-product`, audit verifies actual LLM spend has not exceeded `monthly-budget-llm-usd` declared in PROJECT.md.
+
+- Cost telemetry sources scanned: `.great_cto/cost-history.log`, `logs/llm-cost.log`, `logs/cost.log`, `logs/audit.jsonl` (jsonl with `cost_usd` field)
+- Threshold violations:
+  - `monthly-budget-llm-usd` unset → P0 Beads task ("AI cost cap unset for $ARCHETYPE archetype")
+  - Spend ≥ 100% of cap → P0 ("LLM spend exceeded budget")
+  - Spend ≥ 80% of cap → P1 ("LLM spend approaching budget cap")
+  - No cost telemetry instrumented → P1 ("LLM cost telemetry not instrumented — agent-pack BudgetTracker not adopted")
+- References `agent-pack.md § Budget Cap Enforcement Pattern` for remediation
+
+#### `agents/tech-lead.md` — template references in BLOCKED messages
+
+When SECURITY_REQUIRED block fires `exit 1`, the BLOCKED message now points at the specific template path and gives the `cp` command. Same for compliance artefact gate. Reduces user friction from "BLOCKED: file missing" to "BLOCKED: file missing → cp this template".
+
+### What's next (P2, planned for v1.0.134)
+
+- Three new AI subagents (`ai-prompt-architect`, `ai-eval-engineer`, `ai-security-reviewer`) wired into a dedicated AI pipeline branch — they consume the templates shipped in v1.0.133
+
+### Coverage
+
+- Templates: 13 + README
+- Agents updated: tech-lead, security-officer, project-auditor (3 agents)
+- Hard halts now reference actual templates instead of saying "see pack" (7 BLOCKED messages enriched)
+
+---
+
+## v1.0.132 — 2026-04-27
+
+### Fixed — enforcement-print-without-halt across security-critical archetypes (P0 from cross-archetype audit)
+
+After v1.0.131 closed the AI-pipeline bypass, three parallel agent simulations
+(commerce / web3 / regulated) confirmed the same enforcement bug in every
+security-critical archetype: `echo "BLOCK:"` prints at multiple gates without
+`exit 1`. tech-lead happily emits DONE for a Stripe checkout with no threat
+model, a DeFi lending pool with no upgradeability ADR, and a DORA project
+with no DORA-checklist.md. This release converts every cosmetic BLOCK into
+a real halt.
+
+#### `agents/tech-lead.md` — three new hard halts
+
+1. **SECURITY_REQUIRED block** (lines 633–) now exits 1 when:
+   - ARCH file lacks `## Security` section for archetype in
+     `ai-system|commerce|web3|iot-embedded|regulated|fintech`
+   - Threat model `docs/sec threats/TM-${SLUG}.md` does not exist
+   - SLUG resolves from latest `ARCH-*.md` instead of placeholder `<feature-slug>`
+
+2. **Compliance artefact gate** — new check after COMPLIANCE is read.
+   For each value in `compliance: [...]` in PROJECT.md, the corresponding
+   evidence artefact must exist:
+   ```
+   dora        → docs/compliance/DORA-ICT-risk-assessment.md + DORA-third-party-register.md
+   nis2        → docs/compliance/NIS2-article21-controls.md
+   gxp/21cfr11 → docs/compliance/21CFR11-checklist.md
+   tisax       → docs/compliance/TISAX-VDA-ISA-results.md
+   iso27001    → docs/compliance/ISO27001-SoA.md
+   sox         → docs/compliance/SOX-ITGC-checklist.md
+   pci-dss     → docs/compliance/PCI-DSS-SAQ-D.md (or SAQ-A for saq-a)
+   ```
+   Closes the orphaned-pack bug — packs were declared but agents never
+   verified the evidence existed.
+
+3. **Pre-mortem hard halt for `mode: production`** — previously printed
+   "Pre-mortem required. Generating $PRE" and continued. Now exits 1 if
+   `PRE-${SLUG}.md` is missing AND `mode: production`. PoC and MVP modes
+   keep the previous advisory behaviour.
+
+#### `agents/senior-dev.md` — Step 0b archetype security pre-conditions
+
+For `archetype in [ai-system, agent-product, commerce, web3, iot-embedded,
+regulated, fintech]`, refuses to claim or implement bd tasks unless:
+- `docs/architecture/ARCH-*.md` exists
+- ARCH has `## Security` section
+- `docs/sec threats/TM-<slug>.md` exists
+
+Plus archetype-specific pre-impl rules table (idempotency for commerce,
+Slither + Foundry-fuzz for web3, manifest_version: 3 for browser-extension,
+per-user `tenant_id` namespace for agent-product, etc.) — pushed back to
+tech-lead before claiming the task if the implementation plan does not
+address the relevant rule.
+
+#### `agents/qa-engineer.md` — Step 0b archetype QA artefact gates
+
+Before signing off any QA report, verify archetype-specific artefacts and
+CI gates exist:
+
+- **web3**: Slither report or CI step + Foundry fuzz with `--fuzz-runs ≥
+  10000` configured in CI
+- **commerce**: idempotency proof test exists + grep for raw PAN in code
+  and logs (excluding Stripe test cards)
+- **iot-embedded**: `tests/qemu/` or `tests/hil/` directory exists
+- **browser-extension**: `manifest.json` declares `manifest_version: 3`
+- **agent-product**: cross-user isolation test + prompt-injection regression
+  suite (Garak or custom)
+- **ai-system**: ≥ 3 EVAL-*.md scenarios in `tests/eval/`
+
+QA-engineer cannot write a "pass" report when the gate that would catch the
+threat does not exist.
+
+#### `agents/devops.md` — PoC mode hard halt on prod deploy
+
+Previously narrative-only ("refuse production deploys" in prose). Now an
+actual bash check at start: if `mode: poc` AND target is
+`prod | production | main | live` → exit 1 with remediation pointing to
+`/promote`.
+
+### Why
+
+v1.0.131 fixed the AI archetype enforcement gap with `exit 1` calls. The
+audit confirmed the same gap existed for commerce / web3 / iot-embedded /
+regulated / fintech — same pattern, same blast radius. PROJECT.md's
+`compliance:`, `qa-extras:`, and `packs:` fields had been **decorative**:
+no agent enforced their semantics. v1.0.132 closes that loop end to end.
+
+### What's next (P1, planned for v1.0.133)
+
+Mandatory artefact templates: `templates/ARCH-ai.md`,
+`templates/THREAT-MODEL-AI.md`, `templates/EVAL-template.md`,
+`templates/ADR-LLM.md`, `templates/ADR-PROMPT.md`, plus compliance-framework
+templates (DORA / NIS2 / GxP / TISAX / ISO27001 / SOX / PCI-DSS).
+security-officer split into `mode=pre-impl` (threat model) and `mode=post-impl`
+(CSO report). project-auditor cost-cap check against `monthly-budget-llm-usd`.
+
+### What's next (P2, v1.0.134)
+
+Three new AI subagents: `ai-prompt-architect`, `ai-eval-engineer`,
+`ai-security-reviewer` wired into a dedicated AI pipeline branch.
+
+---
+
+## v1.0.131 — 2026-04-27
+
+### Fixed — pipeline bypass on AI projects (P0 from retro)
+
+A real-world session ran `/start` from a directory that already had a `PROJECT.md`. The guard refused to overwrite, and the agent silently fell back to free-form Q&A — never created PROJECT.md, never invoked tech-lead, never wrote a threat model for an AI-system project that touched prompt injection, SSRF, and a runaway-cost surface. Three structural fixes ship this release.
+
+#### `commands/start.md` — Auto-cd suggestion + AI hard-trigger Discovery
+
+The existing-project guard now lists the **new-project escape hatch as option 1**, not an afterthought. It computes a slug from the description (`/start "build news agent for hashtags"` → suggests `mkdir ../news-agent && cd ../news-agent && /start "..."`) and explicitly forbids silent fallback to Q&A.
+
+Discovery trigger gains an **AI hard-trigger**: any of `ai-agent | agent-product | rag-system | ml-training | ml-serving | mcp-server | voice-agent | multimodal-app | computer-vision | recommendation-engine | anomaly-detection | llm-ops` — Discovery runs regardless of description length. AI-specific questions: audience, EU AI Act / GDPR memory trigger, data residency, kill-switch (who and how fast), monthly LLM cost cap, eval set source. PoC / MVP / production mode is mandatory.
+
+PROJECT.md schema gains three required fields:
+- `mode: poc|mvp|production`
+- `poc-deadline: YYYY-MM-DD` (required when mode=poc)
+- `discovery: required|completed|skipped`
+- `monthly-budget-llm-usd:` (required for ai-system / agent-product)
+
+#### `agents/tech-lead.md` — Step 0a hard-gate
+
+For `archetype in [ai-system, agent-product]`, tech-lead now refuses to write ARCH or call sub-agents until `discovery: completed` (or explicit `discovery: skipped`) AND `mode:` is set in PROJECT.md. Returns BLOCKED with a clear remediation message instead of falling through.
+
+#### `agents/senior-dev.md` — Step 0a Beads enforcement
+
+Hard rule: senior-dev **never uses TodoWrite for implementation tasks**. TodoWrite is in-memory and evaporates with the session. Step 0a runs `bd init` if missing, `bd list` for context, and creates one `bd` task per work-package in the ARCH doc before claiming any work. If the orchestrator above used TodoWrite for tracked tasks, senior-dev's first action is to promote them to `bd`.
+
+#### `references/poc-mode.md` — AI archetype skip matrix override
+
+The default skip matrix lets PoC drop ARCH ceremony, TDD strictness, and pentest. AI archetypes can NOT fully skip security in PoC: prompt-injection bypass and cost runaway are baseline risks regardless of project lifetime.
+
+For PoC mode on `ai-system` / `agent-product`:
+- Threat model: 3-section minimum (`ai-system`) / 5-section minimum (`agent-product`) — covers prompt-injection vector, output exfiltration, cost runaway, plus tool sandbox + cross-user isolation for agent-product
+- Eval set: 3 scenarios minimum (`ai-system`) / 5 scenarios (`agent-product`) — golden citation, refuse-when-uncertain, output-schema-stability, plus 1 prompt-injection + 1 budget-overrun case for agent-product
+- `monthly-budget-llm-usd`: mandatory even at $5/mo
+- Kill-switch documented in ARCH (1 line)
+- SSRF allowlist required if tool layer fetches LLM-suggested URLs
+
+### Why this release matters
+
+Without these fixes, the AI archetype "knows" about EU AI Act and OWASP LLM Top 10 in `ai-pack` and `agent-pack` — but the pipeline never enforced consultation of those docs because the agents were never invoked. v1.0.131 closes the enforcement gap. Knowledge without gates is just trivia.
+
+### What's next (P1, planned for v1.0.132)
+
+- Mandatory artefact templates: `templates/ARCH-ai.md`, `templates/THREAT-MODEL-AI.md`, `templates/EVAL-template.md`, `templates/ADR-LLM-{model}.md`, `templates/ADR-PROMPT-{name}.md`
+- Pre-implementation security gate for ai-system: security-officer split into `mode=pre-impl` (threat model) and `mode=post-impl` (CSO report)
+- `project-auditor` Phase 4 cost-cap check against `monthly-budget-llm-usd`
+
+### What's next (P2, planned for v1.0.133)
+
+- Three new AI subagents: `ai-prompt-architect`, `ai-eval-engineer`, `ai-security-reviewer`
+- Pipeline branch for ai-system / agent-product with these subagents wired in
+
+---
+
+## v1.0.130 — 2026-04-27
+
+### Improved — `/audit` adopts ideas from ksimback/tech-debt-skill
+
+Studied [ksimback/tech-debt-skill](https://github.com/ksimback/tech-debt-skill)
+(255+ ⭐, single-purpose tech-debt audit skill for Claude Code). Folded the
+unique design choices into `agents/project-auditor.md` without breaking the
+7-phase + 14-archetype flow.
+
+- **Phase 4A.0 — Hot-spot identification (size × churn intersection)**:
+  top-20 largest files ∩ top-20 most-modified files in last 6 months. Files
+  in the intersection MUST receive concrete `file:line` citations in
+  findings.
+- **Phase 6 audit report template** — three new required sections:
+  Architectural Mental Model paragraph, Findings Table with `file:line`
+  on every finding (30–80 cap), and the **Things That Look Bad But Are
+  Actually Fine** required section (3–10 entries; empty = audit didn't look
+  hard enough).
+- **Hard rules**: cite `file:line`, no rewrites, no padding ("Nothing
+  material" for empty categories), no sycophancy.
+- **Repeat-run mode**: prior findings tagged `RESOLVED` / `REGRESSED`; new
+  findings tagged `NEW`. Audit becomes living document.
+
+### Added — promotion package + identity cleanup
+
+#### LICENSE file at repo root
+GitHub API was reporting `license: null` because MIT was declared only in
+`plugin.json` and `packages/cli/package.json`. Added root `LICENSE` (MIT).
+This unblocks enterprise adoption gates that check for `LICENSE` file presence.
+
+#### README — comparison table
+New "How is this different from X?" section explicitly positions great_cto
+against raw Claude Code, Cursor / Copilot, Aider / Cline, the built-in
+`/review`, obra/superpowers, davila7/templates, and ksimback/tech-debt-skill.
+Each row says what the alternative does and what it doesn't, then closes with
+the unique slot great_cto fills (process layer above the AI, below the human).
+
+#### GitHub topics trimmed 19 → 8
+Old topics diluted signal. New set: `claude-code-plugin`,
+`claude-code-subagents`, `claude-code-skills`, `agentic-coding`, `sdlc`,
+`code-review`, `multi-agent`, `cto`. GitHub topic-search ranking improves
+when fewer, sharper topics are used.
+
+### Changed — single-contributor identity
+
+All git commits, file references, copyright lines, and footers are now under
+the canonical `avelikiy <avelikiy@users.noreply.github.com>` identity. Three
+prior commits authored under work-email and personal-Gmail identities have
+been rewritten via `git filter-branch`. SHAs of those commits change; tags
+v1.0.0–v1.0.129 are recreated to point at the new SHAs.
+
+Files updated to drop legal-name copyright lines (replaced with `avelikiy`):
+`LICENSE`, `packages/cli/LICENSE`, `packages/cli/package.json` (`author`),
+`README.md` (Author section), `SECURITY.md` (security contact email →
+GitHub private advisory), `site/*.html` (footers + `meta name="author"`),
+`docs/articles/*.md` (article bylines).
+
+### Coverage
+
+Auditor patches + promotion infrastructure + identity hygiene. No CLI changes,
+no archetype changes, no agent prompt changes outside `project-auditor`.
+
+---
+
+## v1.0.128 — 2026-04-27
+
+### Added — agent writing-style reference (21 rules)
+
+Adapted from [yzhao062/agent-style](https://github.com/yzhao062/agent-style) v0.3.1
+(CC BY 4.0) — 12 canonical rules from Strunk & White / Orwell / Pinker plus 9 rules
+from field observation of LLM output 2022–2026. Applied at **generation time** to all
+prose-heavy agents.
+
+#### `skills/great_cto/references/agent-style.md` (NEW)
+
+Condensed 21-rule guide with severity (critical/high/medium/low), BAD→GOOD examples
+in technical contexts, and a 5-second self-check (reader named, active voice, no filler
+bullets, numbers on every claim, citations or admit absence). Source attribution kept
+per CC BY 4.0 license.
+
+#### Wired into all 7 agents — `## Writing Style` section before Step 0
+
+- **tech-lead**: ARCH docs / ADRs / RFCs / brain.md — reader named in first sentence,
+  no throat-clearing
+- **senior-dev**: commit messages / PR descriptions / code comments — imperative active
+  voice, body explains why not what
+- **qa-engineer**: QA reports — every "regression" / "improvement" carries a number
+  (p95, RPS, run count); active voice on failure descriptions
+- **security-officer**: CSO reports / threat models — RULE-H strictest gate, every
+  "best practice" claim cites a NIST / OWASP / CVE / log line
+- **devops**: release notes / rollback runbooks — short, concrete, no "we are excited
+  to announce" preambles
+- **l3-support**: postmortems — active voice on root cause, timeline with UTC
+  timestamps + person/system per action, never close with "in summary"
+- **project-auditor**: audit reports — every gap carries effort estimate + impact;
+  every "outdated" claim links to upstream EOL announcement
+
+### Why
+
+Pipeline-test agents in v1.0.125–127 sometimes produced AI-tells: em-dash habit,
+"Additionally / Furthermore" transitions, summary sentences at every paragraph end,
+handwavy "industry best practice" citations, abstract category nouns ("various
+metrics", "performance issues"). These are mechanical and fixable at generation
+time with a rule reference; the 21-rule set covers ~80% of failure modes.
+
+The 5-second self-check before each prose artifact catches most violations without
+slowing the pipeline. Heavier enforcement (LanguageTool linter, post-generation
+review pass) deferred to v1.0.129+.
+
+---
+
+## v1.0.127 — 2026-04-26
+
+### Closed gaps surfaced by v1.0.126 pipeline dry-runs on remaining archetypes
+
+Pipeline simulation on `commerce`, `web3`, `agent-product` (the highest-stakes
+existing archetypes) flagged real gaps. This release patches them.
+
+#### `commerce-pack.md` — two new sections
+
+- **Subscription reactivation flow**: three reactivation cases (PM-valid /
+  PM-expired / paused) with Stripe patterns and edge cases. Hard rules: no
+  silent reactivate, pro-rate first cycle for 30-day reactivations,
+  idempotency keys namespaced as `reactivate:{user_id}:{epoch_day}`, webhook
+  handler distinguishes `created` vs `resumed`.
+- **Stripe ↔ DB reconciliation job**: hourly + daily full-sync schedule, RPO
+  targets (1h active / 25h archived), 0-tolerance drift on subscription
+  status, 7-year audit log retention for PCI / financial audit.
+
+#### `ARCHETYPES.md` Parameter Values — 11 new compliance keys
+
+Closes the gap where pack documents referenced compliance values that
+ARCHETYPES.md didn't define, leaving security-officer ambiguous on what
+checklist to run. Added: `pci-dss-saq-a`, `pci-dss-saq-a-ep`, `eu-vat`,
+`consumer-rights-directive`, `csp`, `mv3-security`, `age-rating`,
+`accessibility`, `coppa`, `openssf`, `api-stability`, `soc2-type-2`.
+
+#### `web3-pack.md` — six new sections
+
+- **`interest-rate-model`** QA extra (lending): kink-curve fuzzing,
+  utilization invariants, monotonicity proofs, 100k+ runs, gas cost <60k
+  for `accrueInterest`.
+- **`liquidation-keeper-decentralization`** QA extra (lending): top-1
+  keeper share <50% over 30 days, public liquidation interface (no
+  allowlist), Dutch auction or batch settlement preferred.
+- **`insurance-fund`** QA extra: bad-debt absorption mechanism, reserve
+  factor flow, haircut formula, ≥0.5% TVL coverage at launch.
+- **`l2-resilience`** QA extra: sequencer halt, force-inclusion via L1
+  entrypoint, reorg up to L1 finality, cross-domain message delays. Each
+  scenario as Foundry fork test.
+- **Upgradeability decision matrix**: Immutable / UUPS / Transparent /
+  Diamond / Beacon — when to use each, when to avoid, tooling. Universal
+  upgrade discipline (timelock tiers, storage gaps, layout diff in CI,
+  4-of-7 multisig).
+- **Block-ship gate disambiguation by subtype**: token / lending / AMM /
+  bridge / aggregator each have different hard gates. Lending = `flash-loan-sim`
+  with 0 profitable vectors.
+- **Bug bounty sizing**: pre-launch contest (Code4rena / Sherlock) → post-launch
+  Immunefi tier mapped to TVL: <$5M → $50k crit, $5–50M → $250k, $50–500M →
+  $500k–1M, >$500M → $1M–10M. Safe-harbour clause + payout SLA.
+
+#### `agent-pack.md` — five new sections
+
+- **Irreversible-action heuristic**: auto-promote any tool call to `high`
+  trust if it matches verb/recipient/monetary/permission/destructive/cross-system
+  patterns. Safety net for tools that forgot to declare `irreversible: true`.
+- **MCP server trust pattern**: allowlist + scope mapping in
+  `config/mcp_servers.yaml`, SHA256-pinned binaries, per-user OAuth (never
+  service-account), high-trust actions through internal adapters not raw MCP,
+  audit log on every tool call.
+- **Multi-identity scenarios**: `(user_id, account_id, scope)` model for
+  users with personal+work Gmail/Notion. Disambiguation rules: explicit
+  account on every call, no silent merging across accounts, switch-account
+  as first-class action, token revocation cascades.
+- **Output filter concrete recommendations**: Llama Guard 3 (self-hosted),
+  Anthropic safety classifier (built-in to Claude API), OpenAI Moderation,
+  custom regex/NER as always-on layer for deterministic leaks.
+- **Per-user rate limiting**: 4-layer matrix — API gateway, orchestrator
+  (concurrent sessions / RPM / daily token cap), per-tool (gmail.send ≤
+  10/h), budget tracker (per-session $0.50 default / $5 max). UI surfaces
+  quota usage; silent throttling is hostile UX.
+
+### Coverage
+
+Same 14 archetypes + 13 packs. Pack file sizes: commerce-pack ~340 lines
+(was ~310), web3-pack ~210 lines (was ~107), agent-pack ~430 lines (was
+~356), ARCHETYPES.md +11 compliance keys.
+
+---
+
+## v1.0.126 — 2026-04-26
+
+### Closed gaps surfaced by v1.0.125 pipeline dry-runs
+
+End-to-end pipeline simulation on the three new archetypes (browser-extension,
+game, devtools) flagged real architectural gaps in each pack. This release
+patches them.
+
+#### `browser-extension-pack.md` — three new sections
+
+- **Long-running work / `chrome.offscreen`**: decision table for work duration
+  (< 50ms / 50ms–5s / > 5s), offscreen document quickstart, LLM-inference
+  pattern (extension as thin client, backend holds the API key, streamed
+  results via `chrome.runtime.sendMessage`).
+- **Sidebar / iframe injection (Grammarly / Honey pattern)**: Side Panel API
+  vs injected iframe trade-offs, iframe isolation rules (`chrome-extension://`
+  URL, `style.all = initial`, postMessage with origin check, z-index).
+- **Cross-pack stacking**: when to load `[browser-extension-pack, ai-pack]`
+  vs `[..., web-pack]` vs `[..., web3-pack]` vs `[..., commerce-pack]`. Calls
+  out prompt-injection-via-page-content as the most-missed risk for AI
+  extensions.
+
+#### `game-pack.md` — four new sections
+
+- **Team-size sanity check**: red-flag matrix for engine choice (solo/2 picking
+  Unreal 5, 3–5 going custom, AAA-3D-in-Godot). Default rule: team ≤ 5,
+  PC/mobile only → Godot 4 (2D) or Unity 6 (3D); Unreal 5 needs ≥ 8 engineers.
+- **Netcode decision tree**: explicit top-to-bottom rules covering co-op PvE
+  (≤ 4 → P2P relay, 5–8 → cheap dedicated). Calls out the common indie-studio
+  mis-pick of authoritative servers for 4-player co-op.
+- **Steam Deck Verified — the de-facto indie PC baseline**: requirements
+  matrix (60 FPS at 1280×800, < 4 GB RAM, gamepad-mandatory, suspend/resume,
+  Linux-compatible AC). Notes Vanguard incompatibility with Proton.
+- **PC launch milestones**: 6-mo/12-mo timeline template (vertical slice →
+  Steam Next Fest demo → closed beta → EA → 1.0 → v1.1) with per-milestone
+  block-ship gates. Wishlist targets: 50k = break-even, 100k = ramen
+  profitable, < 25k → delay or pivot.
+
+#### `devtools-pack.md` — four new sections
+
+- **SDK release orchestration**: tooling matrix (Stainless pipeline, npm
+  changesets, Google release-please, custom Actions matrix) and the rule that
+  CI must block tag if any SDK fails its language matrix — no "patch Python
+  tomorrow" exceptions.
+- **WebSocket / streaming APIs**: AsyncAPI 3.0 spec, auth-on-upgrade-not-send,
+  token in subprotocol not URL, reconnection contracts (stateless vs cursor
+  resume vs exactly-once), message versioning (`type@v2`), heartbeats,
+  backpressure as explicit disconnect, idle close.
+- **Multi-tenancy**: tenant identity model (API key vs JWT-with-claim vs OAuth
+  audience), isolation level matrix (logical RLS / schema-per / DB-per /
+  cell-per), per-tenant rate limits + quota + flags + credentials rotation +
+  status page.
+- **Sandbox / test mode (Stripe-style)**: separate base URL + separate API
+  keys + same spec/SDK + realistic latency-and-failure injection + free
+  usage + `x-environment` indicator.
+
+### Coverage
+
+Same 13 archetypes + 13 packs. Pack file sizes: browser-extension-pack ~410
+lines (was ~314), game-pack ~370 lines (was ~311), devtools-pack ~390 lines
+(was ~297). No CLI changes.
+
+---
+
+## v1.0.125 — 2026-04-26
+
+### Added — three new archetypes: `devtools`, `browser-extension`, `game`
+
+Coverage gap closed. The 10-archetype taxonomy was missing API-platform/SDK
+products (~20% of YC W26), browser extensions (CSP / MV3 / Web Store review
+specifics), and games (netcode, anti-cheat, age ratings, loot-box jurisdiction
+rules). All three now have first-class archetypes with their own packs.
+
+- **`devtools`** — API-platform / SDK / developer-tools / agent-platform.
+  Compliance defaults: `openssf`, `api-stability`, `soc2-type-2`, `gdpr`.
+  QA gates: OpenAPI/GraphQL stability, multi-language SDK parity, deprecation
+  channels (RFC 9745 header + SDK warnings), docs-as-product.
+  Pack: **`skills/great_cto/packs/devtools-pack.md`** (~280 lines).
+
+- **`browser-extension`** — Chrome/Firefox/Edge MV3 extensions. Detection:
+  `manifest.json` with `manifest_version: 2|3`, WXT (`wxt.config.ts`), Plasmo.
+  Compliance defaults: `csp`, `mv3-security`, `gdpr`. QA gates: Web Store
+  review pre-flight (single-purpose policy, permissions justification, privacy
+  practices form), service-worker patterns, host-permissions scrutiny.
+  Pack: **`skills/great_cto/packs/browser-extension-pack.md`** (~340 lines).
+
+- **`game`** — Unity / Unreal / Godot / Phaser / Cocos. Detection:
+  `ProjectSettings/`+`Assets/` (Unity), `*.uproject` (Unreal), `project.godot`
+  (Godot), web-game deps via package.json. Compliance defaults: `coppa`,
+  `age-rating` (ESRB/PEGI/USK/IARC), `accessibility`. QA gates: netcode
+  (lockstep / rollback / authoritative), anti-cheat (server-side validation
+  always), loot-box jurisdiction matrix (Belgium/NL bans, CN/KR drop-rate
+  disclosure), platform certifications (Sony TRC, Xbox XR, Nintendo Lotcheck).
+  Pack: **`skills/great_cto/packs/game-pack.md`** (~360 lines).
+
+### Changed
+
+- **`packages/cli/src/archetypes.ts`** — `Archetype` union extended from 11
+  to 15 (added `agent-product`, `devtools`, `browser-extension`, `game`).
+  New scoring rules with priority 6–8 to override `library` / `mobile-app`
+  fallback when explicit signals present. `suggestCompliance` now seeds the
+  three new archetypes with their default compliance sets.
+
+- **`packages/cli/src/detect.ts`** — new detection signals:
+  - browser-extension: parses `manifest.json` for `manifest_version`, detects
+    WXT / Plasmo configs.
+  - game: detects Unity (`ProjectSettings/`), Unreal (`*.uproject`), Godot
+    (`project.godot`), and web-game npm deps (phaser, cocos2d, playcanvas).
+  - devtools: detects OpenAPI / Swagger specs at common paths, GraphQL schema,
+    Stainless config, multi-language SDK directories (≥3 language sub-dirs in
+    `sdks/` or `clients/`), Mintlify (`mint.json` / `docs.json`).
+  - Aggregate: `openapi-spec` + `multi-sdk` ⇒ explicit `devtools-api` flag.
+
+- **`skills/great_cto/TYPE_MAP.md`** — reroutes:
+  - `browser-extension` / `chrome-extension-mv3`: `mobile-app` → `browser-extension`
+  - `vscode-extension`: `mobile-app` → `library` (IDE plugins are marketplace
+    packages, not browser extensions)
+  - `game`: `library` → `game`
+  - Adds 4 new keyword rows + Mapping Table rows for `api-platform`,
+    `sdk-platform`, `developer-tools`, `agent-platform` → `devtools`.
+
+- **`packages/cli/src/main.ts`** — `--help` now lists 13 archetypes (was 10).
+
+### Coverage
+
+- 13 archetypes (was 10), 13 domain packs, 75+ specific types in TYPE_MAP.
+
+---
+
+## v1.0.124 — 2026-04-26
+
+### Added — automatic update check at session start
+
+When a new version of great_cto is published to npm, users now see a one-line
+banner at the start of their next Claude Code session offering the upgrade
+command. No manual checking required.
+
+- **`scripts/check-update.sh`** (NEW): silent background update check called
+  from SessionStart hook. Compares cached plugin version against
+  `https://registry.npmjs.org/great-cto/latest`. Caches result for 24h to avoid
+  hammering npm. 3-second timeout so offline doesn't block session start.
+  Banner shows: current version, latest version, version delta (major/minor/patch),
+  upgrade command (`npx great-cto init --force`), changelog URL.
+- **`plugin.json` SessionStart hook**: appends call to `check-update.sh` at
+  the end. Runs after pattern injection so it's the most recent thing user sees.
+  Existence check (`-x`) means missing script doesn't break session start.
+- **`commands/doctor.md` Check 8**: extended with on-demand version freshness
+  check that bypasses the 24h cache. `/doctor` now shows whether the local
+  cache is current with npm's latest.
+
+### How it works
+
+```
+[every 24h, on SessionStart, silent unless update available]
+1. Read PLUGIN_DIR/.claude-plugin/plugin.json → CURRENT_VER
+2. curl npm registry → LATEST_VER (3s timeout, fail silently)
+3. If LATEST_VER > CURRENT_VER (semver): print banner
+4. Cache check timestamp in ~/.great_cto/.last-version-check
+```
+
+```
+╭─────────────────────────────────────────────────────────────────╮
+│  💡 great_cto 1.0.124 is available (you have 1.0.122, +2 patch) │
+│     Upgrade:  npx great-cto init --force                        │
+│     Changelog: https://github.com/avelikiy/great_cto/blob/...   │
+╰─────────────────────────────────────────────────────────────────╯
+```
+
+Verified across 5 scenarios: stale cache (banner shows), hot cache (silent),
+already on latest (silent), missing plugin.json (graceful skip), no network
+(3s timeout, silent).
+
+---
+
+## v1.0.123 — 2026-04-26
+
+### Added — 5 new domain packs + extended stack detection (closes archetype coverage gaps)
+
+After auditing archetype coverage against the actual 2026 ecosystem, found that 6 of 11 archetypes
+had no domain pack, and stack detection missed major frameworks (Flutter, Tauri, Pulumi, dbt, vLLM,
+DuckDB, Iceberg, Adyen, etc.). This release closes those gaps in one batch.
+
+#### New packs (5)
+
+- **`packs/web-pack.md`** (319 lines): framework decision tree (Next/Nuxt/SvelteKit/Astro), backend
+  framework choice (Hono/Fastify/NestJS), ORM (Drizzle/Prisma/Kysely), auth providers (Clerk/Auth.js/Lucia),
+  edge runtime constraints, realtime patterns, perf budgets, OWASP defaults, anti-patterns specific to web.
+- **`packs/library-pack.md`** (282 lines): supply-chain security focus — OpenSSF Scorecard ≥ 7.5
+  baseline, npm provenance + PyPI Trusted Publishing (OIDC), SBOM generation via Syft, semver
+  enforcement (semantic-release/Changesets/cargo-semver-checks), bundle size budgets, ESM-first
+  exports, deprecation policy, security disclosure template, CLI-specific extras.
+- **`packs/mobile-pack.md`** (236 lines): native vs Flutter vs RN vs KMM vs Tauri decision tree,
+  build pipelines (Fastlane/EAS), App Store rejection patterns (4.3, 5.1.1, 2.1, 3.1.1, 4.7),
+  Google Play API 34 requirements, OWASP MASVS V1-V8 detailed checklist, push (APNs/FCM),
+  IAP (RevenueCat), OTA (EAS Update/Shorebird), passkeys-first auth.
+- **`packs/infra-pack.md`** (264 lines): IaC tool decision (Terraform/OpenTofu/Pulumi/CDK/Crossplane),
+  state backends, policy-as-code (OPA/Checkov/tfsec), GitOps (ArgoCD/Flux), cluster management
+  decision per cloud, service mesh "only when you need it" guidance, secrets management, OTel +
+  LGTM observability stack, FinOps essentials with Karpenter and Spot, DR strategy table.
+- **`packs/commerce-pack.md`** (271 lines): payment provider decision (Stripe/Adyen/Paddle/Polar),
+  subscription billing (Stripe Billing/Lago/Stigg/Orb), PCI-DSS scope reduction (SAQ-A target),
+  idempotency patterns, webhook signature verification, refund/dispute workflow, fraud detection
+  (Radar/Sift/Signifyd), multi-currency, tax compliance (Stripe Tax / Paddle MoR), pricing patterns.
+
+#### Pack updates (2)
+
+- **`packs/ai-pack.md`**: appended "Tooling Reference (2026 stack)" section — vLLM/Ollama/llama.cpp
+  for serving, DSPy/Instructor/Outlines for prompt engineering, Ragas/DeepEval/Promptfoo/Braintrust
+  for evaluation, vector DB decision (pgvector/Pinecone/Qdrant/Turbopuffer/LanceDB), Langfuse for
+  observability.
+- **`packs/data-pack.md`**: appended "Tooling Reference (2026 stack)" section — dbt + DuckDB for dev,
+  Polars replacing pandas, Dagster as default orchestrator, Iceberg as lakehouse standard, Snowflake
+  Polaris catalog, ClickHouse for OLAP, Confluent/Redpanda for streaming, Great Expectations / Soda
+  for quality, DataHub / OpenMetadata for catalog.
+
+#### Stack detection (`packages/cli/src/detect.ts`)
+
+Added detection for 15+ new frameworks/tools:
+
+- **Mobile**: Tauri (`@tauri-apps/api`), Capacitor, Flutter (`pubspec.yaml`)
+- **AI**: LangGraph, CrewAI, AutoGen, DSPy, vLLM, Ollama, Mastra, Vercel AI SDK, Ragas, DeepEval, OpenCV/YOLO
+- **Commerce**: Adyen, Paddle, LemonSqueezy, Polar
+- **DBs**: Kysely, Lucia, WorkOS, Neon, PlanetScale, Turso (libsql), DuckDB
+- **Data**: dbt (`dbt_project.yml`), Dagster (`dagster.yaml`), Polars, Iceberg
+- **Infra**: Pulumi (`Pulumi.yaml`), AWS CDK (`cdk.json`), Helmfile, ArgoCD
+- **Embedded**: Zephyr (`west.yml`), ESP-IDF, Embassy (Rust)
+
+#### Library archetype detection — strong signal
+
+`detect.ts` now identifies library projects by manifest signals (npm `main`/`exports`/`bin` without
+`private:true`, Python `[project]` without `manage.py`/`main.py`, Go `go.mod` without `main.go`,
+Rust `[lib]` without `[[bin]]`). When detected, `archetypes.ts` scores library at priority **7**
+(was 2, weak fallback). Library projects now classify with **high confidence** instead of fallback.
+
+#### `ARCHETYPES.md`
+
+Added "Packs Auto-load Map" table — explicit mapping of each archetype to its pack, plus 5
+common multi-pack combinations (e.g. `[ai-pack, enterprise-pack]` for regulated AI, `[web-pack,
+commerce-pack]` for SaaS with checkout, `[mobile-pack, commerce-pack]` for IAP-heavy mobile).
+
+### Pack coverage summary (after this release)
+
+| Archetype | Pack? |
+|-----------|-------|
+| web-service | ✅ web-pack (was ❌) |
+| mobile-app | ✅ mobile-pack (was ❌) |
+| ai-system | ✅ ai-pack (updated) |
+| agent-product | ✅ agent-pack |
+| data-platform | ✅ data-pack (updated) |
+| infra | ✅ infra-pack (was ❌) |
+| library | ✅ library-pack (was ❌) |
+| commerce | ✅ commerce-pack (was ❌) |
+| web3 | ✅ web3-pack |
+| iot-embedded | ⚠ no pack, only detection signals |
+| regulated | ✅ enterprise-pack |
+
+**10 of 11 archetypes now have domain packs (was 5).** iot-embedded keeps detection-only coverage
+since the existing TYPE_MAP entries (`embedded-iot`, `hardware-driver`) link to enterprise-pack
+when compliance overlaps.
+
+---
+
+## v1.0.122 — 2026-04-25
+
+### Added — OWASP LLM Top 10 audit completion + LLM router cost telemetry + multi-IDE truth + smoke test runbook
+
+Closes the four "next priorities" items from v1.0.121: OWASP gaps, cost-savings data
+backing, honest multi-IDE matrix, and a production smoke test plan.
+
+- **`skills/great_cto/references/agent-security.md`**: 5 OWASP categories without dedicated
+  audit sections (LLM02 Output Handling, LLM03 Training Data, LLM08 Excessive Agency,
+  LLM09 Overreliance, LLM10 Model Theft & Key Security) now have full audit checklists,
+  test prompts, and BLOCK/HIGH/MEDIUM thresholds. The OWASP table now anchors each row to
+  its detail section. CSO report template (`## Agent Security Assessment`) updated with
+  per-OWASP verdict slots so the security officer fills 10 verdict lines, not 4.
+- **`commands/cost.md`**: new "LLM router savings (lead the report with this)" section.
+  Reads `.great_cto/llm-router-usage.log`, computes Kimi-vs-Sonnet differential, prints
+  saved $ and %, validates against the README "60–80%" claim. Auto-suppresses if the log
+  is empty (no false claim). The intro now leads with cost savings before infra cost.
+- **`docs/multi-ide.md`** (NEW, 168 lines): honest multi-IDE adaptation guide. Verified
+  YAML frontmatter parses cleanly across all 7 agents; documented Cursor / Codex CLI /
+  Gemini CLI / Antigravity adaptation steps; explicit list of what's lost outside Claude
+  Code (8 items) and what ports cleanly (skills + packs + ARCHETYPES). README compatibility
+  matrix downgraded from optimistic ✅/⚠️ to honest ✅/🟡/❌ per feature × IDE; links to
+  the new doc for deep adaptation.
+- **`docs/smoke-test.md`** (NEW, 235 lines): 7-phase runbook to verify everything works
+  on a real project. Each phase has explicit PASS / FAIL signals; verdict matrix
+  (GREEN / YELLOW / RED) at the end; reporting protocol via `bd create` for found issues.
+- **`README.md`** Links section: added entries for `docs/multi-ide.md` and
+  `docs/smoke-test.md`.
+
+---
+
+## v1.0.121 — 2026-04-25
+
+### Fixed — first-run experience: PROJECT.md template tells users about Phase 0 discovery
+
+After v1.0.117 introduced the discovery skill, fresh installs from `npx great-cto init`
+still produced a PROJECT.md whose Notes section only mentioned `/audit`. Users who
+ran the installer never learned that `/start` will walk them through structured
+discovery if their input is sparse. Result: they'd accept the guessed archetype
+silently and miss the value.
+
+- **`packages/cli/src/bootstrap.ts`**: Notes section in generated PROJECT.md now
+  explicitly says "the archetype and compliance above are best-effort guesses",
+  documents three refinement paths (`/audit`, `/start "<description>"` with Phase 0
+  pointer, or direct edit). Compiled to dist/bootstrap.js.
+- Cleanup-only: removed v-prefixed plugin cache duplicates from manual rsyncs;
+  installer convention is bare version (`1.0.121`, not `v1.0.121`).
+
+---
+
+## v1.0.120 — 2026-04-25
+
+### Changed — outcome-led positioning + memory/MCP/multi-IDE narrative (P1 + P2 from gap analysis)
+
+We compete against `claude-mem` (67k★) on memory and `caveman`/`rtk` (35–46k★) on token cost
+without telling the user that, and we lead with process ("two decisions per feature") instead
+of outcomes. After v1.0.119 fixed discoverability, this release fixes positioning.
+
+- **README hero rewritten** outcome-first: "Ship features in 45 minutes, not 5 hours" headline,
+  "two decisions per feature" preserved as USP detail. Two new badges in hero:
+  `LLM costs down 60–80%` (from llm-router Kimi fallback) and `MTTR down 94% after first incident`
+  (verified from /crystallize loop). Tagline pills now lead with `cross-project memory` and
+  `MCP-native` instead of generic `hooks · skills`.
+- **README "Memory" section** (replaces "The brain"): explicit 4-layer narrative with table —
+  L1 PROJECT.md, L2 CODEBASE.md, L3 brain.md, L4 ~/.great_cto/global-patterns/. Differentiates
+  from generic memory plugins ("we synthesize, not record"). Disk usage stated (~10–50 KB).
+  ASCII diagram of the file layout. Concrete claim: 94% MTTR drop on second occurrence.
+- **README "MCP integrations" section** (NEW): table listing Grafana, LLM router (built-in,
+  60–80% cost reduction), Beads, "your own". JSON snippet showing how to add new servers.
+- **README "Extending the agent roster" subsection** (NEW): documents existing
+  template-bridge integration → 419 specialist agents + 336 commands available as sub-agents.
+- **README "Multi-IDE compatibility" section** (NEW): compatibility matrix for Claude Code /
+  Cursor / Codex CLI / Gemini CLI. Honest scoring (✅ / ⚠️ / ❌) per feature.
+- **`site/index.html` hero**: outcome-led headline mirror, version pill v1.0.115 → v1.0.120,
+  added cost-savings + MTTR pills.
+
+---
+
+## v1.0.119 — 2026-04-25
+
+### Changed — discoverability overhaul (P0 from gap analysis)
+
+After auditing top-30 Claude Code plugin/agent repos (April 2026), our four discoverability
+surfaces — GitHub topics, npm keywords, plugin.json keywords, site meta — were inconsistent
+or missing critical terms. Direct competitors (`wshobson/agents`, `ruvnet/ruflo`,
+`Yeachan-Heo/oh-my-claudecode`) have 30k+ stars; we had 4. Biggest single gap: **0 GitHub topics
+set on the repo** — searches for `claude-code-plugin`, `multi-agent`, `agentic-coding` did
+not surface us.
+
+- **GitHub topics set (19)**: claude-code, claude-code-plugin, claude-code-subagents,
+  claude-code-commands, claude-code-skills, claude, anthropic, ai-agents, agentic-coding,
+  agentic-engineering, multi-agent, multi-agent-systems, sdlc, orchestration, automation,
+  code-review, devops, mcp, plugin
+- **`plugin.json` keywords**: 5 → 21 (added claude-code, claude-code-plugin,
+  claude-code-subagents, claude-code-commands, claude-code-skills, claude, anthropic, plugin,
+  ai-agents, agentic-coding, agentic-engineering, multi-agent-systems, orchestration, mcp,
+  code-review, devops). Previous keywords were disjoint from npm.
+- **`packages/cli/package.json` keywords**: 28 → 39 (added the same agentic-* and claude-code-*
+  terms; kept compliance + tdd + startup terms).
+- **Site meta tags**: index.html keywords expanded 8 → 26 terms; added keyword meta to
+  commands.html, agents.html, archetypes.html (previously: none).
+- **README intro**: rewritten with "**Claude Code plugin** that turns one engineer into a
+  full SDLC team" + explicit "agentic coding · multi-agent orchestration" phrasing. Tagline
+  band shows "7 Claude Code subagents · 16 commands" (was: "7 agents · 11 archetypes ·
+  12-angle review · 13 compliance frameworks · 15 commands"). Stale "15 commands" fixed to 16.
+
+### Added — submitted to two awesome-lists
+
+- **PR opened**: [ComposioHQ/awesome-claude-skills#734](https://github.com/ComposioHQ/awesome-claude-skills/pull/734)
+  added great_cto under Development & Code Tools.
+- **Pre-filled submission URL** generated for `hesreallyhim/awesome-claude-code` (their
+  policy forbids `gh` CLI submissions; one-click manual submit by maintainer).
+
+---
+
+## v1.0.118 — 2026-04-25
+
+### Fixed — discovery Option C path + 24-scenario test coverage
+
+Live test of v1.0.117 revealed the discovery skill described 3 options but didn't
+specify what to do when user picks **Option C (don't build it)**. Without explicit
+handling, agent could create a PROJECT.md anyway and start the pipeline.
+
+- **`skills/great_cto/references/discovery.md`**: split "What to write after CTO picks
+  an option" into two paths. Option A/B writes PROJECT.md as before. Option C writes
+  `.great_cto/DISCOVERY-NO-BUILD.md` with: inputs verbatim, why no build, vendor shortlist,
+  re-evaluation criteria (4 conditions all-must-hold), action items + 6-month revisit reminder.
+  Critical: do NOT also write PROJECT.md when Option C wins.
+- **`commands/start.md`**: existing-project guard now also detects DISCOVERY-NO-BUILD.md.
+  If present → stops with re-confirm / supersede / reset options. Prevents re-running
+  /start from quietly overriding a deliberate "don't build" decision.
+
+### Verified — 24-scenario deterministic test of mapping rules
+
+Encoded mapping rules from discovery.md as Python; ran across 24 representative
+scenarios spanning all 9 archetypes. Distribution: A=54% (teams with capacity),
+B=37% (solo founders / hackathons), C=8% (solo + heavy compliance only).
+
+Verified the skill's key heuristic: "solo + 2+ compliance regimes → Option C dominant"
+fires correctly for AI support bot with PII+PCI (sc#1) and regulated archetype solo (sc#14)
+but not for healthcare RAG with 5-15 team (sc#6, picks A) — capacity matters.
+
+---
+
+## v1.0.117 — 2026-04-25
+
+### Added — Discovery skill (no new agent — reusable across `/start`, `/audit`, `/poc`)
+
+Sparse input is the most common failure mode at project start: a one-sentence description
+forces agents to guess archetype, size, compliance. The fix is structured discovery — an
+8-question domain framework that maps answers to PROJECT.md fields and proposes 2–3 concrete
+approaches (Option A/B/C) with explicit tradeoffs.
+
+Implemented as a **skill, not an agent.** Sub-agents are bad at multi-turn user dialog;
+slash commands in the main session are not. Skills make the framework reusable across
+three entry points without forking logic.
+
+- **`skills/great_cto/references/discovery.md`** (NEW): 8-question framework in 4 blocks
+  (audience+pain, system shape, constraints, capacity+scope), mapping rules from answer
+  patterns to archetype / project_size / compliance / poc-mode, synthesis rule that always
+  proposes 2–3 options with Option C explicitly considering "don't build it / use existing tool",
+  and stop conditions (don't drag past 5 questions when archetype is already clear).
+- **`commands/start.md`**: new **Phase 0: Discovery** block runs before Step 1 type detection.
+  Triggers when description is short, vague, or has conflicting archetype signals. Replaces
+  the old narrow "ask one question and guess" path. Open-ended ideation falls back to
+  `superpowers:brainstorming` (different tool: brainstorming finds scope, discovery narrows it).
+- **`commands/audit.md`**: when README + git history don't reveal audience or compliance,
+  agent invokes the discovery skill for the 2–3 questions the codebase couldn't answer.
+  Audit gives stack; discovery fills audience + compliance. No re-asking obvious facts.
+- **`commands/poc.md`**: when the hypothesis is shorter than 8 words and not falsifiable,
+  Step 2 first runs discovery Block 1 (audience+pain) + Q8 (scope cut) before requiring a
+  falsifiable claim. Prevents POCs from drifting into research projects.
+
+PROJECT.md gains two new optional fields: `discovery: completed | defaulted` and
+`discovery-summary` (verbatim audience / pain / scope-cut + chosen approach), read by
+`tech-lead` at ARCH time so user intent isn't lost when only field values are kept.
+
+---
+
+## v1.0.116 — 2026-04-25
+
+### Added — `/crystallize` can now improve **skills**, not just agents
+
+Previously, every crystallized pattern targeted an agent file (`agents/<name>.md`) and was
+matched at runtime via Step 0 Pattern Lookup. Some learnings — new LogQL templates, new
+postmortem rules, new threat-model techniques — apply across multiple agents and belong in
+shared reference docs (`skills/great_cto/references/<topic>.md`).
+
+- **`skills/great_cto/references/knowledge-extraction.md`**: KE schema now supports
+  `target_skill: <relative-path>` as an alternative to `target_agent: <name>`.
+  KE files use exactly one of the two.
+- **`commands/crystallize.md`**:
+  - `review` subcommand validates that every KE has either `target_agent` or `target_skill`
+    (skips with explicit message if neither). Proposal `Target` line reflects the chosen route.
+  - `approve` subcommand splits into two paths:
+    - **Agent route**: pattern matched at runtime via Step 0 (no file edit needed)
+    - **Skill route**: appends a crystallized entry block to the skill file with proposed change,
+      detection method, fix template, verification, and source GP-NNNN. Auto-commits to plugin repo.
+
+End-to-end verified: synthetic KE with `target_skill: skills/great_cto/references/grafana-ops.md`
+correctly creates GP file, generates proposal, and on approval appends a complete pattern entry
+to the skill doc with attribution.
+
+---
+
+## v1.0.115 — 2026-04-25
+
+### Fixed — `/crystallize` wired into SessionStart + documented in README
+
+- **`plugin.json` SessionStart CMD loop**: added `crystallize` to the loop that copies command
+  files to `~/.claude/commands/` on every session start. Previously the command file existed in
+  the repo but was never installed for users — `/crystallize` would fail with "command not found".
+- **`README.md`**:
+  - Added `/crystallize` row to the advanced commands table with a one-line description
+  - Extended "The brain" section with a cross-project learning paragraph explaining the
+    KE → `/crystallize` → GP → Step 0 loop in plain language
+  - Updated "Fully automatic" table: session start now shows global patterns loaded;
+    added P0 trigger row; `/digest` line updated to mention pattern library stats
+
+---
+
+## v1.0.114 — 2026-04-25
+
+### Added — Step 0 Pattern Lookup in all 6 remaining agents
+
+Completes the self-improving loop: every agent now opens a session by surfacing known patterns
+from `~/.great_cto/global-patterns/` before starting its standard workflow.
+
+- **`agents/tech-lead.md`**: Step 0 before ARCH design — surfaces `arch-rework` patterns as
+  architecture constraints so past decisions aren't repeated. Architecture decisions blocked by
+  a pattern are documented in the new ARCH doc.
+- **`agents/senior-dev.md`**: Step 0 before implementation — surfaces known stack pitfalls with
+  `fix` field so the developer applies proven fixes immediately. KE trigger added: if advisor
+  called AND root cause absent from ARCH doc, write KE before DONE.
+- **`agents/qa-engineer.md`**: Step 0 before test plan — surfaces `why_standard_checks_missed_it`
+  per matched pattern so those exact failure modes become Priority 0 test cases. KE trigger:
+  escaped bug or advisor called more than once.
+- **`agents/security-officer.md`**: Step 0 before security checklist — surfaces `security-gap`
+  patterns with their verification first-step. KE trigger: new vulnerability class not in
+  existing checklist.
+- **`agents/devops.md`**: Step 0 before deploy sequence — surfaces deployment failure patterns
+  so pre-deploy verification of known failure modes runs before gate:ship check.
+- **`agents/project-auditor.md`**: Step 0 before Phase 1 stack fingerprinting — surfaces
+  `audit-recurrence` patterns (same debt found in two consecutive audits) and flags them as
+  RECURRING in the report, requiring structural remediation not just a finding. KE trigger:
+  same debt category appears in this and prior audit.
+
+---
+
+## v1.0.113 — 2026-04-25
+
+### Added — Self-improving agent system (`/crystallize` + Knowledge Extraction)
+
+Every resolved incident, blocked QA run, or completed audit now feeds a structured learning loop:
+agent extracts knowledge → `/crystallize` promotes it to a global pattern → next session,
+agents surface matching patterns before starting standard diagnostics.
+
+- **`skills/great_cto/references/knowledge-extraction.md`** (NEW): KE schema and extraction protocol.
+  Defines when extraction is mandatory (P0 incidents, iterations > 3, new vulnerability class, etc.),
+  full YAML schema for `~/.great_cto/extractions/KE-*.yaml` (symptom, dead_ends, breakthrough_tool,
+  detection_order_next_time, why_standard_checks_missed_it), anonymized canonical example
+  (Grafana jsonData.database null — visible only in Playwright browser console, 8 iterations, 4h),
+  and a privacy scan bash script (no project names, URLs, credentials in KE files — plugin is public).
+- **`commands/crystallize.md`** (NEW): CTO-approval workflow for promoting KE files to global patterns.
+  Subcommands: `status` (pending KEs + proposals + active pattern stats), `review` (KE→GP promotion
+  with noise filter: high=auto-promote, medium≥5 iterations, low≥8 iterations, plus dedup check),
+  `approve GP-NNNN` (applies proposal to agent file + git commit + copies to `~/.claude/agents/`),
+  `reject GP-NNNN reason`, `rollback GP-NNNN` (git revert), `prune` (archive zero-hit patterns
+  older than 90 days). MTTR reduction tracked in `~/.great_cto/metrics/crystallize.log`.
+- **`agents/l3-support.md`**: new **Step 0 Pattern Lookup** block runs before all diagnostics.
+  Reads `~/.great_cto/global-patterns/`, filters by project archetype + stack fingerprint,
+  surfaces matching patterns with `detection_order[0]` as Priority 0 diagnostic.
+  Canonical: "No data in Grafana" → GP match → Playwright browser console first → saves 4h.
+  New **Knowledge Extraction** block at end of workflow: mandatory when P0 or iterations > 3;
+  guides agent to write `~/.great_cto/extractions/KE-*.yaml` with privacy-safe content.
+- **`plugin.json` SessionStart hook**: injects active global patterns matching current project archetype
+  at session start. Each matched pattern surfaces symptom + first detection step so agents apply
+  proven shortcuts before re-discovering known root causes.
+- **`commands/digest.md`**: new `PATTERN LIBRARY` section in format output and data gather block.
+  Shows: active pattern count, total hits, avg MTTR reduction, top 3 patterns by hits.
+
+Pattern files live in `~/.great_cto/global-patterns/` (local machine only — never committed to repo).
+KE files live in `~/.great_cto/extractions/` (local machine only). Public repo contains schemas only.
+
+---
+
+## v1.0.112 — 2026-04-25
+
+### Added — Grafana-native monitoring in `l3-support`
+
+Upgrades `l3-support` incident detection from grep/tail/Docker logs to Grafana MCP
+(`query_loki`, `search_alerts`, `query_tempo`, `get_panel`, `list_dashboards`) with
+graceful file-based fallback for projects without Grafana configured.
+
+- **`agents/l3-support.md`**: frontmatter `tools:` adds 5 Grafana MCP tool names;
+  new `## Grafana Setup` block detects `grafana-url` / `grafana-api-key-env` from PROJECT.md
+  and sets `$GRAFANA_OK` / `$GCX_OK` flags at startup; Step 2 (Check logs) becomes
+  Grafana-first — `search_alerts` + `query_loki` as Priority 0, full file/Docker/journalctl
+  chain preserved as Priority 1–4 fallback; Step 3 (Quick diagnostics) adds
+  `gcx alerts list --state firing` and `gcx correlate --commit HEAD` when gcx is present;
+  new `## Proactive Alert Polling` section enables pre-P0 alert detection from Grafana before
+  users notice; P0 Response Angle 4 gains Tempo trace lookup via `query_tempo` to pinpoint
+  the slow span in a distributed system failure.
+- **`mcp-servers/grafana.md`** (NEW): setup guide for `grafana/mcp-grafana`, `loki-mcp`,
+  and `gcx` CLI — install commands, Claude Code `settings.json` snippet, required Grafana
+  API key scopes, PROJECT.md fields, tool-to-workflow-step mapping, and verification commands.
+- **`skills/great_cto/references/grafana-ops.md`** (NEW): ops reference — 6 LogQL patterns
+  (error spike, latency, OOM, panic, auth failure, dependency timeout), PromQL SLI queries
+  (availability, p95 latency, error budget burn rate, anomaly band), gcx command reference,
+  proactive alert classification table, and the full alert correlation workflow
+  (firing alert → Loki → Tempo → gcx correlate → root-cause statement).
+- **`commands/start.md`**: `## L3` section in PROJECT.md template now documents 4 optional
+  Grafana fields (`grafana-url`, `grafana-api-key-env`, `loki-datasource`, `tempo-datasource`).
+
+---
+
+## v1.0.111 — 2026-04-25
+
+### Added — `agent-product` archetype
+
+New archetype for user-facing autonomous agents built on Claude Agent SDK, LangGraph, CrewAI, AutoGen, and similar frameworks. Differentiated from `ai-system` (which covers internal ML/LLM infrastructure).
+
+- **`skills/great_cto/ARCHETYPES.md`**: added `agent-product` to all three tables — definition,
+  QA strategy, and deploy method. Security tier: `deep` always (user input controls tool execution).
+  Compliance: OWASP LLM Top 10 + EU AI Act + GDPR if storing memory.
+- **`skills/great_cto/packs/agent-pack.md`** (NEW): full AI agent stack reference — orchestration
+  framework decision tree, memory tier selection (L1–L4), tool sandboxing (E2B vs Docker),
+  observability setup (Langfuse + OTel), agent constitution template, per-user isolation pattern,
+  budget cap enforcement, loop bounds, OWASP LLM Top 10 compliance checklist.
+- **`skills/great_cto/references/agent-security.md`** (NEW): security officer audit reference —
+  OWASP LLM Top 10 audit mapping with thresholds, prompt injection test patterns, per-user
+  isolation audit procedure, tool permission matrix template, loop bounds audit commands,
+  supply chain audit for agent deps, observability gate, EU AI Act checklist.
+- **`skills/great_cto/TYPE_MAP.md`**: added detection keywords for `agent-product` type
+  (Claude Agent SDK, user-facing agent, LangGraph agent, CrewAI, AutoGen, agent app, AI copilot).
+- **`agents/security-officer.md`**: added `agent-product` to mandatory archetype list and
+  tier-computation case statement (deep). Added dedicated Agent Security Audit section with
+  6 checks: injection resistance, per-user isolation, loop bounds/budget, observability,
+  tool permission matrix, OWASP LLM Top 10 checklist.
+- **Landing page + README**: updated archetype count 10 → 11, added `agent-product` card to
+  both the hero grid and archetypes page, added `agent-pack` to domain packs list.
+
+---
+
+## v1.0.110 — 2026-04-25
+
+### Improved — visibility + ecosystem positioning
+
+Based on KDnuggets "10 repos to master Claude Code" competitive analysis:
+
+- **README hero keywords**: added `hooks · skills · MCP · subagents · SDLC pipeline · approval gates`
+  code pill row — the terms developers search for when evaluating Claude Code extensions.
+- **Comparison table**: added `affaan-m/everything-claude-code` (hackathon winner, closest scope
+  competitor) and `gsd-build/get-shit-done` (same pipeline philosophy, different depth) with honest
+  positioning notes.
+- **Landing page badge**: updated hero pill to `hooks · skills · MCP · subagents`.
+- **PRs submitted to ecosystem catalogs**:
+  - `hesreallyhim/awesome-claude-code` → Tooling › Orchestrators section
+  - `VoltAgent/awesome-claude-code-subagents` → Meta & Orchestration category
+    (includes `categories/09-meta-orchestration/great-cto-pipeline.md` agent definition)
+
+---
+
+## v1.0.109 — 2026-04-25
+
+### Improved — DORA depth sprint (`/digest`)
+
+Inspired by Habr "DORA-метрики: как собирать, интерпретировать и не переусердствовать, ч.2"
+and AI-Zoo 2026 (Hermes memory-cap pattern):
+
+- **Rework Rate (5th DORA metric)**: counts Beads tasks labelled `hotfix`, `rework`, or
+  `unplanned` in the digest window, expressed as % of deploys. Appears alongside
+  Change Failure Rate in the DORA block.
+- **Delta arrows**: each DORA metric now shows `↑N worse` / `↓N better` / `— same`
+  vs the previous `/digest` run. Values persisted to `.great_cto/dora-baseline.log`
+  (already gitignored) after every run; last 10 snapshots kept.
+- **Context disclaimer**: one-line warning at the top of every digest output —
+  "These numbers describe this service only. Context determines what 'good' looks like."
+  Prevents the common anti-pattern of ranking teams by raw DORA numbers.
+- **SPACE capsule**: three lightweight developer-experience signals added after the
+  DORA block: on-call burden (incidents/engineer), CI predictability (success%),
+  and review pressure (P1/P2 count from last `/review`).
+- **brain.md size guard**: Dream Cycle now enforces a 4000-char cap on `.great_cto/brain.md`.
+  When exceeded, oldest Evidence Timeline entries are trimmed first; Current Synthesis
+  (the useful half) is always preserved. Mirrors the Hermes MEMORY.md pattern.
+- **RECOMMENDATION examples**: added Rework Rate and SPACE-signal example recommendations.
+
+---
+
+## v1.0.108 — 2026-04-24
+
+### Added — browseable web UI
+
+- **`site/archetypes.html`** — 10-archetype grid with default tier badges (baseline / standard / deep).
+- **`site/agents.html`** — 7-agent grid with model tier (Haiku / Sonnet / Opus) and role description.
+- **`site/commands.html`** — 15 commands grouped by usage: Primary (3) / Project lifecycle (5) / Security (5 `/sec` subcommands) / Team & governance (6).
+- **Shared stylesheet** — inline `<style>` block (426 lines) in `site/index.html` extracted to `site/assets/site.css`; all four pages share it.
+- **Cross-page nav** with current page highlighted.
+- **`site/sitemap.xml`** updated with three new URLs.
+
+### Fixed
+
+- **Hero scale metrics**: landing now reads "7 agents · 10 archetypes · 15 commands · 12-angle review · 13 compliance frameworks" — the real counts (was "9 agents · 13 archetypes").
+- **`site/assets/demo.tape`**: output lines were being executed as shell commands, producing `syntax error near unexpected token '('` throughout the GIF. Rewrote every output line as `echo '...'` and replaced the ANSI-escape PS1 (which VHS's bracket parser mangled into `clear114m\]`) with a neutral `export PS1='> '`. GIF re-rendered cleanly.
+- **Nav menu wrapping**: long labels ("How it works", "12-angle review") wrapped to 2–3 lines and pushed the Install button off-screen. Trimmed to 6 nowrap items.
+- **Footer version pin**: was still `v1.0.101`; now reads `v1.0.108`.
+
+### Cleanup
+
+- **`.gitignore`** tightened from `.claude/settings.local.json` to `.claude/` (covers runtime artefacts like `scheduled_tasks.lock` that accidentally got committed in v1.0.107).
+- **`.claude/scheduled_tasks.lock`** removed from the tree.
+
+---
+
+## v1.0.107 — 2026-04-24
+
+### Added — launch polish sprint (README + landing)
+
+Closed competitive gaps against top Claude-Code adjacent projects
+(`anthropics/claude-code`, `obra/superpowers`, `davila7/claude-code-templates`,
+`ruvnet/claude-flow`, `conductor.build`):
+
+- **Demo GIF** (`site/assets/demo.gif`, rendered via `site/assets/demo.tape`
+  using charmbracelet/vhs). 45-second terminal recording: `/start "add Stripe
+  subscriptions"` → tech-lead architecture → approval → senior-dev TDD →
+  12-angle review → QA → CSO → devops canary → ship. Embedded in README
+  header and landing hero.
+- **Logo in README header** — centered SVG + badge row aligned under it
+  (previously text-only H1).
+- **Scale metric row**: "9 agents · 13 archetypes · 12-angle review · 13
+  compliance frameworks" in both README and landing hero. Concrete numbers
+  readers can verify.
+- **Release-velocity signal**: "shipped 5 releases in 24h" pill in hero.
+- **GitHub Discussions enabled** (`gh api -X PATCH /repos/... -F
+  has_discussions=true`). Linked from README, nav, and Links section. Free
+  community channel — no Discord setup overhead.
+- **Comparison table extended** (README): rows for `obra/superpowers`
+  (skills library we integrate on top of, not replace) and
+  `davila7/claude-code-templates` (registry we consume via `template-broker`,
+  not duplicate). Stops the two most-frequent "how is this different from
+  X?" questions at the door.
+
+No agent / pipeline behavior changes in this release.
+
+---
+
+## v1.0.106 — 2026-04-24
+
+### Added — prose-style rules for agent output
+
+Adopted a 7-rule subset from [yzhao062/agent-style](https://github.com/yzhao062/agent-style)
+v0.3.1 (CC-BY-4.0 / MIT) to raise the bar on agent-written prose:
+audit findings, CSO reports, QA reports, CHANGELOG entries.
+
+- **New:** `skills/great_cto/prose-style.md` — RULE-01 (curse of knowledge),
+  RULE-03 (abstract → concrete), RULE-04 (filler words), RULE-05 (dying
+  metaphors), RULE-08 (claim calibration), RULE-A (bullet overuse), RULE-H
+  (citation discipline — critical). One BAD/GOOD pair per rule; upstream
+  carries the full 5-example blocks.
+- **New:** `enforcement/prose-deny.txt` — reference-only deny-list (~40
+  phrases) covering RULE-04/05/H. Not mechanically loaded; the warn-only
+  grep in `agents/qa-engineer.md` inlines a smaller curated pattern.
+- **New:** `NOTICE.md` — third-party attribution (CC-BY-4.0 + MIT).
+- **Wired in 3 agents** (`security-officer`, `qa-engineer`, `project-auditor`):
+  `skills:` frontmatter + one-paragraph "Writing discipline" reminder. QA
+  report now runs a warn-only prose grep before emitting DONE — catches
+  "in order to", "state-of-the-art", "push the boundaries" and similar
+  filler/clichés in agent output without blocking the pipeline.
+- **`commands/audit.md`:** finding format pinned — severity + one-line
+  evidence with file:line or metric; no adjectives-as-findings.
+
+Not wired in `senior-dev` and `tech-lead`: the skill is loaded via their
+SessionStart context when needed; no explicit reminder required (avoiding
+the "5 dup reminders" anti-pattern).
+
+---
+
+## v1.0.105 — 2026-04-24
+
+### Fixed (P2) — `great-cto init` scaffolded PROJECT.md that agents couldn't parse
+
+The installer CLI wrote `primary: <archetype>` without the `archetype:` key
+agents read. It nested `size:` under `## Team` instead of writing `team-size:`
+at root (the key `/rfc` actually greps for), and used a non-existent
+`frameworks:` key instead of `compliance:`. Fresh installs scaffolded a
+PROJECT.md that silently failed the v1.0.104 tier/guard logic. Fixed: CLI now
+writes `archetype:`, `project_size:`, `team-size:` at root, and `compliance:`.
+
+### Fixed (P2) — pre-1.0.104 legacy commands stuck in `~/.claude/commands/`
+
+Users upgrading from < 1.0.104 have unmarked command files the SessionStart
+cleanup loop can't touch (it only deletes marked files, for safety). Those
+stale commands keep showing up in Claude Code forever. Fixed: `great-cto init`
+now runs a one-shot cleanup on upgrade detection — removes files in
+`~/.claude/commands/` matching our known legacy names **and** referencing
+great_cto **and** lacking the 1.0.104 marker. Hand-written user files with
+the same names are preserved (they won't match the great_cto reference test).
+
+---
+
+## v1.0.104 — 2026-04-24
+
+### Fixed (P0) — devops still used v1.0.101 binary `IS_MANDATORY` model
+
+`devops.md` gated pre-deploy on `archetype ∈ {ai-system, commerce, web3, iot-embedded, regulated}`
+and required a full `docs/security/CSO-*.md` for any `medium+` project. After
+v1.0.102 the tier model explicitly says **baseline tier writes no CSO file**, so
+every `medium+` library / web-service / mobile-app / data-platform would **block
+at deploy** on "No CSO security report." Fixed: devops now computes the same
+effective tier as `security-officer` and accepts the one-line baseline verdict
+from `.great_cto/verdicts/security-officer.log` when tier=baseline; CSO file
+required only at `standard` / `deep`.
+
+### Fixed (P0) — SessionStart hook deleted user files
+
+The SessionStart hook in `plugin.json` ran `rm -f ~/.claude/commands/{update,status,dora,...}.md`
+unconditionally. Command names in that list (`update`, `status`, `dora`) are
+generic — if a user had another plugin or a hand-written command with the same
+name, great_cto silently deleted it on every session start. Fixed: copied
+commands are now tagged with a `<!-- great_cto-managed -->` marker, and the
+stale-cleanup loop only removes files that contain that marker.
+
+### Fixed (P1) — `security-gate:` left in TYPE_MAP.md after v1.0.102
+
+v1.0.102 replaced per-type `security-gate: mandatory` overrides with the tier
+model but left 20+ stale rows in TYPE_MAP.md. The migration doc said "ignored"
+but new types copy-pasted the pattern. Scrubbed all `security-gate:` entries
+from TYPE_MAP.md; ARCHETYPES.md example PROJECT.md snippet now shows
+`default-tier:` + `tier-override-reason:` instead.
+
+### Fixed (P2) — `/rfc` team-size guard silently bypassed on malformed input
+
+`team-size: many` (or any non-numeric value) was stripped to `""` by
+`tr -d '[:alpha:]'`, defaulted to 1, and the guard passed with `1 -lt 10`.
+Looked like guard fired correctly but allowed any malformed value through.
+Fixed: validate with regex `^[0-9]+$`; warn on malformed input.
+
+### Fixed (P2) — E2E test harness false-positive success on skipped runs
+
+`tests/e2e/run_pipeline.sh --assert-only` with `CLAUDE_CLI_AVAILABLE` unset
+printed "✓ all assertions passed" and exited 0, so CI saw green without the
+pipeline ever running. Fixed: exits 77 (Autotools SKIPPED convention) when
+bootstrap-only. Set `GREAT_CTO_E2E_ALLOW_SKIP=1` to opt back into lenient
+behaviour for fixture smoke tests.
+
+### New — additional tier-test coverage
+
+`tests/structural/test_security_tiers.sh` now also asserts that:
+- valid waivers emit `SEC_WAIVER: dep=<name> owner=<@x> expires=<date>`
+- expired and owner-less waivers emit `WARN_WAIVER_REJECTED: ...`
+
+11 cases total; runs in ~1s.
+
+---
+
+## v1.0.103 — 2026-04-24
+
+### New — Allowlist waiver parser (`.great_cto/security-allowlist.yml`)
+
+v1.0.102 documented the waiver format in `security-tiers.md` but the agent
+couldn't read it. Now it can.
+
+`security-officer` parses `.great_cto/security-allowlist.yml` during tier
+computation. A waiver suppresses its matching signal only if **all three** are
+valid:
+
+- `reason:` non-empty (documented intent)
+- `approved-by:` starts with `@` (named owner — not a blank line or "team")
+- `expires:` a real ISO date, in the future, ≤ 90 days out
+
+Invalid, expired, or owner-less entries are **rejected** — the signal stays
+active and a `WARN_WAIVER_REJECTED` line is logged. Valid suppressions emit
+`SEC_WAIVER: <target> owner=<@x> expires=<date>` to the audit log for
+traceability.
+
+When every pending `*-dep-introduced` signal is covered by a valid waiver,
+the tier is recomputed — a correctly-waived pci-dep signal drops a
+web-service back from `standard` to `baseline`.
+
+### New — Structural test `tests/structural/test_security_tiers.sh`
+
+Eight fixture scenarios pinning the tier-computation contract:
+
+- archetype defaults (library→baseline, web3→deep, web-service→baseline)
+- signal-driven upgrade (auth-path-changed lifts baseline→standard)
+- explicit `default-tier` override
+- valid waiver suppresses the upgrade
+- expired waiver rejected (stays upgraded)
+- waiver missing `@owner` rejected
+- waiver for unrelated package doesn't suppress
+
+Runs in ~1s. Mirrors the bash in `agents/security-officer.md` — edits there
+should bump this test in lockstep.
+
+### Deferred
+
+- **HTTPS enforcement for greatcto.systems** — cert still provisioning at
+  Let's Encrypt (24h SLA from CNAME setup). Will enforce via
+  `gh api -X PUT /pages -F https_enforced=true` once state flips from `none`.
+
+---
+
+## v1.0.102 — 2026-04-24
+
+### Changed — Risk-based security tiers replace binary mandatory/conditional gate
+
+The previous `mandatory | conditional | none` model had three systemic holes:
+
+1. **`library → none`** was a supply-chain default. In 2026 npm/PyPI supply
+   chain attacks are the #1 vector; zero gate is never right.
+2. **"conditional" read as "off by default"** on archetypes that actually own
+   the blast radius (web-service with auth, infra with IAM).
+3. **Archetype is a proxy for risk, not risk itself** — a web-service handling
+   auth for 10M users is more security-critical than a commerce demo, but the
+   old model said the opposite.
+
+### New — Three tier model
+
+| Tier | Runs | Time | Skippable? |
+|---|---|---|---|
+| `baseline` | CVE scan + secret scan + dep freshness | ~2 min | **never** — floor |
+| `standard` | baseline + STRIDE threat model + OWASP checklist + compliance map | ~15–25 min | requires explicit waiver with owner + expiry |
+| `deep` | standard + penetration-style review + external-dep supply-chain audit + formal dataflow + kill-chain analysis | ~45–90 min | never on deep-tier archetypes |
+
+### New — Signal-driven tier upgrades
+
+`senior-dev` emits `SECURITY_SIGNAL:` lines to `.great_cto/security-signals.log`
+when it detects risky changes in the diff. `security-officer` reads these and
+upgrades the tier for the pipeline run. Signals only upgrade — never downgrade.
+
+| Signal | Detected on |
+|---|---|
+| `pci-dep-introduced` | new dep in stripe/plaid/square/braintree/adyen |
+| `crypto-dep-introduced` | new dep in jose/jsonwebtoken/bcrypt/argon2/libsodium |
+| `auth-path-changed` | file changes in `auth/**`, `iam/**`, `middleware/auth*` |
+| `pii-field-added` | migration adds ssn/dob/passport/medical_*/health_* column |
+| `iac-perimeter-changed` | Terraform diff touching security_group/iam/public bucket |
+| `high-cve-in-dep` | `npm audit` / `pip-audit` / `cargo audit` reports ≥ High |
+
+### Archetype → default tier mapping
+
+| Archetype | Default tier |
+|---|---|
+| `web3` · `iot-embedded` · `regulated` | **deep** |
+| `ai-system` · `commerce` · `infra` | **standard** |
+| `web-service` · `mobile-app` · `data-platform` · `library` | **baseline** |
+
+**`library` now runs baseline** (was: no gate). Supply-chain attacks made the
+old default indefensible. Two minutes of CVE + secret scan closes the hole.
+
+### New / updated
+
+- **`skills/great_cto/references/security-tiers.md`** — single source of truth for tier model, archetype mapping, signal matrix, waiver rules.
+- **`agents/security-officer.md`** — tier-aware execution; baseline runs without CSO report file.
+- **`agents/senior-dev.md`** — emits signals during implementation.
+- **`/sec status`** — reports current tier + fired signals in every run.
+- **`ARCHETYPES.md` / `README.md` / site landing** — tier column replaces binary gate.
+
+### Migration
+
+If PROJECT.md has the old `security-gate: mandatory|conditional|none`, it is
+now ignored (tier derives from archetype + signals). Most projects need zero
+config change — new defaults are strictly more secure without adding review
+burden where it wasn't needed.
+
+To pin a tier explicitly:
+
+```
+## Security
+default-tier: standard
+tier-override-reason: "internal service but handles auth tokens for 10M users"
+```
+
+---
+
+## v1.0.101 — 2026-04-24
+
+### Changed — Pareto cut: 22 commands → 15 (7 primary + 8 conditional)
+
+After 100 releases the surface area had drifted past useful. Most of the
+extra commands duplicated data that `/inbox` or `/digest` already compute,
+or were specialist playbooks that fit naturally under a single security
+umbrella.
+
+**Deleted (4 — zero functionality loss):**
+- `/triage` — backlog hygiene (duplicates, stale tasks, unowned P0/P1) is
+  now a section in `/inbox` that fires only when thresholds trip.
+- `/gates` — gate health + drift detection was already in `/inbox`; the
+  dedicated command only repeated the same numbers.
+- `/dora` — the 4 DORA metrics are already computed and emitted by
+  `/digest` on its weekly cadence.
+- `/investigate` — use Superpowers' `systematic-debugging` skill, or
+  spawn the `l3-support` agent with the question. `/inbox` references
+  updated to name the agent directly.
+
+**Merged under `/sec`:**
+- `/threat-model` → `/sec threat [arch-slug]`
+- `/sbom` → `/sec sbom [version]`
+- `/security-incident` → `/sec incident "<desc>"`
+
+`/sec` is now a dispatcher:
+```
+/sec                         # posture metrics (default = status)
+/sec status [days]           # same, explicit
+/sec threat [arch-slug]      # STRIDE threat model
+/sec sbom [version]          # CycloneDX SBOM
+/sec incident "<desc>"       # DORA/GDPR workflow
+/sec rotate                  # overdue secret rotations only
+```
+
+The three playbook files (threat-model, sbom, security-incident) moved
+to `skills/great_cto/playbooks/` — same content, accessed through the
+dispatcher. No behaviour change, just one less mental anchor.
+
+**SessionStart hook now cleans up stale commands** from earlier versions
+(`~/.claude/commands/{triage,gates,dora,investigate,threat-model,sbom,security-incident,update,status,capture,revisit,board-report}.md`).
+Users upgrading from any past version get a clean command list.
+
+### Numbers
+
+| | v1.0.100 | v1.0.101 | Δ |
+|---|---|---|---|
+| Commands total | 22 | 15 | −32% |
+| Commands in README primary | 3 | 3 | — |
+| Lines in `commands/` | 6915 | ~5200 | −25% |
+| Cognitive load (commands to remember) | 22 | 7 (primary + /sec family) | **−68%** |
+
+### What stayed
+
+All 7 agents, all scheduled automation, gate system, PROJECT.md contract,
+LLM router. None of the cuts touched the core pipeline — pure surface-area
+reduction.
+
+### Migration
+
+Run `/doctor` after upgrading to confirm old commands are cleaned from
+`~/.claude/commands/`. Old muscle memory:
+
+- `/triage` → `/inbox` (hygiene section fires automatically)
+- `/gates` → `/inbox` (already shows gate health)
+- `/dora` → `/digest`
+- `/investigate "<q>"` → spawn `l3-support` with the question
+- `/threat-model foo` → `/sec threat foo`
+- `/sbom 1.2.3` → `/sec sbom 1.2.3`
+- `/security-incident "creds leaked"` → `/sec incident "creds leaked"`
+
+---
+
+## v1.0.100 — 2026-04-24
+
+### Added — LLM router (OpenRouter / Kimi K2) as cost saver
+
+Anthropic tokens are the single largest cost of running great_cto on an
+active project. Most agent calls genuinely need Sonnet — architecture, TDD,
+security review — but ~20–30% is grunt work (log triage, summarization,
+POC smoke tests) that Kimi K2 handles fine at ~5× lower cost.
+
+v1.0.100 adds an optional MCP server `great_cto_llm_router` that exposes a
+single tool, `ask_kimi`, to specific agents. Opt-in, zero-config when
+disabled, zero external dependencies.
+
+**New files:**
+- `mcp-servers/llm-router/server.py` — stdlib-only MCP server (Python 3.9+).
+  Implements MCP 2024-11-05 over stdio. Exposes `ask_kimi` + `router_status`.
+  Appends usage JSONL to `.great_cto/llm-router-usage.log` for later cost
+  reporting. Graceful fallback: if `OPENROUTER_API_KEY` is unset, the tool
+  returns a structured `fallback` signal instead of erroring — agents are
+  instructed to do the task natively.
+- `skills/great_cto/references/llm-router.md` — setup, config, which
+  agents use it and when, security caveats, troubleshooting.
+
+**Config (env vars, layered lookup `env > .env.local > ~/.great_cto/secrets.env`):**
+- `OPENROUTER_API_KEY` — required to enable
+- `GREAT_CTO_ROUTER_MODEL` — default `moonshotai/kimi-k2`; any OpenRouter slug
+- `GREAT_CTO_ROUTER_MAX_TOKENS` — default 4096
+- `GREAT_CTO_ROUTER_TIMEOUT` — default 60s
+
+**Wired agents:**
+- `l3-support` — routine log triage, error clustering, stack-trace
+  summarization. P0/P1 reasoning + postmortem writing stay on Claude.
+- `senior-dev` — POC mode only: smoke tests and boilerplate scaffolding.
+  MVP / production code stays on Claude.
+- `qa-engineer` — POC mode only: smoke test generation. Production QA
+  stays on Claude.
+
+**Never delegates**: tech-lead, security-officer, devops, /audit. Critical
+reasoning stays on native Claude by design.
+
+**Onboarding:**
+- `/start` now enforces `.env.local` in `.gitignore`, mentions the router
+  as a one-time optional cost saver (with setup hint), and shows router
+  status in the confirmation line when active.
+- `/doctor` has a new Check 8b that pings OpenRouter `/auth/key` to show
+  live quota, verifies `.env.local` is git-ignored, and warns if not.
+
+**Cost reporting:**
+- `/digest` reads the usage log and emits an `LLM ROUTER` section with
+  calls, tokens, Kimi spend, Sonnet-equivalent cost, and savings.
+
+**Security:**
+- `senior-dev` credential-scan updated to recognize OpenRouter key shape
+  (`sk-or-v1-[a-f0-9]{32,}`) — blocks accidental commits.
+- `.env.local` git-ignore enforced in `/start`, verified in `/doctor`.
+- Doc warns against sending PII / secrets through the router.
+
+**Expected savings**: 20–30% on total LLM spend for active projects.
+Zero overhead for users who don't configure the key — pipeline is
+unchanged.
+
+### Files modified
+- `.claude-plugin/plugin.json` — `mcpServers` block added.
+- `commands/start.md` — Step 5b (gitignore + optional router setup hint).
+- `commands/doctor.md` — Check 8b (router health + key-leak guard).
+- `commands/digest.md` — LLM ROUTER cost report.
+- `agents/l3-support.md` — `ask_kimi` wired for routine triage.
+- `agents/senior-dev.md` — POC-mode delegation + OpenRouter key pattern in
+  credential scan.
+- `agents/qa-engineer.md` — POC-mode delegation.
+
+### When to skip
+- Solo project shipping one feature / week — savings rounding error.
+- Strict-compliance env (HIPAA, PCI) without an OpenRouter BAA.
+- Offline / air-gapped.
+
+---
+
+## v1.0.99 — 2026-04-24
+
+### Added — POC mode (hypothesis-driven pipeline extension)
+
+CTOs often need to validate a risky assumption before committing to production
+rigor — ship a prototype in 3 days, see if users care, keep it or throw it
+away. Full SDLC (ARCH → threat-model → SBOM → CSO → QA) is expensive overhead
+when the code will be deleted by Friday.
+
+v1.0.99 adds **POC mode**: a lightweight path with forced timebox and
+forced ship/pivot/kill decision. Not a parallel pipeline — a mode flag that
+agents read and adjust rigor accordingly.
+
+**New commands:**
+- `/poc <hypothesis>` — start a POC. Writes `docs/poc/POC-<slug>.md` with
+  hypothesis, success criteria, hard timebox (default 7d, max 14d), and
+  explicit out-of-scope list. Flips `mode: poc` + `poc_slug:` +
+  `poc_expires:` in PROJECT.md.
+- `/poc decide` — forced ritual at expiry. Ship / Pivot / Kill.
+  Evidence required. Always writes `docs/poc/POC-<slug>-learnings.md`.
+- `/poc extend <days>` — max 1×7d. Burns reputation.
+- `/promote` — all-or-nothing gate from POC → production. Runs full
+  ARCH, threat-model (if archetype requires), SBOM, cost-model, security
+  CSO, QA. Flips mode back. Partial promotion is prevented by design.
+
+**Agent skip matrix (see `skills/great_cto/references/poc-mode.md`):**
+- **tech-lead**: 1-pager ARCH (Problem / Decision / Risks only). Skip
+  full Requirements / Non-functional / Alternatives sections.
+- **senior-dev**: one smoke test per hypothesis criterion. Skip
+  coverage target, skip edge-case tests. **Credential-scan still runs.**
+- **qa-engineer**: smoke tests only. Binary PASS / FAIL verdict. QA
+  report headed "POC QA — not production QA".
+- **security-officer**: skip CSO entirely. Run credential-scan only.
+  One-line verdict.
+- **devops**: refuse production deploys. Preview / dev / local /
+  ephemeral staging only.
+
+**One rule that never relaxes:** credential-scan. In all modes, agents
+grep the diff for `sk-[A-Z]`, `AKIA[0-9A-Z]{16}`,
+`-----BEGIN * PRIVATE KEY-----`, `.env` tokens. Match → abort and
+move to `.env.local` / env var.
+
+**/inbox banner:** when `mode=poc`, /inbox emits POC_ACTIVE /
+POC_URGENT (≤2 days) / POC_EXPIRED signals at the top.
+
+**Principles:**
+1. One POC at a time (enforced via PROJECT.md flag).
+2. Hard expiry — no silent slippage.
+3. Observable success criteria (not "users like it").
+4. Forced decision at expiry — no limbo.
+5. Learnings always captured, even on kill.
+6. Promotion requires full rigor — no sneak-through.
+
+### Files added
+
+- `commands/poc.md`
+- `commands/promote.md`
+- `skills/great_cto/references/poc-mode.md`
+
+### Files modified
+
+- `commands/inbox.md` — POC banner at top of Gather Data.
+- `agents/tech-lead.md` — MODE read + POC-mode behaviour.
+- `agents/senior-dev.md` — MODE read + POC-mode behaviour + credential-scan exception.
+- `agents/qa-engineer.md` — MODE read + POC-mode behaviour.
+- `agents/security-officer.md` — MODE read + POC-mode behaviour.
+- `agents/devops.md` — MODE read + POC-mode behaviour.
+- `.claude-plugin/plugin.json` — CMD loop adds `poc promote`.
+
+### When NOT to use POC mode
+
+- Anything that touches money, PII, or production user data.
+- Core architecture decisions (use ADR + full ARCH instead).
+- "I just want to skip the boring parts" — that's production code
+  with less rigor, not a POC. /promote requires full audit, not
+  retroactive rubber-stamp.
+
+---
+
+## v1.0.98 — 2026-04-24
+
+### Added — Cross-doc link rot lint (L1–L4)
+
+Docs reference each other — ARCH → ADR, PM → ARCH, TM → ARCH,
+RELEASE → SBOM. Links rot silently when files are renamed or
+deleted. Inspired by the ghost-link lint pattern from
+cablate/llm-atomic-wiki (Karpathy-style atomic wiki, but the idea
+we borrowed is the cheap deterministic lint, not the compile
+pipeline).
+
+- **New rules L1–L4** in `skills/great_cto/references/anti-patterns.md`:
+  - **L1** — relative markdown link to a non-existent `.md` file
+  - **L2** — inline artefact reference (`ARCH-<slug>.md`,
+    `PM-<date>.md`, `ADR-NNNN.md`, etc.) without a matching file
+  - **L3** — orphan ADR / RFC (no incoming links from any other doc)
+  - **L4** — expired temporal markers (`current version`, `latest
+    release`, `TBD`) in docs older than 90 days
+- **`/audit lint` extended** — scans all `docs/**/*.md` against
+  L1–L4. Skips fenced code blocks and template placeholders
+  (`<slug>`, `<feature>`, `NNNN`, `foo/bar/baz`) to avoid false
+  positives on example snippets.
+- **Waiver syntax respected** — add
+  `<!-- anti-pattern-waiver: L2 reason:<why> -->` on the offending
+  line to suppress.
+
+### Why
+Link rot is the definitive boring problem. A deterministic grep-level
+scan finds 90% of it in seconds without an LLM in the loop. Anything
+subtler (semantic contradictions across docs, drift in claims) stays
+in the "too expensive for every run" bucket — that's what the
+security-officer / project-auditor agents are for.
+
+### Non-goals
+- Not a semantic linter (doesn't read meaning, only names and links)
+- Not a docs-system generator (we don't compile a wiki from scratch —
+  we trust the folder layout the pipeline already produces)
+- Not a replacement for human review — findings are advisory
+
+---
+
+## v1.0.97 — 2026-04-24
+
+### Added — Anti-pattern blocklist + `/audit lint`
+
+Negative rules are sharper than positive guidance. This release adds a
+curated blocklist of shapes engineering artefacts take when they're
+theatrical rather than useful, plus a mechanical lint pass that detects
+them. Inspired by the anti-cliché blocklist pattern
+(ConardLi/web-design-skill), applied here to architecture, threat
+models, SBOMs, postmortems, and gate verdicts.
+
+- **`skills/great_cto/references/anti-patterns.md`** — 5 categories,
+  28 rules with grep-able **tells** and "do instead" guidance:
+  - **ARCH** (A1–A8): no `## Non-goals`, marketing adjectives
+    (scalable/reliable/performant) without numbers, unnamed
+    infrastructure ("a database"), deferred observability, one-line
+    `## Security`, greenfield rewrites without migration
+  - **Threat models** (T1–T6): mitigation = "input validation" alone,
+    accepted risks without owner+expiry, missing dataflow, STRIDE
+    boilerplate left unchanged
+  - **SBOM** (S1–S4): <5 components (tool didn't run), missing
+    integrity hashes, unpinned versions
+  - **Postmortems** (P1–P6): root cause = "human error", action items
+    without owner+date, same lessons as prior PMs, skipped 5-whys,
+    PM-SEC without notification log
+  - **Gate verdicts** (G1–G4): PASS without evidence, batch
+    rubber-stamping (3+ verdicts in 60s), self-approval
+- **`/audit lint`** — scans all artefacts against the blocklist,
+  reports findings with rule ID + file:line + offending snippet.
+  Advisory, not blocking. Respects waivers via
+  `<!-- anti-pattern-waiver: <rule-id> reason:<why> -->`.
+- **Agent prompts reference the blocklist** — `tech-lead` (when
+  writing ARCH), `commands/threat-model` (when writing TM),
+  `l3-support` (when writing PMs) now cite the relevant rule range
+  inline so authors avoid the patterns at drafting time, not at
+  review time.
+
+### Why
+One well-placed "never" beats ten "try to"s. Positive guidance
+("write good architecture") lets mediocre docs through; negative
+constraints with detectable tells stop specific failure modes. The
+cheap win is that most of these patterns are **grep-detectable** — so
+a linter catches them without a model-in-the-loop review.
+
+### Non-goals
+- Not a style guide (no prose quality opinions)
+- Not a code linter (artefact-level only)
+- Not a gate blocker (findings are advisory; waive if intentional)
+
+---
+
+## v1.0.96 — 2026-04-24 🛡
+
+### Added — `/sec` (five security metrics, DORA-style)
+
+DORA gives us four delivery-health numbers. Nothing equivalent existed
+for security posture trend. This release adds a fifth number-set —
+**five metrics computed entirely from artefacts great_cto already
+produces**, no external scanners required, no new telemetry. They
+trend the same way DORA metrics do: up-and-right or down-and-right.
+
+- **`/sec [period_days]`** (default 30) — computes the snapshot:
+  - **CVE MTTR** — median days from public advisory to our resolution
+    in the window. Healthy < 14d; critical < 7d. Source: append-only
+    `docs/cve-log.md`.
+  - **Dependency freshness** — % of direct deps whose latest release
+    is ≤ 180 days old. Healthy ≥ 70%. Source: latest `SBOM-*.json` +
+    registry timestamp cache (`.great_cto/dep-freshness-cache.jsonl`).
+  - **Threat-model coverage** — % of ARCH docs in window that have a
+    `## Security` section AND a matching `TM-<slug>.md`. Healthy ≥ 90%
+    for security-critical archetypes (ai-system / commerce / web3 /
+    iot-embedded / regulated / fintech).
+  - **Pentest burn-down** — severity-weighted `open / (open + closed)`
+    ratio from `docs/security/PENTEST-*.md` finding tables. Trended,
+    not alerted — slow burn-down is a team-culture conversation.
+  - **Secret rotation overdue** — count of secrets past `rotation_due`
+    in `.great_cto/secrets.md`. The only binary metric in the set.
+- **`skills/great_cto/references/sec-metrics.md`** — explains why
+  these five, why not SAST counts / coverage / bug-bounty intake,
+  and documents gaming guards (finding reopen rate, selective dep
+  updates on low-import crates).
+- **`/inbox` signals** — four new triggers fire when thresholds trip:
+  `SEC_CVE_ALERT` (≥1 critical CVE open > 14d), `SEC_ROTATION` (any
+  secret overdue), `SEC_TM_GAP` (< 60% TM coverage on
+  security-critical archetypes), `SEC_FRESHNESS` (reserved for when
+  freshness cache lands). Pentest burn-down is intentionally
+  **not** alerted.
+- **`.great_cto/sec-baseline.log`** — append-only snapshot history,
+  same pattern as `.great_cto/perf-baseline.log`. Used by `/digest`
+  for weekly security trend.
+
+### Why
+**CVE MTTR** is what a CISO asks about first. **Freshness** is the
+leading indicator; MTTR is lagging. **TM coverage** is the proxy for
+"is the team doing design-time security" (SSDF PW.1). **Pentest
+burn-down** tells you whether the team treats findings as real work
+or theatre. **Rotation overdue** is the binary one — you either did
+or you didn't. Five numbers, one snapshot, no new infrastructure.
+
+### Next
+Dependency-freshness cache populator — currently `/sec` reports `-`
+when the cache is absent. A cron-able fetcher that warms
+`.great_cto/dep-freshness-cache.jsonl` from npm / PyPI / crates.io
+closes the last data gap.
+
+---
+
+## v1.0.95 — 2026-04-24 🛡
+
+### Added — `/security-incident` (DORA Art. 17-23 workflow)
+
+Security incidents have different mechanics than ops incidents:
+regulatory clocks start at detection, the classification axes are
+C/I/A rather than P0/P1/P2, and the paper-trail requirements are
+larger by an order of magnitude. v1.0.94 added the **preventive**
+side of secure SDLC (threat models, SBOMs). This release adds the
+**response** side.
+
+- **`/security-incident "<description>"`** — walks the operator from
+  detection to sign-off. Classifies C/I/A impact + DORA class (major
+  / significant / non-significant). Computes notification deadlines
+  from T+0 (DORA 24h / 72h / 1 month; GDPR Art. 33 72h). Drafts
+  `PM-SEC-<id>.md` with a separate template (meta, timeline,
+  evidence, scope assessment, notification log, regulatory analysis,
+  Agent Verdict Audit). Generates **drafts** of DPA / competent-
+  authority / customer notifications — never sends them. Regulatory
+  filing stays a human legal act, forever out of scope for this tool.
+- **PM-SEC-*.md template** — separate from ops PMs. Fields include
+  Classification block (C/I/A + DORA class + affected subjects),
+  Evidence (attach, don't paraphrase), Scope assessment with
+  confidence level, Notification log (every external comm logged by
+  timestamp + recipient), Regulatory analysis (GDPR 33/34, DORA 19,
+  PCI DSS, HIPAA if applicable), and the same Agent Verdict Audit
+  pattern used in ops PMs — applied to security-officer, threat
+  model (tech-lead/TM), QA, red team, and SBOM review.
+- **`l3-support` routes security events** before ops triage. A new
+  "Security classification gate" step (3b) lists seven signals that
+  indicate a security event (auth bypass, data exfiltration,
+  credential exposure, etc.) and hands off to `/security-incident`
+  immediately. Combined events (compromised service that is also
+  DOWN) run `/security-incident` for the regulatory clock, then
+  continue ops triage for service restoration.
+
+### Principles baked into the workflow
+
+- **Speed first, paperwork second.** First 60 min of any incident is
+  containment, not classification. The command is used once
+  containment is underway.
+- **Never auto-notify.** Every notification is a legal act; the
+  command drafts, a human reviews, a human sends.
+- **Preserve evidence.** Every log query, screenshot, and timestamp
+  goes into the PM. No paraphrasing of logs.
+- **Classify before escalating.** Wrong class costs more than a
+  30-minute delay in notification.
+
+### Commands catalogue is now 18
+
+Added to the CMD loop: `security-incident`. Full list: `start audit
+inbox digest review ownership oncall rfc release triage doctor dora
+burn gates cost investigate threat-model sbom security-incident`.
+
+### Next
+
+- v1.0.96 — `/sec` security-DORA metrics (CVE-MTTR, dep freshness,
+  % features with threat model, pentest burn-down, secret rotation)
+  + signals in `/inbox`.
+
+---
+
+## v1.0.94 — 2026-04-24 🛡
+
+### Added — Secure SDLC foundation (NIST SSDF + SLSA L1 + DORA Art. 28)
+
+Security was not missing from great_cto — it was diffused across agents
+with no authoritative mapping. v1.0.94 introduces the **Secure SDLC
+layer**: one reference that says "here's what practice X looks like in
+this framework, and here's the great_cto component that implements it."
+No new certification claims, no new telemetry — just honest scaffolding
+that an auditor or CTO can follow.
+
+Scope of this release is deliberately narrow: **threat modeling +
+supply chain + third-party risk**. These are the three gaps most
+external audits of engineering-process frameworks flag first.
+
+- **`skills/great_cto/references/secure-sdlc.md`** — authoritative
+  mapping of great_cto components to NIST SSDF (SP 800-218), SLSA
+  (v1.0), and EU DORA (Reg. 2022/2554). Includes explicit
+  out-of-scope declarations so auditors can see what great_cto does
+  *not* promise.
+- **`/threat-model [slug]`** — generates a STRIDE-based threat model
+  from the latest (or named) ARCH doc. Writes
+  `docs/threat-models/TM-<slug>.md` with dataflow, asset table,
+  threat matrix, mitigation map, and accepted risks. Auto-appends a
+  `## Security` section to the ARCH doc pointing at the TM. Closes
+  SSDF practice PW.1 (design for security).
+- **`/sbom [version]`** — generates a CycloneDX 1.5 SBOM for the
+  current release. Uses ecosystem-native tools when available
+  (`npm sbom`, `cyclonedx-py`, `cyclonedx-gomod`, `cargo-cyclonedx`),
+  falls back to a minimal hand-built SBOM when they aren't. Writes
+  `docs/releases/SBOM-<version>.json` and cross-references it in the
+  RELEASE doc. Closes SSDF PS.2 / SLSA L1.
+- **`devops` agent invokes `/sbom` on every production deploy**
+  (step 9c), before generating the CHANGELOG entry. If CI already
+  emits a signed SBOM (cosign + OIDC → SLSA L2), the agent references
+  the CI artefact instead of generating locally.
+- **`tech-lead` enforces `## Security` section** in every ARCH-*.md
+  for archetypes `ai-system`, `commerce`, `web3`, `iot-embedded`,
+  `regulated`, `fintech`. Missing section blocks the ARCH gate.
+- **VENDOR schema extended** with DORA Art. 28 fields: ICT-3P
+  register flag, critical-or-important-function classification, data
+  categories shared, data location, sub-processors, concentration
+  risk, and a mandatory **exit strategy** section (trigger, migration
+  path, alternatives, estimated time, data portability, tested?).
+  Fields are marked "n/a" for non-financial projects so the structure
+  survives a future audit without forcing EU-regulatory ceremony on
+  every team.
+
+### What this does *not* do
+
+`secure-sdlc.md` is explicit about the scope limits:
+
+- great_cto does not claim certification readiness for any framework.
+- Regulatory notifications (DORA Art. 19, GDPR Art. 33) remain legal
+  acts that a human must perform — out of scope.
+- SLSA L3+ requires external build infrastructure and is out of scope;
+  L1-L2 is achievable with the patterns this release establishes.
+- Dedicated security teams for regulated-sector entities are still
+  needed for entities in scope for DORA proper.
+
+### Commands catalogue is now 17
+
+Added to the CMD loop: `threat-model`, `sbom`. Full list:
+`start audit inbox digest review ownership oncall rfc release triage doctor dora burn gates cost investigate threat-model sbom`
+
+### Next (not in this release)
+
+- v1.0.95 — `/security-incident` with DORA Art. 17-23 notification
+  timeline (24h → 72h → 1 month) + `PM-SEC-*.md` template.
+- v1.0.96 — `/sec` command: security DORA (CVE-MTTR, dependency
+  freshness, % features with threat model, pentest-findings burn-down,
+  secret-rotation overdue count).
+
+---
+
+## v1.0.93 — 2026-04-24
+
+### Added — `/investigate` (AI SRE command)
+
+Inspired by Gouthamve Venkatasubramanyam's _"I built an AI SRE in 60
+minutes"_ (2024). The core observation: an investigation agent is
+useless on day one and invaluable after five incidents — because
+pattern recognition compounds. The knowledge base, not the model, is
+the moat.
+
+great_cto already produces that knowledge base (postmortems,
+crystallised lessons, DORA baseline) — it was missing the command that
+reads it.
+
+- **`/investigate "<alert>"`** — given an alert description, loads
+  prior postmortems, lessons, the curated pattern library, recent
+  deploys, active risks, and the last 48h of commits, then produces
+  **three ranked hypotheses** with the cheapest diagnostic for each.
+  Ranks by `likelihood × cheapness_of_test`, not by "interestingness."
+  Never writes fixes — hands off to `l3-support` or `senior-dev` with
+  a concrete proof plan.
+- **`skills/great_cto/references/incident-patterns.md`** — curated
+  pattern library. Append-only. Format: `P-<num>` with `Tell`,
+  `Hypothesis`, `Confirm with`, `Fix`, `Seen in`, `Applies to`.
+  `l3-support` adds entries after each postmortem where the root cause
+  generalises beyond the specific service.
+- **Wired into `/inbox`.** BURN_ALERT and DORA_TRIGGER now both suggest
+  `/investigate` as the next step, so an on-call engineer can go from
+  "something's wrong" to "three ranked hypotheses" in one command.
+- **`l3-support` pattern-extraction step** — after each PM, the agent
+  computes the next `P-<num>` and prompts whether to append a new
+  entry. Skipped for one-off business-logic bugs.
+
+### Why now
+
+The five-command health dashboard (`/dora /burn /gates /cost`) answers
+"is something wrong?" — it did not answer "what's wrong and what should
+I check first?" `/investigate` closes that gap using artefacts we were
+already producing. No new infrastructure, no new integrations.
+
+---
+
+## v1.0.92 — 2026-04-24
+
+### Added — Deployment Rework Rate (5th DORA metric, 2024)
+
+The classic four DORA metrics measure **what went out and how reliably** —
+they don't tell you whether a deploy delivered value or just cleaned up
+yesterday's mess. A team doing ten deploys a week, six of them hotfixes,
+looks great on DF and MTTR but is burning capacity. The 2024 DORA report
+flagged Rework Rate as the single best predictor of "feels fast but isn't
+shipping." great_cto now tracks it.
+
+- **New `kind` column in `.great_cto/deploys.log`** — `devops` agent tags
+  each deploy as `feature` / `hotfix` / `rollback` / `patch`. Branch-name
+  heuristic (`hotfix/*`, `fix/*`) + revert-commit detection picks the
+  right label automatically; legacy rows without `kind` are treated as
+  `feature` for backwards compatibility.
+- **`/dora` reports Rework Rate** — 5th line in the snapshot, with delta
+  vs previous window and verdict marker. Elite threshold: < 10%.
+- **Rework signal in `/inbox`** — fires when 7-day Rework Rate > 10% and
+  there are ≥3 deploys in the window (to avoid noise from tiny samples).
+- **CFR thresholds tightened** per 2024 DORA: elite < 5%, high 5–15%,
+  concerning > 15%. `/inbox` now emits `level=warn` at 5–15% and
+  `level=alert` at > 15%, so growing teams see the signal before it's
+  already a fire.
+
+### Added — Gaming guards in `/dora`
+
+Metrics become lies when teams optimize the **number** instead of the
+process. `/dora` now runs two automated anti-manipulation checks after
+computing the snapshot:
+
+- **Guard 1**: DF and Rework both rising > 10% — flags possible empty /
+  technical deploys being counted to inflate DF.
+- **Guard 2**: CFR dropped > 30% in a single window — flags possible
+  incident-definition narrowing.
+
+Two more manipulations (task fragmentation, rework hidden in features)
+aren't mechanically detectable but are documented for tech-lead in
+`skills/great_cto/references/dora.md` with detection heuristics.
+
+### Baseline schema
+
+`.great_cto/dora-baseline.log` gained a `rework_rate` column. Existing
+baselines stay readable (extra column at the end, ignored by older
+tooling).
+
+---
+
+## v1.0.91 — 2026-04-24 🛡
+
+### Trust-signal pass — addressing external audit findings
+
+A pass over the parts of the repo that shape first impressions for new
+users and potential contributors. No behavioural changes — just trust
+signals and honesty.
+
+- **`SECURITY.md` rewritten.** Replaced the default GitHub template
+  placeholder with a real policy: threat surface, supported-versions
+  table, private reporting channel (email + GitHub security advisory),
+  response SLA (72h ack / 7d triage / 30d fix for High/Critical),
+  coordinated disclosure window, and a threat model distinguishing
+  out-of-scope (LLM-layer issues) from in-scope (hook bypass,
+  over-broad agent `tools:` frontmatter, shell injection in command
+  skills, CLI installer bugs).
+- **Versioning unified.** `packages/cli/package.json` was drifting at
+  `0.1.4` while the plugin was at `1.0.90`, creating ambiguity about
+  what's versioned. CLI and plugin now ship on the same track.
+  `scripts/bump-version.sh` updates both in lockstep going forward.
+- **Economic claims softened in README.** The old "$400/yr vs $1.07M/yr"
+  framing replaced by an honest statement: great_cto is process, not a
+  team, and the numbers are indicative Anthropic-API spend (varies with
+  context size and model).
+- **Limitations & non-goals section added to README.** Explicit list of
+  what great_cto does *not* do: it's not an IDE, not a CI/CD system,
+  not a secrets manager, not deterministic, and not audited against any
+  compliance framework. Archetype scaffolds are starting points, not
+  certifications.
+
+---
+
+## v1.0.90 — 2026-04-21
+
+### Added — Cost & capacity (the third axis after reliability and delivery)
+
+A feature that ships on time with 99.99% uptime but doubles the cloud
+bill per 1k users is still a failed feature. Cost is a silent SLO — no
+pager fires when you cross a threshold, so the discipline has to come
+from the release process itself.
+
+- **`/cost [days]`** — monthly run-rate (aggregated across services),
+  cost-per-deploy, WoW/MoM delta, top movers (≥20% change MoM), and
+  headroom vs `monthly-budget` in PROJECT.md. Flags cost-added spikes,
+  near-budget conditions, and rising cost-per-deploy.
+- **Devops appends cost estimates automatically** to
+  `.great_cto/cost-history.log` after every production deploy, pulled
+  from the latest ARCH doc's "Total estimated addition" line.
+  Structured format: `ISO8601 | service | estimated | actual | source |
+  feature`. Actuals fill in via monthly cloud-console reconcile (15 min
+  per month — see `cost-discipline.md`).
+- **Cost alert in `/inbox`.** Fires on run-rate ≥ `budget-alert-threshold`
+  (default 80%) or on any service +30% MoM spike. Points at `/cost` for
+  the full breakdown and action items.
+- **Budget config in PROJECT.md.** Two optional fields —
+  `monthly-budget: <usd>` and `budget-alert-threshold: <pct>`. Omit
+  both to disable headroom signals (estimate-only mode still works).
+- **`skills/great_cto/references/cost-discipline.md`** — why cost is an
+  engineering signal, how to run the monthly reconcile, anti-patterns
+  to refuse ("optimize later", "reserved instances will fix it",
+  "ignore the one-off"), and workflows for top-mover and near-budget
+  alerts.
+
+With this release, `/dora` + `/burn` + `/gates` + `/cost` cover the four
+CTO health axes: delivery, reliability, process, economics — each
+visible at-a-glance from `/inbox` and drill-down on demand.
+
+`.great_cto/cost-history.log` is gitignored (may contain contract values).
+
+---
+
+## v1.0.89 — 2026-04-20
+
+### Added — Quality gate health (catch gates that have started rubber-stamping)
+
+A gate that always passes is not a gate — it's theater. The only way to
+know whether a gate is real is to compare its verdicts against subsequent
+reality (incidents, postmortem agent-verdict audits). This release makes
+that comparison a single command.
+
+- **`/gates [days]`** — per-agent pass rate, drift vs prior window,
+  time-to-verdict, and effectiveness (% of audited PMs where the agent's
+  PASS was actually correct). Healthy window: 70–90% pass rate. Outside
+  that, flag. Drift +10pp upward while already at >85% triggers
+  "rubber-stamping?" warning. Effectiveness <70% triggers "missed too
+  many incidents."
+- **Two verdict log formats supported.** Per-agent files
+  (`qa-engineer.log`, space-delimited) and per-day files
+  (`2026-04-20.log`, pipe-delimited) are both parsed automatically.
+- **Postmortem audit cross-reference.** `/gates` parses the
+  "Agent Verdict Audit" tables from every PM in the window and counts
+  per-agent "Correct? = no" rows to compute effectiveness.
+- **Gate drift signal in `/inbox`.** Cheap version of the same check
+  surfaces a warning when any agent crosses the rubber-stamping
+  threshold, with a pointer to `/gates` for the breakdown.
+- **`skills/great_cto/references/gate-health.md`** — calibration table,
+  the 70–90% window rationale, anti-patterns to refuse ("disable noisy
+  gate", "auto-approve when busy"), and workflows for both
+  rubber-stamping and low-effectiveness flags.
+
+No new data input required — `/gates` reads the existing
+`.great_cto/verdicts/*.log` and `docs/postmortems/PM-*.md` artefacts.
+Effectiveness scoring activates as soon as your PMs include the
+"Agent Verdict Audit" section.
+
+---
+
+## v1.0.88 — 2026-04-21
+
+### Added — SLO burn rate (catch exhaustion before it happens)
+
+A point-in-time SLO check tells you "78% consumed" but not whether you got
+there gradually (fine) or in the last 6 hours (not fine). Burn rate is
+the derivative — and multi-window burn rate catches both fast incidents
+and slow regressions days before the budget runs out.
+
+- **`/burn [service]`** — multi-window burn rate (24h / 7d / 30d) per
+  service+SLI, with projected exhaustion in days at the current 7d pace.
+  Thresholds match the Google SRE multi-window pattern: 14.4× normal in
+  24h pages on-call, 6× in 7d files a ticket, 1× in 30d goes on the
+  review pile.
+- **Burn alert in `/inbox`.** When any service crosses fast (24h) or
+  slow (7d) burn threshold, `/inbox` surfaces it with the multiplier
+  and a pointer to `/burn` for the breakdown — proactive rather than
+  reactive.
+- **`/digest` writes a snapshot per run** to `.great_cto/slo-burn-history.log`.
+  Burn rate needs at least 2 snapshots; weekly digest cadence gives 7d
+  resolution. Run `/digest 1` daily to make 24h burn meaningful.
+- **`skills/great_cto/references/burn-rate.md`** — multi-window pattern,
+  the four numbers and what they mean, anti-patterns to refuse
+  ("just lower the SLO" is not the answer), and the workflow split
+  between fast-burn (incident response) and slow-burn (planning).
+
+`.great_cto/slo-burn-history.log` is gitignored. Snapshots are derived
+from `slo-budget-current.md` so no new data input is required — only
+the cadence at which `/digest` runs determines burn-rate resolution.
+
+---
+
+## v1.0.87 — 2026-04-21
+
+### Added — DORA aggregator (the loop, not the dashboard)
+
+Four numbers that tell you whether the engineering system is healthy,
+computed from artefacts you already produce.
+
+- **`/dora [period]`** — snapshot of Deployment Frequency, Lead Time for
+  Changes, Change Failure Rate, and MTTR for the last N days (default 30),
+  with week-over-week deltas. Reads `.great_cto/deploys.log`,
+  `docs/postmortems/PM-*.md`, and `bd` closed tasks; no new services.
+- **CFR signal in `/inbox`.** When 7-day CFR exceeds 15%, `/inbox` flags
+  it with the latest 3 incidents — so the metric becomes an actionable
+  prompt in the daily workflow, not a dashboard nobody opens.
+- **Weekly DORA snapshot in `/digest`.** Existing DORA section now reads
+  `deploys.log` first (fallback: `perf-baseline.log`), so the weekly
+  Monday digest carries real numbers instead of placeholders.
+- **`devops` writes a single line per production deploy** to
+  `.great_cto/deploys.log` (timestamp, service, version, status,
+  MR-merge-time). This is the only new data input the feature requires.
+- **`skills/great_cto/references/dora.md`** — reference for `tech-lead`
+  and `qa-engineer`. Encodes the Ostrovok pattern: when CFR rises, look
+  at Lead Time first; "stricter QA" is rarely the right answer.
+
+`.great_cto/dora-baseline.log` accumulates one row per `/dora` run for
+local trend-over-time without re-computation. Gitignored.
+
+---
+
+## v1.0.86 — 2026-04-20
+
+### Added — ADR lifecycle + incident lesson crystallization
+
+Decisions don't rot silently anymore, and incidents leave durable traces
+that tech-lead reads on every new feature.
+
+- **ADR review candidates.** `/doctor` now surfaces decisions older than
+  180 days with zero references in the code (`src/`, `app/`, `lib/`, …).
+  Old ADRs that still drive live code stay quiet; truly forgotten ones
+  get flagged as candidates to revisit or mark superseded.
+- **Supersession tracked both ways.** `/rfc new` accepts an optional
+  `Supersedes: ADR-003, ADR-007` header. On `/rfc close accept`, the
+  listed ADRs are auto-marked `Status: SUPERSEDED` with a reciprocal
+  `Superseded-by:` link back to the new RFC/ADR. `/doctor --fix` repairs
+  any one-way links.
+- **Incidents crystallize into lessons.** When `l3-support` finishes a
+  P0 postmortem, it appends a single actionable line to
+  `.great_cto/lessons.md` (date | service | root cause | prevention).
+  `tech-lead` now reads this log at the start of every new feature —
+  recurring failure patterns become architecture constraints before the
+  next ship, not after the next incident.
+
+---
+
+## v1.0.85 — 2026-04-20
+
+### Removed
+
+- **11 orphan files** across `docs/qa-reports/`, `docs/demo/`, `docs/plans/`,
+  and `CONTRIBUTING.md`. These were historical artefacts from closed releases
+  (QA reports for v1.0.2, planning docs for shipped features, an unused demo
+  gif) that no command, README link, or skill referenced. Repo is ~1500 lines
+  lighter and easier to navigate.
+
+---
+
+## v1.0.84 — 2026-04-20
+
+### Fixed
+
+- **Stale gates now surface on macOS.** `/inbox` and the great_cto skill no
+  longer silently report every gate as fresh under zsh — the age calculation
+  correctly detects gates older than 24h regardless of shell.
+- **Force-push protection closed a gap.** The PreToolUse guard now blocks
+  `git push --force-with-lease` (previously only `--force` / `-f` were caught),
+  matching the policy intent.
+- **Write audit covers bulk edits.** Multi-file edits are now logged to
+  `permission-denied.log` the same way single-file writes are.
+
+### Added
+
+- **`scripts/bump-version.sh`** — single command to bump `plugin.json` and
+  sync the README badge + "actively maintained" line, removing the drift
+  that let version references go out of sync in earlier releases.
+
+---
+
+## v1.0.83 — 2026-04-20
+
+### Added
+
+- **`/doctor --fix`** — one-shot remediation. Creates missing artefact
+  directories (`docs/audit`, `docs/security`, `.great_cto/verdicts`, …),
+  regenerates `.great_cto/env.sh`, migrates old PROJECT.md to the v1.0.76
+  format with stub `Stack:`/`Type:` lines, rotates stale
+  `permission-denied.log`, initialises `bd` if absent.
+- **`docs/validation/README.md`** — documents the three-tier test strategy
+  (L1 structural, L2 e2e assert-only, L3 manual dogfood) and when to run each.
+- **`docs/scheduling/README.md`** — how to set up recurring `/digest` (Mon
+  09:00) and `/audit` (monthly) via Claude scheduler, cron, or Actions.
+- **`docs/postmortem/SILENT-PIPELINE-FAILURE.md`** — write-up of the
+  six-month-silent-failure that motivated v1.0.78–v1.0.82 hardening.
+
+### Changed
+
+- README now lists `/doctor` in the advanced commands table.
+
+---
+
+## v1.0.82 — 2026-04-20
+
+### Added — two more e2e fixtures
+
+Extended the test harness with two new fixtures that cover the most common archetypes and reproduce known failure modes:
+
+- **`tests/fixtures/trading-system-rust/`** — reproduces the <private-project> failure mode: committed API keys (`render.yaml` with `OPENROUTER_API_KEY`, `GEMINI_API_KEY`), `unwrap()` panic on hot path, no kill-switch, no risk tests, outdated `reqwest 0.11`. Manifest asserts `security-officer | BLOCKED` verdict — validates the v1.0.79 hard rule (P0 + SEC label must BLOCK).
+- **`tests/fixtures/web-fullstack-node/`** — covers `web-fullstack` primary / `web-service` archetype. Next.js 13 with unauthenticated `/api/admin`, committed `.env.local`, green-lie tests (`echo no tests && exit 0`). Manifest asserts CSO BLOCKs on unauthenticated admin endpoint.
+
+### Changed
+
+- `tests/e2e/assert_manifest.py`: added optional `after_cso` block processing and `cso_ran()` detection; bootstrap existence check now accepts `pyproject.toml | package.json | Cargo.toml | go.mod | pom.xml` (previously Python-only).
+- `.github/workflows/plugin-ci.yml`: e2e matrix expanded from `[cli-tool-python]` to all three fixtures.
+
+---
+
+## v1.0.81 — 2026-04-20
+
+### Fixed — zsh compatibility in /doctor and SessionStart
+
+Dogfooding `/doctor` on <private-project> on macOS (default shell: zsh) surfaced two shell incompatibilities that produced noisy stderr output and broken branches:
+
+1. **`grep -c PATTERN 2>/dev/null || echo 0`** — when grep finds zero matches it still prints `0` AND exits 1, so `|| echo 0` runs, producing `"0\n0"`. The captured value then fails `[ "$X" -gt 0 ]` integer tests with "integer expression expected".
+2. **`ls docs/audit/AUDIT-*.md 2>/dev/null`** — zsh without `setopt nomatch` prints "no matches found" to stderr *before* the command runs, so `2>/dev/null` inside the command can't suppress it.
+
+**Fixes:**
+
+- `commands/doctor.md`: replaced `|| echo 0` with `VAR=${VAR:-0}` guard; replaced `ls PATTERN` with `find <dir> -maxdepth 1 -name <pat>` in all artefact and verdict-log lookups.
+- `.claude-plugin/plugin.json` SessionStart hook: same two fixes in the inline P0 banner + audit-staleness detection.
+
+**Dogfood result on <private-project>** (previously failing, now clean):
+```
+✓ PROJECT.md present, old format (no Stack:/Type: — will migrate)
+✗ 6/6 pipeline phases — no artefacts ever written
+17 Beads open, 1 in_progress, P0 SEC (leaked API keys) pinpointed
+0 verdicts, 0 permission denials
+```
+
+---
+
+## v1.0.80 — 2026-04-20
+
+### Added — Test harness foundation
+
+Until now, the only way to test the plugin was "run /audit on a real project and eyeball the output". Slow, non-reproducible, hides silent failures. v1.0.80 introduces three layers of automated tests.
+
+**Layers:**
+
+- **Structural** — `tests/structural/validate.py` verifies `plugin.json` is valid semver JSON with required keys; every `commands/*.md` and `agents/*.md` has a parseable YAML frontmatter with required fields; the SessionStart CMD-copy loop references only files that exist (and vice versa — no orphan commands); `TYPE_MAP.md` has well-formed rows with backticked slugs. Fast (< 1s). Catches contract drift before any runtime.
+- **E2E harness** — `tests/e2e/run_pipeline.sh <fixture>` copies a fixture to a tmpdir, `git init`s it, optionally invokes `claude -p "/audit"` when `CLAUDE_CLI_AVAILABLE=1`, then runs `assert_manifest.py` against the fixture's `expected/manifest.json`. Supports `--assert-only` for CI runs without the Claude CLI.
+- **Fixtures** — `tests/fixtures/<name>/` each carry deliberately seeded problems an agent should detect, plus a golden `expected/manifest.json` describing the required post-audit state (artefact paths, PROJECT.md format lines, verdict-log patterns, Beads coverage topics, min/max issue counts).
+
+**First fixture:** `cli-tool-python` — 6 seeded problems (committed fake token, CVE-2023-32681 in pinned requests, bare except, missing tests, TODO on entry point, type detection). Small enough to iterate on quickly.
+
+**CI:** `.github/workflows/plugin-ci.yml` runs structural + e2e-assert-only on every push/PR that touches `commands/`, `agents/`, `skills/`, `.claude-plugin/`, or `tests/`. The full e2e path (actual `/audit` via `claude -p`) is wired but gated on `CLAUDE_CLI_AVAILABLE=1` and will run nightly once the Anthropic key is configured as a GitHub secret.
+
+**Why this matters: the v1.0.79 observability work only helps if someone looks. CI with real fixtures turns "did the pipeline write its artefacts" from a human check into an automated gate.**
+
+Next fixtures (v1.0.81): `web-fullstack-node`, `trading-system-rust`.
+
+---
+
+## v1.0.79 — 2026-04-20
+
+### Added — Observability foundation
+
+The audit of great_cto's own behaviour on real projects (<private-project>, <private-project>) revealed a systemic failure mode: **agents run, then fail silently**. Beyond PROJECT.md and Beads, no pipeline artefacts ever landed on disk — no audit reports, no ARCH docs, no QA reports, no CSO reports. Silent Write/Bash denials (v1.0.78 diagnosed the cause — plan mode inheritance) produced partial work without alerting the user.
+
+v1.0.79 makes failure visible.
+
+**New:**
+
+- `/doctor` command — health check that reports: required-file presence, PROJECT.md format version (v1.0.76+ Stack/Type contract), artefact freshness per phase (audit/arch/qa/cso/ADR/digest with configurable max-age), Beads backlog (P0/P1/in_progress counts, stall detection), verdict log tail, PermissionDenied tail, scheduled-task health, plugin install integrity. No writes — diagnosis only. Ends with a prioritised "Next actions" list.
+- `.great_cto/verdicts/YYYY-MM-DD.log` — one-line verdict each time a pipeline agent terminates. Format: `ISO_TS | agent | DONE|BLOCKED | artefacts=N | <domain_metric>`. Enables audit trail and powers `/doctor`.
+- **Mandatory artefact post-condition** in `project-auditor`, `qa-engineer`, `security-officer`, `tech-lead`: before emitting DONE, each agent verifies its expected artefact file exists on disk. Missing file → `BLOCKED: <agent> post-condition failed — <path> not written` rather than a vacuous DONE.
+- **SessionStart banner** (plugin.json hook):
+  - Red P0 banner with top-3 P0 titles when any P0 is open.
+  - Audit staleness warning when `docs/audit/AUDIT-*.md` is > 30 days old or absent.
+  - Digest staleness warning when `.great_cto/digest-latest.md` is > 8 days old (catches broken Mon 09:00 scheduler).
+- `doctor` added to the plugin's SessionStart CMD copy loop — `/doctor` is now available out of the box.
+
+**Rationale: without these three layers (post-conditions + verdicts + banner), a pipeline that silently produces nothing is indistinguishable from a pipeline that was never run. The audit of <private-project> — 6 months of activity, 12 Beads issues, P0 leaked API keys open for 6 days — showed exactly that failure mode.**
+
+---
+
+## v1.0.78 — 2026-04-20
+
+### Fixed — Spawned sub-agent reliability (bugs found during <private-project> pipeline run)
+
+Three issues observed when spawning `project-auditor`, `qa-engineer`, and `security-officer` via the `Agent` tool from a parent session:
+
+1. **`qa-engineer` returned "I need bash access"** despite `Bash` being in frontmatter `tools:`. Root cause: spawned sub-agents inherit the parent session's `permissionMode`. If the parent was in plan mode (or any restrictive mode), `Bash`/`Write` are blocked at the session layer regardless of what the agent declares.
+2. **`security-officer` cut off mid-sentence** with no summary. Root cause: `maxTurns: 25` / `timeout: 600` was too tight for HIGH-effort security scans with CVE lookups.
+3. **`project-auditor` / `qa-engineer` could not write artefacts** even when their analysis completed — same `PermissionDenied` cause as (1).
+
+**Fixes:**
+
+- `agents/security-officer.md` — bumped `maxTurns: 25 → 40`, `timeout: 600 → 900`, added `Edit` to `tools:`.
+- `agents/qa-engineer.md` — bumped `maxTurns: 35 → 40`, `timeout: 600 → 900`, added `Edit` to `tools:`.
+- **Pre-flight probe** in all three agents (`project-auditor`, `qa-engineer`, `security-officer`): before any real work, the agent attempts `mkdir -p .great_cto && touch .great_cto/.<name>-probe`. On `PermissionDenied`, it emits a clear `BLOCKED: permission denied (Bash/Write)` message with remediation (exit plan mode, or `/permissions` allow-list), rather than silently producing useless partial output.
+- `README.md` — FAQ entry documenting the plan-mode inheritance issue and pointing users at `.great_cto/permission-denied.log`.
+
+**Not fixed (by design):** the permission inheritance itself is a Claude Code platform behaviour, not something a plugin can override. The plugin's `PermissionDenied` hook (v1.0.x) already logs each denial to `.great_cto/permission-denied.log` for forensics.
+
+---
+
+## v1.0.77 — 2026-04-20
+
+### Fixed — Docs + command-reference hygiene
+
+Trivia release caught by a full command smoke test. Three user-facing hints still pointed at `/update` — a command removed in v1.0.52 — and the README version badge had been frozen at 1.0.70 for six releases. Zero behaviour changes, zero cache impact, zero agents touched.
+
+**1. Stale `/update` references replaced:**
+- `commands/digest.md:244` — "Consider /update to audit agent coverage" → "Consider /audit to scan agent/tooling coverage"
+- `commands/start.md:260` — "sections (added later via `/update`)" → "sections (added later via `/audit` refresh or edited by hand as the project matures)"
+- `commands/start.md:377` — "catalog unavailable — run /update when online" → "catalog unavailable — SessionStart hook will retry on the next session"
+
+**2. README version badge + text** — 1.0.70 → 1.0.77 (line 6 badge, line 267 "actively maintained" line).
+
+**Integration summary:**
+- `commands/digest.md` (1 line): stale-command hint
+- `commands/start.md` (2 lines): stale-command hints
+- `README.md` (2 lines): version badge + maintenance copy
+
+**Cache discipline.** Zero agent edits. SessionStart hook byte-identical with v1.0.76. Pure copy-fix release.
+
+**Verification.** Full smoke test of all 10 commands and 7 agents: bash syntax OK (known `<placeholder>` false-positives preserved), SessionStart hook CMD/AGENT loops match filesystem (10 + 7), every `skills/great_cto/references/*.md` (12 files) exists, no orphaned subagent_type references, `/digest` board + architecture modes wired, `/rfc` team-size guard in place, `/start` three scheduled tasks (Mon digest + Sun audit + Q1 arch-review) for medium+ projects.
+
+---
+
+## v1.0.76 — 2026-04-19
+
+### Fixed — Audit reliability: stop hallucinated types, surface Stack/Type in every report
+
+Patch release driven by a real-world audit run on an AI-orchestrator project that produced two silent failures: a secondary type (`neobroker`) that does not exist in TYPE_MAP.md, and a chat summary with no Stack or Type line for the CTO to verify. Three narrow fixes close both holes without touching agents unrelated to audit.
+
+**1. TYPE_MAP.md — new keyword row for AI orchestrators.**
+Added `AI orchestrator, agent orchestrator, multi-agent orchestration, agent router, workflow orchestrator, agent coordinator → ai-agent-framework`. Projects that describe themselves as "orchestrator" now resolve deterministically instead of being forced into `ai-agent` + invented secondary.
+
+**2. project-auditor Phase 7 — mandatory type validation.**
+Before writing `.great_cto/PROJECT.md`, the detected primary and secondary types are validated against the canonical list of backticked tokens in TYPE_MAP.md. Invalid primary → **BLOCKED** with the 10 nearest valid types printed. Invalid secondary → dropped with a warning. No more silent inventions of vertical labels (`neobroker`, `fintech`, `crypto`) as types — those belong in a `## Domain` section, not `## Type`.
+
+**3. project-auditor Phase 9 — Stack/Type lines are now mandatory, not optional.**
+Reporting Contract upgraded: every DONE or BLOCKED summary MUST include two verbatim lines before the DONE/BLOCKED terminator:
+```
+Stack: <language> <major-version> / <primary framework> / <database> / <deploy target>
+Type:  <primary> [+ <secondary>]   archetype: <archetype>
+```
+Detection-failure path is explicit (`Stack: detection failed (<reason>)`) rather than silent omission. Type-preservation path is explicit (`Type: <primary> (preserved, PROJECT.md < 7d old)`). Rationale: without these two lines the CTO cannot spot misdetection until it has already polluted the Beads backlog.
+
+**Integration summary:**
+- `skills/great_cto/TYPE_MAP.md` (+1 row): orchestrator keyword mapping
+- `agents/project-auditor.md` (+45 lines): type validation block in Phase 7; mandatory summary block in Reporting Contract
+
+**Cache discipline.** One agent edit (project-auditor only). Other six agents untouched. SessionStart hook byte-identical with v1.0.75 — full prefix cache survives.
+
+**Backward-compat.** Strictly additive. Existing PROJECT.md files with valid types pass validation unchanged. The only "breaking" path is intentional: a future audit that would have hallucinated a type now blocks and asks for a canonical choice — this is the desired behaviour, not a regression.
+
+---
+
+## v1.0.75 — 2026-04-19
+
+### Added — Synthesis consumers: executive narrative + quarterly architecture review
+
+Fifth and final release in the arc (v1.0.71 → v1.0.75). **Zero agents touched.** Just `/digest` and `/start` — yet this is the largest functional delta of the arc. Q-review and the board narrative consume every artifact the four prior releases produced.
+
+**Why last and why agents-free.** The v1.0.71–v1.0.74 releases added writing surfaces: risks, waivers, deprecations, SLOs, incident-log, pre-mortems, vendors, cost models, onboarding. This release adds the **reading surfaces** that turn those files into decisions. Keeping it agents-free preserves the prompt cache prefix exactly as it stood after v1.0.74 — CTOs who never invoke the synthesis modes pay zero cache cost.
+
+**Two new synthesis modes in `/digest`:**
+
+**1. Executive narrative** (extends `board` mode, auto-triggered). Appends a connected-story section to the board report: **What we shipped** (one-liner per ARCH-*.md / RFC-*.md from the period, each cited by artifact slug), **Why it matters** (synthesized from ARCH "Business context" + ADR rationale — no inventions), **Metrics that tell the story** (existing DORA numbers + trend interpretation), **Risks on the horizon** (top-3 H×H / H×M from RISK-REGISTER + any EXHAUSTED SLO row), **Next quarter focus** (Beads tasks tagged `epic:q<N+1>`). Synthesizer rule: every line traces to a file. Fallbacks for first-quarter / zero-risk / small-project.
+
+**2. Architecture review** (new `architecture` mode: `/digest Q2 architecture`). Generates `docs/architecture/ARCH-REVIEW-<YEAR>-Q<N>.md` in **draft status** — CTO reviews and removes the `> Draft` marker to finalize. Subsequent runs refuse to overwrite finalized reviews. Sections: Decisions Landscape, Drift Analysis, God Nodes Evolution, Aged Tech Debt, Active Risks Summary, Unresolved Waivers, Pre-mortem Post-Reviews Due, Reliability Summary, Cost Drift, Deprecations on the Horizon, Recommendations for Q+1. Every recommendation cites its evidence. First run of each quarter snapshots `.great_cto/brain.md` as `brain-<Y>-Q<N>-snapshot.md` for the next review's diff base.
+
+**Scheduled automation for Q-review.** `/start` registers a third scheduled task for `project_size: medium` or larger: `0 10 1 1,4,7,10 *` (1st of Jan/Apr/Jul/Oct at 10:00). Skipped for nano/small projects where Q-review is overkill.
+
+**Integration summary:**
+- `/digest` (+160): executive narrative builder extending board mode; full architecture review mode with draft-status protection + brain.md snapshotting
+- `/start` (+15): third scheduled task (quarterly review) for medium+ projects
+
+**Two new references** in `skills/great_cto/references/`: `board-narrative.md` (source mapping, synthesizer rules, fallback behaviors) and `quarterly-review.md` (input inventory from v1.0.71–v1.0.74, output schema, draft/final lifecycle, massive-review summarization rule, small-project skip).
+
+**Backward-compat**: pure additive. Projects that never invoke `/digest architecture` see zero change (all existing modes unchanged). Projects that invoke `board` get the narrative section appended to their existing board report — original DORA table stays intact below. Every access guarded — missing sources produce explicit fallback text, never fabricated data.
+
+**Cache discipline — the important one**: **zero agent edits this release**. The agents/*.md prompt surface is byte-identical to v1.0.74. SessionStart hook byte-identical (verified). `/digest` and `/start` are user-invocable commands — their output is outside the agent's prompt cache path entirely. Maximum feature delta, minimum prefix disruption.
+
+**Behavioral change worth flagging**: `/digest board` now produces a longer output (narrative + DORA instead of DORA alone). `/digest architecture` is a new capability entirely. Neither changes any existing agent's behavior.
+
+Files: `.claude-plugin/plugin.json`, `CHANGELOG.md`, `commands/{digest,start}.md`, `skills/great_cto/references/{board-narrative,quarterly-review}.md` (2 new). **No agent files edited.**
+
+### Arc summary (v1.0.71 → v1.0.75)
+
+Five releases closed the gap between "Great CTO does X" and "plugin captures X":
+
+| Release | Artifacts introduced | Files |
+|---------|---------------------|-------|
+| v1.0.71 | Risk register, waivers, deprecations | 3 new refs, 3 agent edits |
+| v1.0.72 | SLO + INCIDENT-LOG + error budgets | 1 new ref, 3 agent edits |
+| v1.0.73 | Pre-mortem + vendor register | 2 new refs, 2 agent edits |
+| v1.0.74 | Cost attribution + onboarding | 2 new refs, 2 agent edits |
+| v1.0.75 | Executive narrative + Q-review | 2 new refs, **0 agent edits** |
+
+Total: **10 new references, 15 file edits, 5 new artifact families**, ~1000 LOC across 5 commits. Every release backward-compatible; every release preserved SessionStart hook byte-identical; every release additive with `[ -f ... ]` guards on every access.
+
+---
+
+## v1.0.74 — 2026-04-19
+
+### Added — Cost attribution + auto-generated onboarding
+
+Fourth release in the arc (v1.0.71 → v1.0.75). Addresses the "features ship, cost compounds, nobody tracks" problem and the "new engineer needs 2 weeks to ramp" problem — both by making previously-tribal knowledge into greppable files.
+
+**Two new artifact patterns:**
+
+**1. Cost Model section — inside each qualifying ARCH-*.md.** Not a separate file; kept coupled to the decision it justifies. Required for `project_size ≥ medium` OR archetype `ai-system`/`commerce`/`regulated`. Schema: runtime cost table (compute, database, data transfer, external APIs with vendor-register cross-reference), unit economics (per-DAU, per-transaction, break-even), cost controls (caps, rate limits, cache, scheduled scale-down), quarterly review cadence. For teams, the estimate mirrors into `OWNERSHIP.md` "Expected cost/mo" column so per-team cost attribution is answerable without re-parsing every ARCH.
+
+**2. `docs/onboarding/README.md`** — synthesized single-file onboarding. project-auditor combines `.great_cto/brain.md`, `DECISION-LOG.md`, `CODEBASE.md` god-nodes, `OWNERSHIP.md`, runbooks, and top Beads tasks into a linear read. Regenerated monthly by `/digest`; first-created by `/audit` if `team-size ≥ 2`. Respects hand-edits (checks generated-date marker before overwriting).
+
+**Actual-vs-estimate reconciliation** (optional). If the CTO wires a FinOps source to populate `.great_cto/cost-actual.log` via cron / GitHub Action, `/digest` flags any service > 20% over estimate at quarter start. No live billing integration inside the plugin — files only.
+
+**Integration summary:**
+- tech-lead (+21): Cost Model section injection in ARCH for qualifying projects; vendor-register cross-reference for external APIs
+- project-auditor (+26): onboarding synthesis with conflict-flagging and hand-edit respect
+- `/audit` (+26): cost-model coverage scan on IaC files; onboarding first-run generation
+- `/digest` (+22): quarterly cost reconciliation; monthly onboarding refresh
+
+**Two new references** in `skills/great_cto/references/`: `cost-model.md` (schema, data sources, OWNERSHIP.md coupling, actual-vs-estimate file format) and `onboarding.md` (schema, source mapping table, regeneration rules, conflict handling).
+
+**Backward-compat**: pure additive. ARCH docs without Cost Model remain valid (retroactive enforcement absent). Projects without `docs/onboarding/` see zero change. Solo founders (team-size: 1) skip onboarding generation entirely. Every access guarded by `[ -f ... ]` / `[ -d ... ]`. Old `PROJECT.md` from v1.0.68–v1.0.73 works unchanged.
+
+**Cache discipline**: tech-lead edited once more (4th consecutive release — each edit is an appended section, preserving stable prefix). project-auditor gets its first touch in this arc. security-officer, devops, l3-support all untouched this release. SessionStart hook byte-identical.
+
+**Behavioral change worth flagging**: for `medium`+ ARCH docs, tech-lead now writes a Cost Model section as a mandatory part of output. CTO sees one more section in the ARCH doc (runtime cost + unit economics + cost controls). For smaller projects: zero change.
+
+Files: `.claude-plugin/plugin.json`, `CHANGELOG.md`, `agents/{tech-lead,project-auditor}.md`, `commands/{audit,digest}.md`, `skills/great_cto/references/{cost-model,onboarding}.md` (2 new).
+
+---
+
+## v1.0.73 — 2026-04-19
+
+### Added — Forward-looking: pre-mortem + vendor register
+
+Third release in the arc (v1.0.71 → v1.0.75). Moves risk thinking from reactive (postmortem after incidents) to proactive (pre-mortem before ship) and makes third-party vendor dependency a tracked artifact.
+
+**Two new artifact families:**
+
+**1. `docs/pre-mortems/PRE-<slug>.md`** — forward-looking failure analysis generated by tech-lead before finalizing ARCH. Triggered automatically when `project_size` is `large`/`enterprise`, or archetype is `web3`/`iot-embedded`/`regulated`, or CTO flags `risk: high`. Schema: scenario dated 6 months post-ship, ≥5 brainstormed failure modes, P×I ranking, early warning signs, mitigations mapped to gates, risks fed into the register. Distinct from ADR (decision record), postmortem (past incident), and threat model (adversarial security).
+
+**2. `docs/vendors/VENDOR-<slug>.md`** — per-vendor register for paid SaaS / critical third-party services (Stripe, OpenAI, Twilio, etc.). Schema: role, criticality (critical/high/medium/low), SLA, incident history, fallback plan, compliance certs, contract/renewal, linked risks. Scope deliberately excludes npm libraries (those are deprecations.md) and low-criticality utilities (avoids register fatigue).
+
+**Closing the learning loop.** Pre-mortems include an empty "Post-ship review" filled 90 days post-launch. `/digest` surfaces overdue reviews — scenarios that didn't happen teach what signal was noise; scenarios that happened but weren't brainstormed become future-pre-mortem prompts in `.great_cto/brain.md`.
+
+**Integration summary:**
+- tech-lead (+54): pre-mortem trigger+generation before ARCH finalizes; vendor check at ARCH time (block `critical` without fallback plan)
+- security-officer (+38): pre-mortem mitigation-to-gate verification (unenforced H×H mitigations block gate:compliance); quarterly vendor review pass
+- `/digest` (+28): overdue pre-mortem review reminder; quarterly vendor review trigger (month 1/4/7/10)
+- `/audit` (+16): scan deps for known vendor SDKs, flag any without matching VENDOR-*.md
+
+**Two new references** in `skills/great_cto/references/`: `pre-mortem.md` (triggers, brainstorming prompts, schema, post-ship loop) and `vendors.md` (criticality gate, review cadence, risk coupling).
+
+**Backward-compat**: pure additive. Projects without `docs/pre-mortems/` or `docs/vendors/` see zero behavior change; every access guarded by `[ -f ... ]` / `[ -d ... ]`. Old `PROJECT.md` from v1.0.68–v1.0.72 works unchanged. `pre-mortem: skip` in PROJECT.md suppresses trigger for otherwise-qualifying repos.
+
+**Cache discipline**: tech-lead + security-officer edited this release. tech-lead touched in v1.0.71, v1.0.72, v1.0.73 — each edit is additive/appended-section (prefix unchanged). security-officer untouched in v1.0.72; this is its second edit. `/audit` and `/digest` both touched again. SessionStart hook byte-identical.
+
+**Behavioral change worth flagging**: for `large`/`enterprise` projects, ARCH now spawns a pre-mortem generation step before completing. CTO sees one additional artifact path ("Pre-mortem written → docs/pre-mortems/PRE-<slug>.md") and one optional step (approve/amend failure-mode brainstorm). For smaller projects: zero change.
+
+Files: `.claude-plugin/plugin.json`, `CHANGELOG.md`, `agents/{tech-lead,security-officer}.md`, `commands/{audit,digest}.md`, `skills/great_cto/references/{pre-mortem,vendors}.md` (2 new).
+
+---
+
+## v1.0.72 — 2026-04-19
+
+### Added — Reliability layer: SLO, INCIDENT-LOG, error budgets
+
+Second release in the arc (v1.0.71 → v1.0.75). Builds on the risk/waiver foundation from v1.0.71 to make reliability a **measured artifact** rather than tribal knowledge.
+
+**Three new files managed by the plugin:**
+
+**1. `docs/reliability/SLO.md`** — per-service SLO definitions + response policy. Seeded by tech-lead when a new network-facing service is introduced in ARCH (default: availability 99.9%, latency p95 < 200ms, error rate < 0.5%; 30d rolling window). CTO tightens or loosens based on product criticality. Tightening retroactively requires an ADR per the reference.
+
+**2. `docs/reliability/INCIDENT-LOG.md`** — append-only, chronological, exact 4-line-per-entry format that `awk` can grep in one shot. Written by `l3-support` after every postmortem with SLI impact and by `devops` on canary failure (rollback triggered). Makes reality a first-class artifact alongside intent (SLO).
+
+**3. `.great_cto/slo-budget-current.md`** — computed cache. `/digest` recomputes it from INCIDENT-LOG over the 30d rolling window. Statuses: `ok` / `warn` (50–80%) / `WARN` (80–100%) / `EXHAUSTED` (>100%). Read-only at runtime by `devops` (gate:ship blocks on EXHAUSTED, requires CTO approval on WARN) and `/inbox` (surfaces any WARN/EXHAUSTED row).
+
+**Policy, not paging.** The layer is deliberately **manual reality log + computed budget** — no Datadog / Prometheus integration, no automated alerts, no per-endpoint SLOs. Alerts stay in the team's existing monitoring system; this is a **decision record** that makes "are we within budget?" answerable from files in the repo.
+
+**Enforcement in the pipeline:**
+- `ok` → proceed normally
+- `warn` → log in RELEASE doc, proceed
+- `WARN` (80%+) → devops pauses, requires CTO explicit approval
+- `EXHAUSTED` (>100%) → **deploy blocked** except for hotfix with WAIVER per v1.0.71 enforcement
+- Multiple SLIs burned simultaneously → tech-lead drafts `STABILITY-PLAN-<date>.md` within 24h; team executes a stability week before new features resume
+
+**Integration summary:**
+- tech-lead (+21): seed SLO.md entry when introducing new service in ARCH
+- devops (+35): SLO budget check in gate:ship (block on EXHAUSTED, pause on WARN) + INCIDENT-LOG append on canary failure
+- l3-support (+15): append INCIDENT-LOG on postmortems with SLI impact
+- `/inbox` (+14): surface WARN/EXHAUSTED rows from budget cache
+- `/digest` (+54): recompute SLO budgets from INCIDENT-LOG, write cache
+
+**One new reference** in `skills/great_cto/references/`: `reliability.md` — canonical schemas for all three files, budget computation bash, entry format contract, source/consumer tables.
+
+**Backward-compat**: pure additive. Projects without `docs/reliability/` see zero behavior change; every access guarded by `[ -f ... ]` / `[ -d ... ]`. Old `PROJECT.md` from v1.0.68–v1.0.71 works unchanged.
+
+**Cache discipline**: three agent edits this release (tech-lead, devops, l3-support) — none of which were touched in v1.0.71's foundation release. Prompt prefix unchanged where possible.
+
+Files: `.claude-plugin/plugin.json`, `CHANGELOG.md`, `agents/{tech-lead,devops,l3-support}.md`, `commands/{inbox,digest}.md`, `skills/great_cto/references/reliability.md` (1 new).
+
+---
+
+## v1.0.71 — 2026-04-19
+
+### Added — Foundation artifacts: risk register, waiver log, deprecation calendar
+
+First release in a 5-part arc (v1.0.71 → v1.0.75) that closes the gaps between **"Great CTO does X"** and **"the plugin actually captures X"**. Release 1 lays three new artifact foundations that later releases consume.
+
+**1. Risk register (`docs/risks/RISK-REGISTER.md`).** Persistent reality of active architectural, operational, and security risks. Different from backlog (tasks have done-state — risks don't) and from postmortems (past vs forward-looking). Scored by probability × impact over 6 months. Sources: tech-lead's ARCH "Risks" section, security-officer's CVE-pattern detection (3+ similar findings in 90d), recurring INCIDENT-LOG causes via `/digest`, deprecation EOLs approaching, manual CTO entries. Consumed by `/inbox` (top-5 H×H / H×M surfaces), `/audit` (pre-audit summary), and future pre-mortem synthesis.
+
+**2. Waiver log (`docs/waivers/WAIVER-*.md`).** Makes "skip this gate" a **tracked artifact** instead of a silent shortcut. security-officer and devops now refuse to skip gates without a waiver containing: reason, follow-up action (Beads task created automatically), and expiry (max 14 days; 48h for emergency). `/inbox` surfaces expired waivers with open follow-ups; `/digest` detects repeat-skip patterns (same gate 3+ times in 90d) as a process-debt signal.
+
+**3. Deprecation calendar (`docs/deprecations/DEPRECATION-CALENDAR.md`).** Explicit lifecycle for frameworks, APIs, runtimes, regions being sunset. tech-lead greps it before finalizing an ARCH stack — proposed use of a deprecated thing gets surfaced in the "Stack considerations" section. `/audit` auto-suggests entries for packages with > 24-month silent releases. `/inbox` shows EOLs within 90 days; `/digest` calls out EOLs within the next quarter. When an EOL < 6 months remaining has no active migration, `/audit` auto-creates a risk-register entry linking back.
+
+**Integration summary:**
+- tech-lead (+27 LOC): risk append from ARCH; deprecation consult before stack
+- security-officer (+35): CVE-pattern → risk; waiver enforcement on gate:compliance skip
+- devops (+15): waiver enforcement on gate:ship skip
+- `/inbox` (+37): top risks, upcoming EOLs, waiver expiry
+- `/digest` (+33): recurring-cause risk detection; waiver expiry + pattern; EOL calls
+- `/audit` (+28): pre-audit risk summary; deprecation auto-suggest
+
+**Three new references** in `skills/great_cto/references/`: `risk-register.md`, `waivers.md`, `deprecations.md` — canonical schemas with ID schemes, dedup rules, and lifecycle diagrams.
+
+**Backward-compat**: pure additive release. Projects without the new artifacts see zero behavior change; agents check `[ -f ... ]` before every access. Old `PROJECT.md` from v1.0.68–v1.0.70 works unchanged.
+
+**Cache discipline** (per v1.0.69): each agent edited exactly once in this release. `tech-lead.md` gets both risk and deprecation blocks in one delta; `security-officer.md` gets risk-pattern and waiver together; `devops.md` gets waiver only. Future v1.0.72–v1.0.75 will each touch different agents to keep prompt prefix stable across most releases.
+
+**Behavioral change worth flagging**: gate skips are no longer silent. When CTO says "skip security this time", security-officer now demands reason + follow-up + expiry before proceeding. This is intentional — silent skips were the dominant source of tracked debt loss.
+
+Files: `.claude-plugin/plugin.json`, `CHANGELOG.md`, `agents/{tech-lead,security-officer,devops}.md`, `commands/{inbox,digest,audit}.md`, `skills/great_cto/references/{risk-register,waivers,deprecations}.md` (3 new).
+
+---
+
+## v1.0.70 — 2026-04-19
+
+### Changed — Pareto simplification (UX surface shrunk; internals unchanged)
+
+The 20% of the surface area that drives 80% of real usage now fits on one screen. Everything else is still present — just moved out of the first fold. Zero functionality removed; backward-compatible for every existing `PROJECT.md`.
+
+**1. README rewrite.** Top fold is now four things: one-paragraph pitch, one `/start` example, one install command, three commands. Down from 430 to ~220 visible lines. Eight deep sections (`<details>`): ROI math, 10 archetypes, 13 compliance frameworks, 7 agents, artifacts, competitive compare. The first-time visitor reads in ~60 seconds instead of scrolling past 11 tables.
+
+**2. Three primary commands, everything else demoted.** `/start`, `/review`, `/inbox` are the only commands on the first screen. `/audit`, `/rfc`, `/digest`, `/release`, `/ownership`, `/oncall`, `/triage` are still in `plugin.json` (nothing deleted from the plugin) but sit behind a collapsed "More commands" block.
+
+**3. Pipeline sizes: 5 → 3 user-facing.** The CTO chats about `quick` / `standard` / `deep`. Internally the five canonical sizes (`nano` / `small` / `medium` / `large` / `enterprise`) still back the agents — `/start` maps user-facing to internal at write time. Agent files untouched (preserves the cache discipline from v1.0.69).
+
+**4. Approval levels: 5 → 2 user-facing.** Default is `review` (the old `gates-only`); `auto` is unchanged. The three advanced levels (`strict`, `expert`, `step-by-step`) remain opt-in — written verbatim to PROJECT.md when the CTO asks for them. All seven agents continue to grep for the canonical names.
+
+**5. "73 types" removed from user-facing docs.** `TYPE_MAP.md` is now marked **internal** in its header — it's an auto-detection dispatch table, not user configuration. `README.md` no longer surfaces the "73 types" count. The 10 archetypes stay; the CTO never picks a type manually.
+
+**Backward compat**:
+- Every existing `PROJECT.md` from v1.0.68/v1.0.69 keeps working without migration
+- Agents read the same canonical values as before (`nano`…`enterprise`, `gates-only`…`step-by-step`)
+- The simplification is purely a UX layer over unchanged internals
+
+**What we did NOT change**:
+- 12-angle `/review` (killer feature, untouched)
+- brain.md, CODEBASE.md, HANDOFF.md hooks
+- Advisor pattern (Opus escalation)
+- Agent files (cache discipline preserved per v1.0.69)
+- `plugin.json` command list (all 10 commands still dispatch)
+- Compliance auto-detection, packs, archetypes
+
+Files: `README.md`, `commands/start.md`, `skills/great_cto/ARCHETYPES.md`, `skills/great_cto/TYPE_MAP.md`, `.claude-plugin/plugin.json`, `docs/plans/PLAN-pareto-simplification.md` (new).
+
+---
+
+## v1.0.69 — 2026-04-19
+
+### Changed — Cache discipline across SessionStart, /review, and file globs
+
+Five surgical changes that make our prompt structure cache-friendly for the KV-cache in Claude Code's transport. Zero semantic change — same data, same agents, same gates. Just stable-prefix-first / volatile-suffix-last.
+
+**1. SessionStart hook reorder** (`.claude-plugin/plugin.json`). `=== LOCAL ===` moved from the top (between PREFERENCES and PROJECT) to after CODEBASE and before HANDOFF. The stable prefix is now: `PREFERENCES → PROJECT → PHASE → BRAIN → CODEBASE`, followed by the volatile `LOCAL → HANDOFF → QA/CSO/PERF → STATUS`. A CTO edit to `.great_cto/local.md` no longer invalidates the cache for PROJECT/brain/codebase.
+
+**2. Phase cache implication documented** in `skills/great_cto/references/phases.md`. Switching phase mid-pipeline is now flagged as a cache-invalidation event. Switch between pipelines (after gate:ship closes), not during one.
+
+**3. Deterministic sort on every `ls *.md` / `find … *.md` that feeds context** — `commands/inbox.md`, `commands/digest.md`, `commands/release.md`, `commands/rfc.md`, `commands/oncall.md`, `commands/audit.md`, `commands/start.md`. Previously filesystem order leaked into prompts (different on macOS HFS+ vs APFS vs Linux ext4), producing different token prefixes across runs. Every list is now `| sort`-stable.
+
+**4. Runtime-immutability rule for `agents/*.md` and `commands/*.md`** added to the File Layout Invariant in `skills/great_cto/SKILL.md`. Task-specific state flows through `$ARGUMENTS`, `bd`, or sibling files — never through mutation of an agent document. Preserves the largest cache-hot blocks we ship.
+
+**5. `/review` cache-discipline note** (`commands/review.md`) after Setup, before Angle 1. The diff + archetype + design-system detection is the stable prefix across all 12 angles; re-reading or reordering it between angle evaluations forfeits prefix caching. Codified so future edits don't regress.
+
+**Why this is the right ROI:**
+- Zero-risk edits: every change is a one-line doc note, a one-argument `| sort`, or a single block reorder
+- Total ~30 LOC across 10 files; each item independently reversible
+- Biggest practical win on `/review` (12 angles × same diff) and on daily `/inbox` runs
+
+**Source of principles:** prompt-caching works on exact-token-prefix match; any edit in the middle invalidates everything after. Our job is just to keep volatile content at the tail.
+
+Files: `.claude-plugin/plugin.json`, `commands/{inbox,digest,release,rfc,oncall,audit,start,review}.md`, `skills/great_cto/SKILL.md`, `skills/great_cto/references/phases.md`, `docs/plans/PLAN-cache-discipline.md` (new).
+
+---
+
+## v1.0.68 — 2026-04-19
+
+### Added — `/triage`, DONE/BLOCKED contract, file-layout invariant
+
+**1. New command `/triage`** — cross-backlog reorganizer. Reads every open Beads task and analyzes along exactly four axes:
+- **Duplicates** — same scope under different wording; keeps the better-scoped copy
+- **Misplaced** — label/epic mismatch; verifies destination scope before moving
+- **Priority inversions** — foundational/unblocking items buried under user-facing ones (ranks by unblock count, not visibility)
+- **Cross-cutting gaps** — work referenced in ARCH docs or retros but not tracked
+
+Presents a structured diff first and never writes until the CTO says `approve`. Self-critique pass covers false duplicates, priority-by-visibility, orphaning, and missing-evidence gaps. Caps the plan at 30 actions per invocation; backlogs > 200 items require a label filter.
+
+**2. New skill `skills/done-blocked/SKILL.md`** — reporting contract. Terminal agent verdicts must be exactly one of:
+- `DONE: <summary>` + `artifact` + `next`
+- `BLOCKED: <obstacle>` + `tried` + `failed_because` + `need`
+
+Hard rule: no third state, silence ≠ DONE, `failed_because` must be concrete (not "unclear"), `need` must name a specific unblock. Wired into all 7 agents (tech-lead, senior-dev, qa-engineer, security-officer, devops, l3-support, project-auditor) as a short "Reporting Contract" section at the end of each agent doc. Verdicts continue writing to `.great_cto/verdicts/*.log` — now with a defined shape so the digest can compute DONE:BLOCKED ratio per agent.
+
+**3. File-layout invariant** added to `skills/great_cto/SKILL.md` (§ "File Layout Invariant") — distinguishes **agent-context** (curated markdown, committed, read on every turn) from **runtime-state** (side-effect logs, caches, gitignored). Decision heuristic: "would I want git blame on this line?" Yes → agent-context. No → runtime-state.
+
+**Why this is the right ROI:**
+- `/triage` replaces ad-hoc backlog grooming with a measurable, repeatable pattern; cold path so it doesn't cost tokens when unused
+- DONE/BLOCKED is one paragraph per agent but makes the handoff pipeline machine-readable
+- The invariant prevents future drift — new contributors won't accidentally commit `verdicts/*.log`
+
+Files: `commands/triage.md` (new), `skills/done-blocked/SKILL.md` (new), `skills/great_cto/SKILL.md` (§ added), all 7 agent docs (+ skill ref + reporting contract section), `.claude-plugin/plugin.json` (CMD loop + version).
+
+---
+
+## v1.0.67 — 2026-04-19
+
+### Changed — Coordinator + references split for `skills/great_cto/SKILL.md`
+
+`skills/great_cto/SKILL.md` stays short and scannable; cold-path sections move to `references/` and are pulled only when the CTO says the triggering phrase.
+
+**Extracted (cold path — loaded on demand):**
+- `references/phases.md` — phase table (planning / implementation / review / release), switching logic, semantics. Triggered when CTO says *"move to X phase"*.
+- `references/decision-log.md` — append logic, entry format, ADR-vs-Decision-Log routing. Triggered when CTO says *"log decision"* / *"we decided X"* / `decision:`.
+
+**Kept inline (hot path — needed every CTO message):**
+- Intent mapping, conventions, pipelines, CTO signals — all still in `SKILL.md`. Moving these to references would force a reference load on every turn, defeating the point.
+
+**Why this split:** the Phases section (~30 lines) and Decision Log section (~40 lines) together accounted for ~70 lines of SKILL.md that were almost never needed in any given session. Extracting them trims the coordinator to the decisions Claude makes on every message, without losing any content — the references are one `Read` away when the triggering phrase fires.
+
+Files: `skills/great_cto/SKILL.md` (sections replaced with link stubs), `skills/great_cto/references/phases.md` (new), `skills/great_cto/references/decision-log.md` (new).
+
+---
+
+## v1.0.66 — 2026-04-19
+
+### Added — Skeptical-triage skill + `/review --deep` flag
+
+The 3-round + arbiter pattern from v1.0.65 is now a reusable skill, available to any agent that needs to filter false positives before a gate decision.
+
+**New skill:** `skills/skeptical-triage/SKILL.md` — the canonical definition of the pattern (Round 1 Reachability → Round 2 Verify Defenses → Round 3 Missed Angles → Arbiter + crux). Hard rules, confidence scoring, severity demotion table, and JSONL log schema all live in one place.
+
+**New flag:** `/review --deep` — triage P0/P1 findings from **all** 12 angles (not just security/reliability 2/4/7/9). Use on high-stakes PRs or release candidates where the cost of a false-positive gate:code block is high. Default behavior unchanged.
+
+**Wired into:**
+- `commands/review.md` — now references the skill instead of duplicating rules. `--deep` expands triage scope.
+- `agents/security-officer.md` — references the skill for CSO audit findings.
+- `agents/qa-engineer.md` — can apply triage to flaky regression verdicts (real regression vs. test pollution).
+- `agents/tech-lead.md` — can apply triage to contested ADR trade-offs.
+
+**Log schema** (`.great_cto/triage-log.jsonl`, append-only):
+```json
+{"timestamp": "...", "caller": "review|security-officer|qa-engineer|tech-lead",
+ "finding_id": "...", "original_severity": "P0", "rounds": [...],
+ "arbiter": {"verdict": "VALID", "crux": "..."}, "confidence": 0.67,
+ "final_severity": "P0"}
+```
+
+Use this to measure whether triage earns its keep: `jq 'select(.arbiter.verdict=="INVALID")' .great_cto/triage-log.jsonl | wc -l` gives the FP filter rate. If <10% — triage is filtering noise that wasn't there (tighten original prompts). If >40% — original angle rules are too trigger-happy.
+
+**Why a skill instead of inline text:** four callers now need the same pattern. DRY. Single place to update rules, single place to measure effectiveness, single schema for the triage log.
+
+Files: `skills/skeptical-triage/SKILL.md` (new), `commands/review.md`, `agents/security-officer.md`, `agents/qa-engineer.md`, `agents/tech-lead.md`.
+
+---
+
+## v1.0.65 — 2026-04-19
+
+### Added — Skeptical triage for P0/P1 security findings
+
+`/review` now runs a 3-round self-challenge + arbiter pass over P0/P1 findings from Angles 2 (Security), 4 (SQL Safety), 7 (Data Privacy), 9 (Concurrency) before creating `gate:code`. `security-officer` applies the same pattern to CSO audit findings before blocking `gate:ship`.
+
+**How it works:**
+
+1. **Round 1 — Reachability:** can an attacker actually reach this code with untrusted input?
+2. **Round 2 — Verify defenses:** every cited defense must be grep-confirmed. Constant names are not verified bounds — resolved numeric values are.
+3. **Round 3 — Missed angles:** error paths, integer edges, race windows — what did prior rounds not consider?
+4. **Arbiter:** final VALID / INVALID + one-sentence `crux` (the single key fact the verdict turns on).
+
+**Confidence** = `valid_rounds / 3`. Findings:
+- `INVALID` → filtered from gate tally (recorded as `[FILTERED]` for audit)
+- `VALID` + confidence < 50% → demoted P0→P1, P1→P2
+- `VALID` + confidence ≥ 50% → keep severity
+
+**Hard rules:**
+- *Absence of defense → VALID, not UNCERTAIN* (don't hide behind "probably handled elsewhere")
+- *Code quality issue ≠ security vulnerability* (data races on diagnostic state, NULL checks on internal-only APIs → INVALID)
+- *Do not contradict your own conclusion in the same response*
+
+**Hard findings skip triage** (always P0): secrets in source/git history, confirmed CVEs with exploit in installed version.
+
+**Why:** single-pass 12-angle review produces ~30-50% false positives on P0/P1 security findings. Triage filters those before they turn into `gate:code` blocks that CTO has to manually override. Net cost: ~4 extra LLM turns per triaged finding; net savings: less CTO context-switching on noise.
+
+Output example:
+```
+🔥 100% [VVV→V] auth.c:142 — stack overflow in parse_header
+     CRUX: len comes from wire, memcpy into 64-byte buf, no bound check
+🤔  33% [IIV→I] session.c:88  — (FILTERED — arbiter INVALID)
+     CRUX: lookup_session only called from trusted internal path
+```
+
+Files: `commands/review.md`, `agents/security-officer.md`.
+
+---
+
+## v1.0.64 — 2026-04-18
+
+### Added — Traceability graph via bd labels
+
+Requirements → Implementation → Tests now form a queryable graph using Beads labels and deps — no new storage, no extra MCP servers.
+
+**How it's built:**
+- `tech-lead` creates one bd task per REQ-N after writing the Requirements Checklist, with labels `req` + `feature-<slug>`
+- `senior-dev` wires `bd dep IMPL REQ` when claiming the impl task, and lists linked REQs in the PR body (`## Implements REQs`)
+- `qa-engineer` creates a TEST task per COVERED REQ and wires `bd dep TEST IMPL`, closing immediately with the evidence reference
+
+**Query it:**
+```bash
+/review trace R-042              # show tree rooted at REQ R-042
+/review trace feature-checkout   # show full feature tree (REQ → IMPL → TEST, coverage)
+/review trace I-087              # upstream (what I-087 depends on) + downstream
+```
+
+Answers questions like _"if I change R-042, what breaks?"_ via `bd deps R-042 --reverse`.
+
+**Graceful degradation:** if `bd` is unavailable, the ARCH-*.md Requirements Checklist remains the fallback trace. The QA report's inline REQ → Evidence lines continue working.
+
+Our version piggybacks on existing `bd` primitives instead of building a separate store.
+
+Files: `agents/tech-lead.md`, `agents/senior-dev.md`, `agents/qa-engineer.md`, `commands/review.md`. Patch 3/3 of phases-traceability-decisions plan — completes the trio.
+
+---
+
+## v1.0.63 — 2026-04-18
+
+### Added — Phase-filtered SessionStart
+
+`.great_cto/PROJECT.md` now supports a `phase:` field that tells the SessionStart hook which context to load. Four phases — `planning`, `implementation` (default), `review`, `release` — each loads a different slice of context, saving tokens and reducing noise.
+
+**Loaded per phase:**
+
+| Phase | Loaded | Skipped |
+|---|---|---|
+| `planning` | PROJECT.md, brain.md, digest-latest | CODEBASE, HANDOFF, QA/CSO, perf |
+| `implementation` | PROJECT.md, brain.md, CODEBASE, HANDOFF | digest, QA/CSO, perf |
+| `review` | PROJECT.md, HANDOFF, latest QA, latest CSO | brain, CODEBASE, digest |
+| `release` | PROJECT.md, HANDOFF, perf-baseline tail | brain, CODEBASE, QA/CSO |
+
+**Switch in chat:** "move to review phase" / "planning phase" / "release phase" — orchestrator updates `phase:` in PROJECT.md. Pipeline rules (agents, gates) are unaffected — phase only controls hook context.
+
+**Backward compatible:** missing `phase:` field falls back to `implementation`. Tested with 4-phase fixture matrix.
+
+Files: `.claude-plugin/plugin.json`, `commands/start.md`, `skills/great_cto/SKILL.md`, `packages/cli/src/bootstrap.ts`. Patch 2/3 of phases-traceability-decisions plan.
+
+---
+
+## v1.0.62 — 2026-04-18
+
+### Added — Decision Log
+
+Non-architectural decisions (process changes, vendor picks, waivers, reversible calls) now have a first-class artifact: `docs/decisions/DECISION-LOG.md`. Complements existing ADR files in the same directory — ADRs stay for architecture trade-offs, the Decision Log captures everything else that used to be buried in Slack or `brain.md`.
+
+**Trigger:** Say "log decision", "we decided X", or prefix a message with "decision:" in chat. The orchestrator appends a sequential `D-NNNN` entry with context, decision, alternatives, reversibility, and owner.
+
+**Surfaced:** Last 3 entries shown in `/inbox` under a new `RECENT DECISIONS` section (only when the log has entries).
+
+**Seeded:** `/start` scaffolds an empty `DECISION-LOG.md` alongside `brain.md` seeding.
+
+Files: `commands/start.md`, `commands/inbox.md`, `skills/great_cto/SKILL.md`, `.claude-plugin/plugin.json`. ~35 LOC added.
+
+---
+
+## v1.0.61 — 2026-04-17
+
+### Added — `npx great-cto init` one-command installer
+
+Install friction reduced from 5 manual steps to 1 command. New `great-cto` npm package in `packages/cli/` (separate from plugin, published to npm).
+
+```bash
+npx great-cto init
+```
+
+**What it does:**
+1. Scans the current directory — `package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`, `Chart.yaml`, `*.tf`, `hardhat.config.*`, `platformio.ini`, and more
+2. Picks the matching archetype out of 11 (web-service, mobile-app, ai-system, commerce, web3, data-platform, infra, library, iot-embedded, regulated, greenfield)
+3. Clones the latest plugin tag into `~/.claude/plugins/cache/local/great_cto/<version>/`
+4. **Atomically** merges `enabledPlugins: { "great_cto@local": true }` into `~/.claude/settings.json` — timestamped backup, other keys preserved
+5. Writes `.great_cto/PROJECT.md` pre-filled with archetype, stack, suggested compliance frameworks (GDPR, PCI-DSS, EU AI Act, etc.)
+
+**Flags:**
+- `--dry-run` — show what would happen, no changes
+- `--force` — reinstall even if present
+- `--archetype NAME` — override auto-detected archetype
+- `--version-tag VER` — pin to a specific plugin version
+- `-y, --yes` — non-interactive
+
+**Detection coverage:** 50+ framework / library signals across TypeScript, Python, Go, Rust, Java/Kotlin, Swift, Solidity, and infrastructure files. Pure Node ≥22 with native TypeScript — zero runtime dependencies, MIT, lives under `packages/cli/`.
+
+**README reorg:** `npx great-cto init` is now the primary install path on the README front page. Manual git-clone install demoted to a collapsible `<details>` block for advanced users.
+
+---
+
+## v1.0.60 — 2026-04-17
+
+### Fixed — audit-driven corrections
+
+Post-release audit of v1.0.59 surfaced inconsistencies between README claims and actual hook/frontmatter behavior. This release fixes all P0 findings.
+
+**Fix #1 — `brain.md` now injected into subagents (was docs-only before)**
+The README has always promised: *"SessionStart injects brain.md into every agent."* Reality was that SubagentStart only cat'd `PROJECT.md | head -15`. Agents started via Task/Agent tool never received the compiled knowledge base.
+
+Updated SubagentStart hook now injects three blocks:
+- `PROJECT.md` (first 15 lines) — unchanged
+- `brain.md` Current Synthesis section (or first 30 lines) — **new**
+- `HANDOFF.md` (first 20 lines) — **new** — previous session state carries forward
+
+This closes the biggest behavioral gap in the plugin: *"agents that get smarter over time"* now actually works end-to-end.
+
+**Fix #2 — `qa-engineer` skills declaration**
+`agents/qa-engineer.md` calls `bd` (Beads CLI) 5 times in its body but was missing `skills: [beads]` in frontmatter — the only agent without it. Added. Prevents silent skill-load failures when qa-engineer runs standalone.
+
+**Fix #3 — `tech-lead` model pinned**
+`model: opus` (alias) → `model: claude-opus-4-7` (pinned). All other agents already pin API IDs. Now the convention is consistent across all 7 agents: pinned IDs, explicit at release time, guaranteed reproducibility.
+
+**Fix #4 — stray test artifact removed from repo root**
+Moved `QA-TEST-REPORT-stack-migration.md` (April 7 test run) from root to `docs/qa-reports/`.
+
+**Fix #5 — README links demo/ and docs/eval/**
+The `demo/` directory (saas-api, smart-contract, trading-bot) and `docs/eval/` (5 pipeline evals) existed in the repo but were never linked from README. Users couldn't find them. Added to Links section.
+
+---
+
+## v1.0.59 — 2026-04-16
+
+### Changed — Opus 4.7 advisor upgrade
+
+Anthropic released [Claude Opus 4.7](https://www.anthropic.com/news/claude-opus-4-7) on 2026-04-16 with +13% on SWE-bench and 3x more production tasks resolved on Rakuten-SWE-Bench vs Opus 4.6.
+
+**Advisor model bumped `claude-opus-4-6` → `claude-opus-4-7`** in:
+- `agents/senior-dev.md` — advisor for architectural trade-offs during TDD
+- `agents/security-officer.md` — advisor for compliance + threat modeling
+- `commands/review.md` — advisor for 12-angle code review (concurrency, LLM trust)
+
+**tech-lead** uses `model: opus` alias — auto-resolves to Opus 4.7 with no change needed.
+
+**Sonnet 4.6 + Haiku 4.5** unchanged (no new versions released).
+
+**README updated**: agent table, /review mention, "Built with" list.
+
+**No cost change** — Opus 4.7 is priced identically to 4.6 ($5 in / $25 out per MTok).
+
+---
+
+## v1.0.58 — 2026-04-16
+
+### Added — CODEBASE.md: zero-dependency codebase map for existing repos
+
+Inspired by graphify (knowledge graph tool), implemented with pure bash — no external dependencies.
+
+**Codebase map generation in `tech-lead`** (`agents/tech-lead.md`):
+- Activates only when `greenfield: false`
+- Generated once, cached at `.great_cto/CODEBASE.md` — subsequent agents read the cache
+- Generated with a single bash block, no pip/npm/cargo install required
+- **5 sections:**
+  1. **Entry points** — main.ts / app.py / cmd/main.go etc.
+  2. **Module structure** — file count per directory (community detection by density)
+  3. **God nodes** — most-imported modules across TS/JS/Python/Go (highest coupling = change carefully)
+  4. **Public API surface** — exported functions, classes, interfaces (TS)
+  5. **Routes / endpoints** — all HTTP handlers detected by pattern matching
+  6. **Data models** — schema.prisma, models.py, .sql files (first 50 lines)
+- ~30x token reduction for codebase orientation vs reading raw files
+
+**`senior-dev` reads CODEBASE.md** before implementation (`agents/senior-dev.md`):
+- Step 4 "Read context" now starts with `cat .great_cto/CODEBASE.md | head -40`
+- God nodes flagged: highest-coupling modules require more careful changes
+
+**SessionStart injects CODEBASE.md** (`.claude-plugin/plugin.json`):
+- `head -20 .great_cto/CODEBASE.md` shown alongside PROJECT.md + brain.md at session start
+- Every session starts with codebase orientation for existing repos
+
+**Why vs graphify**: graphify gives 71.5x reduction with AST + embeddings but requires `pip install`. This gives ~30x with zero dependencies — works immediately on any project.
+
+---
+
+## v1.0.57 — 2026-04-16
+
+### Added — Design System audit as Angle 12 in `/review`
+
+Based on analysis of `material-3-skill` article (Habr #1023084).
+
+**Angle 12 — Design System Reviewer** (`commands/review.md`):
+- Activates only for `mobile-app` and `web-service` archetypes. Skipped for all others.
+- Auto-detects design system from codebase: `material3`, `tailwind`, `swiftui`, `rn-custom`
+- **8 check categories** with matching token vocabulary per system:
+  - **Hardcoded colors** — hex/raw color values instead of design system tokens (breaks dark mode + theming)
+  - **Hardcoded typography** — literal font sizes instead of type scale tokens
+  - **Hardcoded spacing** — magic px/dp values instead of spacing scale
+  - **Wrong components** — raw primitives when a design system component exists
+  - **Accessibility (P0)** — missing `contentDescription`/`aria-label`, touch targets < 48dp/44pt, color-only information
+  - **Elevation/shadow** — raw shadow values instead of design system elevation tokens
+  - **Dark mode safety** — colors that break in dark mode
+  - **Motion** — hardcoded animation durations instead of motion tokens
+- P0 = accessibility violation blocking users, P1 = hardcoded value breaking theming/dark mode, P2 = inconsistency
+- Verdict log now includes `archetype=` field
+- Summary updated: 11 angles → 12 angles
+
+**Why**: Material Design 3 article showed that design-system compliance is automatable the same way SQL safety is — specific patterns, specific fixes, no subjectivity needed.
+
+---
+
+## v1.0.56 — 2026-04-15
+
+### Added — GBrain-inspired compiled truth system (brain.md)
+
+Based on analysis of GBrain Skillpack (garrytan/gbrain).
+
+**1. brain.md initialized on `/start`** (`commands/start.md`):
+- Every new project seeds `.great_cto/brain.md` with structured template
+- Sections: Current Synthesis (architecture patterns, failures, tech debt, team patterns) + Evidence Timeline
+- Created once; never overwritten — subsequent runs are no-ops
+
+**2. Brain-first lookup in `tech-lead`** (`agents/tech-lead.md`):
+- Step 1 reads `.great_cto/brain.md` before designing architecture
+- Extracts: patterns in use, known failures to avoid, tech debt context, team patterns
+- First-feature projects get "NO_BRAIN" signal and skip lookup
+
+**3. Brain write after ARCH doc** (`agents/tech-lead.md`):
+- Appends to Evidence Timeline after each architecture decision
+- Records: date, feature name, archetype, pipeline size, ADR count, key decisions
+- Evidence is append-only; synthesis is recomputed by /digest dream cycle
+
+**4. Dream Cycle in `/digest`** (`commands/digest.md`):
+- Creates brain.md if missing (digest-only projects without /start)
+- Appends to Evidence Timeline: velocity, postmortem count, security blocks, retro signals, P2 count
+- Updates Current Synthesis sections when signals cross thresholds
+- Uses advisor (Sonnet 4.6, max 1) for prose synthesis
+
+**5. SessionStart injects brain.md** (`.claude-plugin/plugin.json`):
+- `head -30 .great_cto/brain.md` injected into every session after PROJECT.md
+- Agents start each session aware of accumulated project knowledge
+
+**Why**: Each session was starting cold — no memory of past architectural decisions, known failures, or team patterns. Agents repeated past mistakes. Brain-first lookup + dream cycle creates a living knowledge base that improves with each feature shipped.
+
+---
+
+## v1.0.55 — 2026-04-15
+
+### Added — Pipeline Triad improvements
+
+**1. Discovery guard in `/start`** (`commands/start.md`):
+- Detects vague/research/MVP-without-requirements descriptions before type detection
+- Signals: "explore", "figure out", "not sure", "validate idea", "PoC", "experiment", etc.
+- Shows warning with alternatives: discuss first / /audit / "I know what to build"
+- Does NOT trigger for "prototype JWT auth" or "MVP for SaaS dashboard" (clear deliverables)
+
+**2. Cost estimate in `tech-lead` Checkpoint A** (`agents/tech-lead.md`):
+- Shows token/cost/time estimate before CTO approves architecture
+- Table: nano ~$0.10 / small ~$1 / medium ~$4-6 / large ~$10-14 / enterprise ~$20-30
+- Adds ~20% for MANDATORY security gate archetypes
+- Notes advisor (Opus) call surcharge when applicable
+
+**3. Eval Harness** (`docs/eval/`):
+- 5 canonical test cases covering key pipeline behaviors
+- EVAL-001: CRUD endpoint (baseline, web-service small)
+- EVAL-002: JWT auth service (commerce mandatory security gate)
+- EVAL-003: Discovery guard triggers correctly (positive + negative cases)
+- EVAL-004: Hotfix nano — senior-dev only, no ARCH doc
+- EVAL-005: Security officer blocks SQL injection, approves after fix
+
+**4. `/audit eval` action** (`commands/audit.md`):
+- `/audit eval` runs all EVAL-*.md assertions
+- Reports PASS / FAIL / WARN per case
+- Shows score: N/5 passing
+- FAIL cases show specific missing artifact + remediation hint
+
+**Why**: Pipeline Triad article identified that pipelines fail when fed discovery tasks.
+Cost visibility before gate:arch prevents surprise spend. Eval harness catches
+agent regressions after prompt changes.
+
+---
+
+## v1.0.54 — 2026-04-15
+
+### Added — Advisor Tool, Memory Tool, Automatic Caching
+
+Based on analysis of Anthropic API changelog (April 9 + February 19, 2026).
+
+**#1 Advisor Tool (`advisor_20260301`) — public beta since April 9, 2026:**
+
+Executor model calls advisor mid-generation when uncertain. Beta header: `advisor-tool-2026-03-01`.
+
+| Agent / Command | Executor | Advisor | max_uses | When advisor activates |
+|----------------|----------|---------|---------|----------------------|
+| `qa-engineer` | haiku | sonnet | 2 | edge case test coverage decisions |
+| `security-officer` | sonnet | opus | 2 | compliance edge cases (regulated/web3) |
+| `senior-dev` | sonnet | opus | 1 | architectural trade-offs not in ARCH doc |
+| `devops` | haiku | sonnet | 1 | deployment strategy questions |
+| `/review` | sonnet | opus | 2 | subtle concurrency / LLM trust issues |
+| `/digest` | haiku | sonnet | 1 | RECOMMENDATION quality |
+
+`tech-lead` already uses Opus — no advisor needed.
+
+**#2 Memory Tool (`memory_20250929`) — GA since February 17, 2026:**
+
+Intra-session memory for architectural context propagation:
+- `tech-lead` writes key decisions to memory after ARCH doc (pattern, stack, constraints, rejected alternatives)
+- `senior-dev` reads tech-lead memory before implementation — no need to re-derive from full ARCH doc
+- `qa-engineer` and `security-officer` get memory access for cross-agent context
+
+**#3 Automatic Caching — GA since February 19, 2026:**
+
+Reordered SessionStart hook output: stable content first → higher cache hit rate.
+- Was: PREFERENCES → PROJECT → LOCAL → HANDOFF → STATUS
+- Now: PREFERENCES → LOCAL → PROJECT → HANDOFF → STATUS
+- LOCAL (rarely changes) now before PROJECT (changes per feature)
+
+**#4 Haiku-3 deprecation check — CLEAN:**
+
+No explicit `claude-3-haiku` IDs found in agents or commands. All aliases (`haiku`, `sonnet`, `opus`) resolve to 4.5/4.6 automatically. No action needed.
+
+---
+
+## v1.0.53 — 2026-04-14
+
+### Added — `/release` command for frontend and mobile releases
+
+**`commands/release.md`** — 4 actions:
+- `notes [version]` — writes App Store (4000 chars), Google Play (500 chars), in-app modal text. Filters out internal/infra commits automatically.
+- `changelog [from..to]` — translates git commits → user-facing `CHANGELOG-USER.md` (separate from technical CHANGELOG.md). Groups related commits, omits internal changes.
+- `docs` — flags stale help center articles, landing page sections, and guides based on new features. Does not auto-edit — flags only.
+- `sync` — checks version consistency across package.json, build.gradle, Info.plist, PROJECT.md + verifies all release artifacts exist.
+
+Archetype-aware: proceeds for `mobile-app`, `web-service`, `commerce`, `ai-system`. Warns for `library`, `infra`, `data-platform`.
+
+**Why**: devops agent writes technical CHANGELOG.md. Nobody writes the App Store notes, user changelog, or checks which help articles are stale. This does that.
+
+---
+
+## v1.0.52 — 2026-04-14
+
+### Changed — Reduced from 13 commands to 5
+
+**Deleted** (5 commands): `/status`, `/capture`, `/revisit`, `/board-report`, `/update`
+- `/status` duplicated `/inbox` (>60% overlap)
+- `/capture`, `/revisit` — rarely used, replaceable via chat
+- `/board-report` → merged into `/digest` as flag: `/digest Q2 board`
+- `/update` → SessionStart hook already handles file sync
+
+**Demoted to extended** (still callable, not advertised): `/digest`, `/ownership`, `/oncall`
+
+**Modified**:
+- `commands/digest.md` — added `board` flag: `/digest Q2 board` generates board-report and saves to `docs/board-reports/`
+- `commands/rfc.md` — added team-size guard: shows warning if team-size < 10
+- `commands/start.md` — confirmation hint updated (no more /ownership and /oncall references)
+- `plugin.json` — CMD loop reduced from 13 to 8 commands; version 1.0.51 → 1.0.52
+- `README.md` — 5-command structure with extended section
+
+**Why**: Solo founders and small teams shouldn't need to learn 13 commands. The 5 primary commands cover 95% of daily use. Everything else is either automatic or accessible when you need it.
+
+---
+
+## v1.0.51 — 2026-04-14
+
+### Changed — Focused positioning: solo founders and teams up to 50 engineers
+
+**README**:
+- Tagline: "Replace your engineering bottleneck" → "The engineering process for solo founders and teams up to 50 engineers"
+- Why this matters: removed corporate tone → concrete pain of solo/small team
+- Use Cases table: "20-200 engineers" → "10-50 engineers", added solo founder row
+- Team commands section: "20-200" → "10-50"
+- Built with: "200-person" → "50-engineer"
+
+**plugin.json description**: updated to match new positioning
+- Was: "Automated SDLC framework for CTOs. One account = one project..."
+- Now: "Engineering process for solo founders and teams up to 50 engineers. Agents do architecture, code review, QA, and security. You make two decisions per feature."
+
+**commands/start.md**: confirmation message shows team setup hint when team-size ≥ 5
+
+**Why**: 200-person teams have Jira, Engineering Managers, platform teams — great_cto can't compete there. The real value is 5-50 engineers who need process without overhead.
+
+---
+
+## v1.0.50 — 2026-04-14
+
+### Fixed — 5 integration gaps
+
+**`/digest` + `/inbox` + `/status`** → Team section:
+- Shows on-call person, RFC overdue count, ownership gaps
+- Hidden when team commands not configured (no noise for solo projects)
+- RECOMMENDATION examples extended with RFC/oncall/ownership signals
+
+**`l3-support`** → reads OWNERSHIP.md for P0 escalation:
+- Finds affected service owner from OWNERSHIP.md before escalating
+- Gets current on-call from oncall-schedule.md (fallback: PROJECT.md)
+- Escalation path: on-call → team lead (from OWNERSHIP) → CTO
+- Added `approval-level` read: `auto` → skip postmortem
+
+**`/board-report`** → reuses `digest-latest.md` if <7 days old:
+- Extracts COMMITS, DEPLOY_COUNT, OPEN_P0 from existing digest
+- Falls back to raw data collection only if digest is stale
+
+**`/start`** → team-size aware initialization:
+- `team-size:` field added to PROJECT.md template
+- If team-size ≥ 5 and no OWNERSHIP.md exists → auto-scaffolds ownership table from detected service roots
+- Tells CTO: "OWNERSHIP.md scaffolded → fill in team details"
+
+**README demo** → two scenarios (solo + growing team):
+- Solo: feature pipeline with 11-angle review + two approvals
+- Team 20+: /rfc cross-team decision → /oncall who → /board-report
+
+---
+
+
+## v1.0.49 — 2026-04-14
+
+### Added — 4 commands for teams of 20-200
+
+**`/ownership`** — service ownership matrix:
+- `/ownership map` — auto-detect from git history + package.json/go.mod/Cargo.toml; proposes team→service→TL table
+- `/ownership show` — current ownership table
+- `/ownership set <path> <team>` — update a single entry
+- `/ownership verify` — find unowned paths and stale owners (no commits in 90+ days)
+- Generates CODEOWNERS from the table
+- Read by: oncall (who is on-call per service), security-officer (who to escalate P0 to), rfc (affected teams)
+
+**`/oncall`** — on-call rotations:
+- `/oncall who` — who is on-call now, time remaining, contacts
+- `/oncall schedule <team> <members>` — configure rotation (weekly/biweekly), generates 8-week schedule
+- `/oncall handoff` — auto-generated shift handoff note: incidents during shift, open P0/P1, fragile areas, performance trend
+- `/oncall escalate <service>` — escalation path for a specific service
+- Reads OWNERSHIP.md → knows team and Slack channel per service
+
+**`/rfc`** — RFC process for cross-team decisions:
+- `/rfc new "title"` — creates RFC-NNN with template (problem, proposal, alternatives, impact, open questions)
+- `/rfc list` — all open RFCs with deadlines; ⚠ flag for overdue
+- `/rfc show <id>` — full RFC text
+- `/rfc comment <id> "text"` — add a comment to an RFC
+- `/rfc close <id> accept|reject "reason"` — close RFC; on accept → auto-creates ADR
+- Statuses: DRAFT → REVIEW → ACCEPTED / REJECTED / WITHDRAWN
+- Review deadline: 5 business days from creation
+
+**`/board-report`** — quarterly report for CEO/investors:
+- Reads: git history, DORA metrics, audit reports, verdict logs, open gates, RFC activity, compliance status
+- Translates technical metrics into business language (no jargon)
+- Sections: Executive Summary (3 bullets), Delivery, Reliability, Security & Compliance, Team, Risks (table), Investments, Next Quarter Focus
+- Arguments: `/board-report` (current quarter) / `/board-report Q1` / `/board-report 30` (last N days)
+- Saves to `docs/board-reports/BOARD-<YEAR>-<QN>.md`
+
+### Impact
+- 13 commands (was 9) — full coverage for teams of 20-200
+- New artifacts: `docs/rfcs/`, `docs/board-reports/`, `docs/handoffs/`, `.great_cto/OWNERSHIP.md`, `.great_cto/oncall-schedule.md`, `CODEOWNERS`
+- 0 changes to existing agents — integration via shared file reads
+
+---
+
+## v1.0.48 — 2026-04-14
+
+### Added — Weekly automation + cleaner session status
+
+**Weekly scheduled tasks** (set up automatically by `/start`):
+- `/digest` — every Monday at 9:00 (DORA metrics for the week → `.great_cto/digest-latest.md`)
+- `/audit` — every Sunday at 23:00 (dependency scan + secrets scan → `docs/audits/AUDIT-AUTO-*.md`)
+- Created via `mcp__scheduled-tasks__create_scheduled_task` (Claude Code native scheduling)
+- If tool unavailable — `/start` skips silently, outputs a reminder
+
+**SessionStart: `=== STATUS ===` block** — at the end of each session start:
+- `branch | gates=N | tasks=N | last_agent=<name>`
+- If open gates exist → `→ run /inbox to see pending decisions`
+- Top-5 lines of the latest `/digest` (if `.great_cto/digest-latest.md` exists)
+
+**README** — updated for v1.0.48:
+- Commands: `/review` now 11-angle (was 3)
+- New "Automatic" section — what happens without commands
+- "Approval Levels" section — auto/gates-only/strict/expert/step-by-step table
+- Proof Loop, User Spec → Tech Spec, HANDOFF.md — mentioned in agents section
+
+---
+
+## v1.0.47 — 2026-04-14
+
+### Changed — Auto-handoff replaces /handoff command
+
+**Auto-handoff via PreCompact hook** — HANDOFF.md now written automatically:
+- `PreCompact` hook extended: before context compaction, writes `.great_cto/HANDOFF.md` with a state snapshot (git, open gates, open tasks, last verdict, latest docs)
+- `SessionStart` hook extended: on new session start, reads `HANDOFF.md` and shows it to CTO in `=== HANDOFF ===` block
+- `/handoff` command removed — no longer needed, everything happens automatically
+
+**Before**: CTO had to manually run `/handoff` before closing a session
+**After**: PreCompact fires automatically on context compaction → next session sees the state without any CTO action
+
+---
+
+## v1.0.46 — 2026-04-13
+
+### Added — 5 features from community research
+
+**Proof Loop** — agents verify their own output before claiming done:
+- `senior-dev`: re-checks every REQ-* item from ARCH doc before closing task; re-runs tests; max 2 self-fix attempts before escalating
+- `qa-engineer`: new Step 3d verifies all QA plan items were actually executed before writing PASS
+- `tech-lead`: new Step 5b checks 9 ARCH doc quality rules before creating gate:arch
+- `security-officer`: new Step 5c verifies all mandatory security checks were run before verdict
+
+**Session Handoff** (`/handoff` command) — structured context transfer between sessions:
+- Captures: pipeline stage, git state, open gates, open tasks, latest docs, recent ADRs
+- Writes `.great_cto/HANDOFF.md` with "resume from here" instructions
+- Accepts optional CTO note: `/handoff "waiting for legal approval on PCI scope"`
+- Next session starts: read HANDOFF.md → `/inbox` → continue
+
+**Validator Auto-retry 3x** — qa-engineer and security-officer retry on soft failures:
+- Soft failures (network timeout, missing optional tool, flaky test): retry up to 3x with 2-3s delay
+- Hard failures (logic assertion, compile error, confirmed CVE): write FAIL immediately
+- Flaky test protocol: PASS with P2 note if ≥1/3 runs pass; note `Reliability: N/3 runs` in report
+- Security scanner unavailable after 3 attempts: P2 note "manual review required" (not a blocker)
+
+**User Spec → Tech Spec separation** (tech-lead, `expert`/`step-by-step` only):
+- Produces `docs/specs/USER-SPEC-<feature>.md` first (business language: what, who, why, success criteria)
+- CTO approves USER-SPEC before ARCH doc is written
+- ARCH doc links back to USER-SPEC; Requirements Checklist maps each USC to a REQ
+- Skipped for `auto`/`gates-only`/`strict` (no overhead for standard workflow)
+
+**11-angle code review** (`/review`):
+- Was: 3 angles (performance, security, readability)
+- Now: 11 angles — adds SQL safety, LLM trust boundaries (ai-system only), conditional side effects, data privacy, error handling, concurrency, dependency freshness, API contracts
+- Angle 5 (LLM trust) auto-skips if `archetype ≠ ai-system`
+- Summary now shows all 11 reviewers with individual P0/P1/P2 counts
+
+### Fixed
+- `plugin.json` SessionStart: removed stale `PIPELINES.md` and `notify.sh` copy (both deleted in v1.0.45)
+- `plugin.json` SessionStart: added `handoff` to command copy list
+- `plugin.json` PermissionDenied hook: removed Telegram call, now logs to `.great_cto/permission-denied.log`
+- `/review` setup: reads `approval-level` (was `review_mode`, merged in v1.0.45)
+
+---
+
+## v1.0.45 — 2026-04-14
+
+### Changed — Pure reduction: -1000 lines, 3 knobs → 1
+
+**Deleted PIPELINES.md** (was 892 lines):
+- Type Detection Keywords → moved to TYPE_MAP.md
+- QA/Deploy/Threshold/Gate tables → already in ARCHETYPES.md (redundant since v1.0.37)
+- Pipeline Size Selector → replaced by `approval-level`
+- Special Rules + Conflict Matrix → simplified to archetype-based in SKILL.md (~100→15 lines)
+- All agent/command `PIPELINES_MD` references → replaced with `ARCHETYPES_MD`
+
+**Merged 3 knobs into 1 `approval-level`** (was: `project_size` + `interaction_mode` + `review_mode`):
+- `auto` — 0 gates, 0 checkpoints (hotfix)
+- `gates-only` — gate:arch + gate:ship (default)
+- `strict` — + gate:code (code review required)
+- `expert` — all gates + 2 checkpoints per agent (deep review)
+- `step-by-step` — every substep (learning)
+- Default changed from `verbose` (35 approvals/day) to `gates-only` (2 approvals/day)
+
+**Removed unused PROJECT.md fields**:
+- `availability-sla` — never read by any agent
+- `architecture-framework` — niche, CTO writes in ARCH doc if needed
+- `findings-refs` — orphaned by v1.0.44 `/audit --refresh` removal
+- `audit-sha` → moved to `.great_cto/audit-state.json` (internal, not user-facing)
+
+**Honest README**:
+- "automates SDLC" → "AI-assisted SDLC orchestration. Agents diagnose, plan, and review. You decide and deploy."
+- Removed PIPELINES.md from Links section
+
+### Impact
+- ~1000 lines deleted (30% of codebase)
+- 1 PROJECT.md field to understand (`approval-level`) instead of 3 (`project_size` + `interaction_mode` + `review_mode`)
+- Adding a new type: still 1 row in TYPE_MAP.md — nothing else
+- Source of truth: ARCHETYPES.md + TYPE_MAP.md + domain packs. No legacy shadow document.
+
+---
+
+## v1.0.44 — 2026-04-13
+
+### Removed — `/audit --refresh` mode
+
+**Why**: v1.0.43 parallelization + CVE cache made full `/audit` fast (~1-1.5min). Separate refresh mode duplicates logic with marginal speedup. Simpler to just re-run `/audit`.
+
+- Removed `--refresh` flag from `/audit` command
+- Removed Mode Detection section from `project-auditor.md`
+- Removed Phase 10 (Refresh Mode) from `project-auditor.md` (~80 lines)
+- `security-officer` step 1c stale audit message now suggests `/audit` (not `--refresh`)
+
+### Preserved
+- `audit-sha:` field in PROJECT.md — still written by `/audit`, still read by security-officer for stale detection
+- `findings-refs:` list — still useful for traceability (bd:ID → file:line)
+- CVE cache 24h — makes re-running `/audit` nearly as fast as refresh was
+
+### Impact
+- Fewer commands to learn (one audit command, not two modes)
+- ~80 lines less code to maintain in project-auditor.md
+- Same speed in practice (CVE cache makes 2nd audit fast anyway)
+
+---
+
+## v1.0.43 — 2026-04-13
+
+### Changed — Performance (parallelization + caching + lazy loading)
+
+**Parallel execution:**
+- `project-auditor`: Phases 1-4 (stack, CVE, age, architecture debt) now run in parallel via 4 Agent tool sub-agents — **~3-4x faster `/audit`**
+- `security-officer`: compliance checklists parallelized when ≥2 values — one sub-agent per checklist (e.g. `[iso27001, sox, pci-dss]` runs 3 checklists in parallel) — **~2-3x faster for regulated projects**
+- `qa-engineer`: test execution split into Group A (parallel — unit, perf, security, rollback) + Group B (sequential — integration, E2E with DB) — **~1.5-2x faster for medium+ projects**
+
+**Lazy pack loading:**
+- `qa-engineer` + `security-officer`: packs loaded only when a specific `qa-extras` or `compliance` value needs them — not eagerly
+- No compliance values → skip pack load entirely (saves ~5-10k tokens per session)
+
+**Caching** (new `.great_cto/cache/` directory, gitignored):
+- CVE scan results cached for 24h (invalidated when `package-lock.json`, `Cargo.lock`, `poetry.lock`, `go.sum` change)
+- Stack detection cached for 24h (invalidated when manifest files change)
+- `/digest` output cached for 1h (digest-based on stable past data)
+
+**Skip redundant checks:**
+- `/audit --refresh`: already skips Phases 1-6 (no full scan), only runs Phase 10 refresh
+- `/audit` type drift check: skipped if PROJECT.md < 7 days old (`SKIP_DRIFT=true`)
+
+**Session init:**
+- SKILL.md: auto-creates `.great_cto/cache/` + adds to `.gitignore` on first session
+
+### Impact
+- `/audit` on medium project: ~5min → ~1-1.5min
+- `/audit --refresh`: already fast, unchanged
+- `/digest` second run in hour: instant (cache hit)
+- Security audit with 3 compliance frameworks: ~5min → ~2min
+- QA for medium project: ~3min → ~1.5min
+
+### Safety
+- Parallelization only applied to read-only phases / independent tasks
+- Cache invalidation automatic on manifest/lock file changes
+- Fallback to sequential if Agent tool unavailable (no regression)
+
+---
+
+## v1.0.42 — 2026-04-13
+
+### Added — Interactive checkpoints per agent (human-in-the-loop)
+
+**Problem (from user feedback)**: agents run autonomously, CTO sees result only in `/inbox`. If agent errs on step 3, 4-5 steps are wasted before catch. No way to intervene mid-stream.
+
+**Solution**: each agent pauses at **2 checkpoints** — plan (before action) + result (after action). CTO approves or comments. Comments → agent revises → re-checkpoint.
+
+- **New field in PROJECT.md**: `interaction_mode: quiet | normal | verbose | step-by-step`
+  - `quiet` = 0 checkpoints (autonomous, nano/hotfix)
+  - `normal` = original gate:arch + gate:ship only
+  - `verbose` = **default** — 2 per agent (plan + result)
+  - `step-by-step` = checkpoint on every major substep
+
+- **SKILL.md § Interaction Mode**: standard checkpoint pattern. Three options at each checkpoint: `[enter] approve`, `<text> comment to revise`, `cancel`. Comments trigger revision loop (max 3 rounds per checkpoint).
+
+- **Agent checkpoints** added:
+  - `tech-lead`: (A) before ARCH write — show options + trade-offs + cost; (B) after ARCH + ADR + Beads tasks — show summary
+  - `senior-dev`: (A) before implementation — show plan + TDD cases; (B) after PR — show diff summary
+  - `qa-engineer`: (A) before tests — show QA plan + tools + thresholds; (B) after report — show PASS/FAIL + bugs
+  - `security-officer`: (A) before audit — show compliance scope + targets; (B) after CSO report — show APPROVED/BLOCKED + findings
+  - `devops`: (A) before staging — show deploy plan; (B) before prod — show staging results; (C) after prod — show canary metrics
+
+- **Safety mandates**: devops B+C checkpoints + security-officer (for MANDATORY archetypes) are always shown regardless of mode. Production deploys always require human approval.
+
+### Impact
+- Errors caught early: tech-lead wrong approach → caught at Checkpoint A, not after 5 agent runs
+- Natural revision loop: "use sessions instead" → tech-lead re-plans → re-checkpoint
+- Trade-off: +10 approvals/day in verbose mode. Switch to `normal` for routine work.
+
+---
+
+## v1.0.41 — 2026-04-13
+
+### Added — `/audit --refresh` mode + stale findings detection
+
+**Problem (from real user feedback)**: `/audit` finds P0 bugs → user commits fixes → PROJECT.md still shows `P0:2`. Next `/start` for mandatory archetype → security-officer blocks pipeline on stale findings.
+
+**Solution**: audit writes commit SHA + Beads task refs per finding. `/audit --refresh` re-verifies only known findings against current code. Security-officer detects staleness and suggests refresh.
+
+- **`project-auditor`**: Phase 7 now writes `audit-sha: <HEAD>` and `findings-refs:` list in PROJECT.md. Each entry links Beads task to file:line.
+- **`project-auditor`**: Phase 10 added — Refresh Mode. Parses `findings-refs:`, checks each against current code per finding type (secrets, CVE, unpinned-dep, SQL-injection, god-file, missing-test). Closes Beads tasks verified fixed. Updates PROJECT.md counters.
+- **`/audit --refresh`**: new mode flag. Skips full scan when no new audit needed. Falls back to full audit if no prior `audit-sha:` in PROJECT.md.
+- **`security-officer`**: step 1c checks if PROJECT.md `audit-sha` ≠ current HEAD AND P0 > 0 → notes in CSO report + suggests `/audit --refresh`. Does NOT auto-close findings.
+
+### Impact
+- After commits that fix audit findings: `/audit --refresh` takes seconds (not minutes), closes fixed findings, updates counters
+- Pipeline no longer blocks on stale findings once refresh run
+- Audit gets better with use: each full audit → commit fixes → refresh → lean finding list
+
+### Safety
+- Refresh never auto-closes findings in Beads — only after pattern verification
+- >30 commits since last audit OR lock-file changes → refresh suggests full re-audit instead
+
+---
+
+## v1.0.40 — 2026-04-10
+
+### Fixed — 16 audit findings (2 P0, 4 P1, 10 P2)
+
+**P0 (broken):**
+- README: pack entry counts corrected (ai-pack: 16→20, web3-pack: 12→17, data-pack: 11→14)
+- `/audit`: "57 types" → "73 types in TYPE_MAP.md"
+
+**P1 (inconsistencies):**
+- README: added `RELEASE-*.md` to artifact list
+- ARCHETYPES.md: renamed "Compliance Parameter Values" → "Parameter Values" (togaf is architecture, not compliance)
+- TYPE_MAP.md: split `Default params` and `Overrides` into separate columns (security-gate, min-size no longer mixed with compliance)
+- ARCHETYPES.md: added single source of truth for MANDATORY security gate archetypes (`ai-system`, `commerce`, `web3`, `iot-embedded`, `regulated`)
+
+**P2 (improvements):**
+- qa-engineer + security-officer: pack loading path fallback (`find . .great_cto` if `~/.claude` path fails)
+- `/start`: nano + MANDATORY type conflict → auto-upgrade to `medium` with warning
+- `/start`: nano size definition now includes `<500 LOC` upper bound
+- tech-lead: enforces `min-size:` from TYPE_MAP.md Overrides column; warns if upgrading
+- `/start`: documented pack auto-detection for all 10 archetypes (5 get packs, 5 default to none)
+- `/start`: override loop guard — max 2 rounds, then asks for explicit archetype
+- README: added "Packs auto-load by archetype. Override in PROJECT.md" note
+- SKILL.md: added `/digest`, `/review`, `/status` to intent mapping table
+- SKILL.md: improved Beads unavailable message with fallback explanation + install link
+- `/start`: consolidated file reading pattern (PIPELINES→keywords, TYPE_MAP→archetype, ARCHETYPES→rules)
+
+---
+
+## v1.0.39 — 2026-04-10
+
+### Changed — Agent Simplification (Phase 3 of 3)
+
+Replaced type-specific conditionals in agents with archetype-based logic:
+
+- **`security-officer`**: Step 5 (compliance) rewritten — was 50+ lines of inline checklists (ISO 27001 Annex A, SOX ITGC, SOC2, HIPAA, GDPR, type-specific examples). Now: iterate `compliance:` params → delegate to domain pack checklists. Universal PII checks retained inline. ~50 lines removed.
+- **`qa-engineer`**: Step 1 rewritten — was type-merge algorithm reading PIPELINES.md per-type QA strategies. Now: read ARCHETYPES.md for base QA strategy → extend with pack-defined `qa-extras` → apply `compliance:` QA checks. Threshold override from `performance-sla:` param.
+- **`senior-dev`**: Step 5 (TDD) simplified — was 5 type-specific overrides (infra-iac, db-migration, data-visualization, llm-ops, data-warehouse). Now: 3 archetype-based branches (infra → Terratest, data-platform → dbt, ai-system → evals-first, all others → standard TDD).
+- **`devops`**: Step 5 (staging deploy) simplified — was 4 type-category branches. Now: 8 archetype-based branches matching ARCHETYPES.md deploy method table.
+
+### Impact — Before vs After
+
+| Metric | Before (v1.0.36) | After (v1.0.39) |
+|--------|------------------|------------------|
+| PIPELINES.md | 800+ lines, sole source of truth | Legacy reference — ARCHETYPES.md (120 lines) is primary |
+| security-officer compliance | 50+ lines inline, type-specific | 15 lines: loop over params → delegate to pack |
+| qa-engineer strategy | Type-merge algorithm + PIPELINES.md lookup | Archetype base + pack extras |
+| senior-dev TDD | 5 type-specific if-else | 3 archetype branches |
+| devops deploy | 4 type-category branches | 8 archetype branches (matches ARCHETYPES.md) |
+| Adding a new type | Edit 7 tables in PIPELINES.md + touch 4 agents | Add 1 row to TYPE_MAP.md (archetype + params) |
+
+---
+
+## v1.0.38 — 2026-04-10
+
+### Added — Domain Packs (Phase 2 of 3)
+
+4 domain packs extract type-specific depth from PIPELINES.md into standalone files:
+
+- **`packs/ai-pack.md`** — 16 qa-extras definitions: `wer`, `ttfb`, `barge-in`, `dtmf-fallback`, `concurrent-calls`, `retrieval-quality`, `prompt-regression`, `cost-cap`, `per-modality-accuracy`, `hallucination`, `cross-modal`, `tool-injection`, `schema-enforcement`, `bias-audit`, `model-card`, `drift-monitoring`, `data-poisoning`. Compliance extras: `eu-ai-act`, `tcpa`, `gdpr-biometric`.
+- **`packs/web3-pack.md`** — 12 qa-extras: `formal-verification`, `flash-loan-sim`, `economic-attack-sim`, `kill-switch`, `slither-audit`, `echidna-fuzz`, `reentrancy-guard`, `gas-optimization`, `key-ceremony`, `sanctions-screening`, `kyc-aml`, `order-matching`, `circuit-breaker`. Compliance: `fatf`, `ccss`, `ofac`, `kyc-aml-regs`.
+- **`packs/enterprise-pack.md`** — 6 deep compliance checklists: `21cfr11` (IQ/OQ/PQ + ALCOA+ + e-signatures), `nis2` (10 Article 21 measures + Article 23 reporting), `dora` (ICT risk + third-party register + TLPT), `tisax` (VDA ISA + AL1/2/3 + OEM-specific), `iso27001` (93 Annex A controls + SoA + risk assessment), `sox` (ITGC: change management, logical access, computer ops, SoD).
+- **`packs/data-pack.md`** — 11 qa-extras: `data-lineage`, `pii-classification`, `schema-diff`, `point-in-time`, `online-offline-consistency`, `freshness-sla`, `snapshot-regression`, `backtest-validation`, `rollback-dry-run`, `dbt-test`, `contract-validation`. Compliance: `data-lineage-compliance`, `retention-policy`, `data-residency`.
+
+**Pack loading**:
+- `/start` auto-detects packs from archetype: `ai-system` → `[ai-pack]`, `web3` → `[web3-pack]`, `regulated` → `[enterprise-pack]`, `data-platform` → `[data-pack]`
+- `qa-engineer` reads pack files at runtime for qa-extras definitions (what/tool/threshold/edge inputs)
+- `security-officer` reads pack files for deep compliance checklists (replaces inline checklists when pack is more detailed)
+
+### Impact
+- Each pack is self-contained: can be understood without reading PIPELINES.md
+- Packs are additive: CTO adds `packs: [ai-pack, enterprise-pack]` for an AI system in a regulated industry
+- Next: v1.0.39 = agent simplification (remove type-specific conditionals from agent files)
+
+---
+
+## v1.0.37 — 2026-04-10
+
+### Added — Archetype-based pipeline architecture (Phase 1 of 3)
+
+**Problem**: 75 specific types × 5 sizes × compliance frameworks = combinatorial explosion. PIPELINES.md at 800+ lines, each agent full of type-specific conditionals. 80% of users use ~10 types.
+
+**Solution**: 10 archetypes + parameter-driven customization. Specific types become aliases.
+
+- **`ARCHETYPES.md`** (NEW) — 10 archetype definitions with base rules:
+  - `web-service`, `mobile-app`, `ai-system`, `data-platform`, `infra`, `library`, `commerce`, `web3`, `iot-embedded`, `regulated`
+  - Each archetype: QA strategy, deploy method, thresholds, security gate default, gates-by-size matrix
+  - Compliance driven by `compliance: [values]` parameter (13 values: gdpr, pci-dss, sox, iso27001, dora, nis2, 21cfr11, tisax, etc.)
+  - `qa-extras: [values]` extends base QA (from domain packs in v1.0.38)
+  - Parameter resolution order: archetype base → size adjustment → compliance → qa-extras → explicit overrides → domain pack
+
+- **`TYPE_MAP.md`** (NEW) — 75 specific types → archetype + default params:
+  - `voice-agent` → `ai-system` + compliance: [tcpa, gdpr-biometric] + qa-extras: [wer, ttfb, barge-in]
+  - `payment-service` → `commerce` + compliance: [pci-dss, sox] + min-size: enterprise
+  - `rest-api` → `web-service` + compliance: [owasp-api]
+  - Unmapped types default to `web-service` with warning
+
+- **`/start`** — now resolves type → archetype before writing PROJECT.md:
+  - PROJECT.md gets `archetype:` field + `compliance:` + `qa-extras:` + `security-gate:` params
+  - Confirmation shows archetype + pipeline: `ai-system (from voice-agent) | medium | 5 agents [~45min]`
+
+- **`tech-lead`** — reads `archetype:` + params from PROJECT.md; uses ARCHETYPES.md for QA strategy and deploy constraints
+- **`qa-engineer`** — reads `archetype:` for base QA plan, `qa-extras:` for additional checks, `compliance:` for compliance QA
+- **`security-officer`** — reads `compliance:` param list; each value maps to a checklist; backwards compat with PIPELINES.md type-specific rules
+- **`devops`** — reads `archetype:` for deploy method from ARCHETYPES.md
+
+### Migration
+- Backwards compatible: agents read `archetype:` first, fall back to `primary:` type + PIPELINES.md
+- Existing PROJECT.md files work as-is (no archetype → agents use type-based logic)
+- PIPELINES.md retained as legacy reference — domain-specific depth still available
+- Next: v1.0.38 = domain packs, v1.0.39 = agent simplification
+
+---
+
+## v1.0.36 — 2026-04-10
+
+### Added — Smart /start onboarding
+- **`/start` Step 2b** — auto-detects `project_size` and `greenfield` from description + repo state:
+  - Size inferred from description signals ("fix" → nano, "add feature" → small, "build service" → medium, etc.)
+  - Regulated types → always `enterprise` override
+  - Greenfield: checks `src_files > 10` in repo + description signals ("existing", "our codebase")
+- **`/start` confirmation** — shows detected type + size + pipeline as one-liner before starting:
+  ```
+  Detected: type=rest-api | size=small | 3 agents
+  Pipeline: tech-lead → senior-dev → qa [~20min]
+  ```
+- **`/start` override replies** — CTO can correct before PROJECT.md is written:
+  - "go" / "yes" → proceed
+  - "existing" → sets `greenfield: false`
+  - "make it large" → upgrades size
+  - "nano" → downgrades to nano
+- **PROJECT.md** — now includes `project_size:` and `greenfield:` fields from setup
+- **`tech-lead`** — reads `greenfield: false` → scans existing entry points, API contracts, schema before designing architecture (additive design, not redesign)
+- Only asks ONE question if greenfield is ambiguous — never asks type/size/team directly
+
+---
+
+## v1.0.35 — 2026-04-10
+
+### Added — Adaptive Pipeline Sizing
+- **`project_size` field** in PROJECT.md: `nano | small | medium | large | enterprise`
+- **PIPELINES.md** — new `## Pipeline Size Selector` section:
+  - Size determination rules (file count + type signals)
+  - Type overrides: regulated types always → `enterprise`; MANDATORY security gate types → min `medium`
+  - Required-agents matrix: which agents run at each size
+  - Lightweight QA mode for `small` (unit tests only, no load test, no rollback dry-run)
+  - Direct deploy for `nano` (no QA agent, no security-officer, no devops agent)
+- **`tech-lead`**: determines `project_size` as step 2, writes to PROJECT.md; nano → skips ARCH doc + gate entirely
+- **`senior-dev`**: reads `project_size`; nano → skips gate:arch check, deploys directly after merge
+- **`qa-engineer`**: reads `project_size`; nano → exits immediately; small → lightweight mode (no perf baseline, no rollback dry-run, abbreviated report)
+- **`security-officer`**: reads `project_size` + checks MANDATORY type list; nano/small non-MANDATORY → exits immediately
+- **`devops`**: CSO report required only for medium/large/enterprise OR small + MANDATORY type; nano bypasses devops entirely
+- **`l3-support`**: reads `project_size`; nano/small → exits; medium → 15min window; large → 30min; enterprise → 60min+
+
+### Impact
+- `rest-api` + nano (single-function fix) → 1 agent, ~5min
+- `rest-api` + small (new endpoint) → 3 agents (tech-lead + senior-dev + qa), ~20min
+- `payment-service` any size → always full 7-agent pipeline (MANDATORY override)
+- `saas-platform` + large → full pipeline, canary deploy, 30min L3 window
+
+---
+
+## v1.0.34 — 2026-04-10
+
+### Added — 3 new project types (top trending 2026)
+- **`voice-agent`** — VAPI / ElevenLabs / Retell AI / telephony AI
+  - QA: WER ≤5%, TTFB ≤300ms, turn latency ≤800ms, barge-in ≥95%, 2× load test
+  - Deploy: canary by call % (1%→5%→20%→100%), webhook swap rollback
+  - Compliance: TCPA (US consent), GDPR Art.9 (voice as biometric), per-jurisdiction recording notice, CASL
+  - Gate Prerequisites: voice quality test results + TCPA consent evidence + GDPR DPIA (if biometric use)
+- **`edge-app`** — Cloudflare Workers / Deno Deploy / Vercel Edge / Fastly Compute
+  - QA: cold start ≤50ms p95, bundle ≤1MB, 0 Node.js API violations, global p95 ≤100ms from ≥5 regions
+  - Deploy: atomic global CDN deploy → multi-region smoke test, CDN version rollback
+  - Compliance: OWASP API Top 10 at edge + CSP enforcement + credential-in-worker audit
+  - Gate Prerequisites: bundle size report + multi-region latency results + Node.js API surface audit
+- **`multimodal-app`** — GPT-4o / Claude vision / Gemini apps (text + image + audio)
+  - QA: per-modality accuracy vs baseline, hallucination ≤2%, latency per modality (text ≤2s, vision ≤5s, audio ≤3s)
+  - Deploy: shadow mode → A/B per modality → full traffic, per-model feature flags rollback
+  - Compliance: EU AI Act Annex III high-risk check, model card (all modalities), GDPR Art.22 (no purely automated decisions), child safety audit
+  - Gate Prerequisites: per-modality eval results + EU AI Act classification doc + model card + data subject rights procedure
+  - `multimodal-app` added to MANDATORY security gate list
+- All 3 types fully covered in: Type Detection Keywords, QA Strategy, Deploy Method, Threshold Cross-Reference, Gate Prerequisites, MANDATORY compliance check
+
+---
+
+## v1.0.33 — 2026-04-10
+
+### Added
+- PIPELINES.md: 5 new project types — `critical-infrastructure`, `financial-services`, `gxp-system`, `iso27001-scope`, `automotive-supplier`
+- PIPELINES.md: NIS2 Article 21, DORA (EU 2022/2554), 21 CFR Part 11, ISO 27001:2022, TISAX VDA ISA compliance entries in all relevant tables (QA Strategy, Deploy Method, MANDATORY security gate, compliance check, Gate Prerequisites)
+- PIPELINES.md: SOX ITGC entries for `payment-service`, `data-warehouse`, `saas-platform`
+- `security-officer`: ISO 27001:2022 Annex A checklist (all 93 controls, SoA ≥90% required) — triggered by `compliance: iso27001` or type `iso27001-scope`
+- `security-officer`: SOX ITGC checklist (Change Management, Logical Access, Computer Operations, Segregation of Duties) — triggered by `sox: true` or types `payment-service`, `data-warehouse`, `saas-platform`; any ITGC failure → P0
+- `tech-lead`: Well-Architected Assessment section in ARCH doc (6 pillars, 1-3 score) — triggered by `cloud: aws|gcp|azure` in PROJECT.md; score=1 pillar → Beads task auto-created
+- `tech-lead`: TOGAF ADM Phase mapping section in ARCH doc — triggered by `architecture-framework: togaf` in PROJECT.md
+- `/digest`: DORA Metrics section — Deployment Frequency, Lead Time for Changes, MTTR, Change Failure Rate; computed from perf-baseline.log + git timestamps + postmortems; DORA band label (elite/high/medium/low) per metric
+
+---
+
+## v1.0.32 — 2026-04-10
+
+### Added
+- `/review` command — 3-angle GATE:CODE (Performance / Security / Readability reviewers); creates or closes `gate:code`; verdict logged to `.great_cto/verdicts/code-review.log`
+- `/status` command — pipeline dashboard: current stage, open gates + age, per-agent verdicts, last deploy, open P0/P1 bugs, active L3 monitoring
+- `l3-support`: retrospective entry appended to `.great_cto/retrospectives/RETRO-YYYY-MM.md` after every postmortem — feeds tech-lead's pattern reader on next feature
+
+### Fixed
+- `security-officer`: now reads PIPELINES.md `MANDATORY compliance check` for the project type and runs type-specific checklists (was running generic GDPR/SOC2/HIPAA for all types)
+- `security-officer`: Telegram notify after APPROVED/BLOCKED decision
+- `/digest`: Linux-compatible date arithmetic (python3 fallback → macOS → Linux); perf-baseline format updated to `p95:Nms` (matches v1.0.30 devops format); added GATES section + AGENT VERDICTS section
+- `devops`: CHANGELOG entry now uses `printf` instead of `echo "\n"` (portable across bash/sh/zsh)
+- `project-auditor`: explicit PROJECT.md format template when creating on first audit
+- `senior-dev`: hints CTO to run `/review` after PR when `review_mode: strict`
+- `tech-lead`: DECISIONS.md auto-updated immediately after writing each ADR (no longer requires manual step)
+- `/revisit`: DECISIONS.md index auto-updated when superseding an ADR
+- `plugin.json`: SessionStart now copies `review.md` and `status.md` to `~/.claude/commands/`
+
+---
+
+## v1.0.31 — 2026-04-09
+
+### Improved — PIPELINES.md v1.8 → v2.0 (51→95+ quality score)
+
+**Phase 1 — Gate Prerequisites (highest impact):**
+- Added 22 missing gate prerequisite rows: `monorepo`, `k8s-operator`, `desktop-app`, `browser-extension`, `vscode-extension`, `electron-app`, `realtime-system`, `messaging-queue`, `video-streaming`, `cms-headless`, `search-service`, `cli-tool`, `compiler-lang`, `wordpress-plugin`, `data-warehouse`, `internal-tool`, `data-pipeline`, `data-visualization`, `platform-engineering`, `chrome-extension-mv3`, `ai-agent-framework`, `llm-ops`
+- All 65 types now have gate prerequisites — CI enforcement possible without guessing
+
+**Phase 2 — Numeric defaults for vague thresholds:**
+- `computer-vision`: mAP ≥0.50 default (was "task-specific"); override with `qa-mAP-threshold:` in PROJECT.md
+- `time-series-forecasting`: MAPE ≤20% default (was "task threshold"); override with `qa-MAPE-threshold:`
+- `video-streaming`: 10 Mbps bitrate baseline; override with `qa-bitrate-baseline:`
+- New section: "QA Threshold Overrides via PROJECT.md" — documents 5 override keys for qa-engineer and devops
+
+**Phase 3 — Rollback-deploy pair hardening:**
+- `rag-system` deploy: prerequisite to snapshot index before reindex
+- `static-site` deploy: record deploy ID to `.great_cto/static-deploy.log` for rollback
+- `video-streaming` deploy: export CDN origin config before deploy
+- `ai-agent` deploy: prerequisite for bias/fairness audit artifacts when `ai-bias-risk: true`
+- `infra-iac` deploy: warning about dependent stack cascade risk
+
+**Phase 4 — Geographic compliance gaps:**
+- `web-fullstack`: added CCPA (CA/US), LGPD (BR), APPI (JP), PDPA (SG/TH) per-region triggers
+- `notification-service`: added CASL (Canadian recipients — express consent, 10-day unsubscribe SLA)
+- `ai-agent`, `llm-ops`: added EU AI Act Annex III + China CAC algorithm registration
+- `rag-system`: added EU AI Act Annex III high-risk check
+- `data-warehouse`: GDPR → GDPR/CCPA/LGPD right-to-erasure
+- `bridge-protocol`: added CFTC compliance check for US commodity derivatives
+- `infra-iac`: CIS Benchmarks versioned → CIS Benchmarks v8 (2024)
+- `web-fullstack`: OWASP Top 10 versioned → OWASP Top 10 2021
+
+**Phase 5 — Threshold alignment across QA Strategy ↔ Threshold Cross-Reference ↔ Gate Prerequisites:**
+- `rest-api`: Threshold Cross-Reference now includes IDOR findings + rate limit (were in QA Strategy but not cross-reference)
+- `graphql-api`: Threshold Cross-Reference now includes max_depth ≤10, max_complexity ≤1000, injection + IDOR findings
+- `payment-service`: Threshold Cross-Reference now includes TLS 1.2+, MFA, availability ≥99.9%
+- Gate Prerequisites for `rest-api` + `graphql-api`: extended to include security test evidence
+
+**Phase 6 — Housekeeping:**
+- Removed duplicate `auth-service` row in Multi-Region Deploy Strategy
+- PIPELINES.md version bumped from 1.8 to 2.0
+
+---
+
+## v1.0.30 — 2026-04-10
+
+### Fixed — 15 issues from quality audit (58→75+ score)
+
+**Critical — Gate state machine:**
+- `qa-engineer`: creates `gate:ship` explicitly on PASS (was never created, security-officer had no gate to close)
+- `security-officer`: finds and closes `gate:ship` by label lookup (was closing a hardcoded ID)
+- `senior-dev`: verifies `gate:arch` is closed before claiming any task (was able to start without architecture approval)
+- `devops`: verifies QA report exists AND result=PASS AND CSO result=APPROVED before deploying (was only checking gate:ship status)
+
+**High — Reliability:**
+- `notify.sh`: retry up to 3× with exponential backoff; 4096-char message truncation; never blocks pipeline
+- `perf-baseline.log`: consistent format `p95:<val>ms error_rate:<val>% ts:<ISO> feature:<name>` written by devops, read consistently by qa-engineer
+- `devops`: smoke test success criteria now numerical (all 5 return 2xx, error rate <0.5%, p95 within 20% of baseline)
+- `devops`: baseline NOT written on rolled-back deploys (was corrupting baseline)
+- `l3-support`: escalation SLA with exact time windows (T+15 L2, T+30 L3+Telegram, T+60 major incident)
+
+**Medium — Consistency:**
+- `tech-lead`: reads `review_mode` from PROJECT.md and applies strict/auto gate logic
+- `tech-lead` + `qa-engineer` + `security-officer`: write agent verdict logs to `.great_cto/verdicts/` for postmortem traceability
+- `devops`: triggers l3-support monitoring task after every deploy (30min standard, 72h regulated types)
+- `inbox`: gate approval now explicit — confirms what happens next after CTO approves/rejects
+- `inbox`: "clear" state shows backlog count + PR count (was just "clear")
+- `plugin.json`: PermissionDenied hook sends Telegram alert when Bash/Write blocked (was log-only)
+
+---
+
+## v1.0.29 — 2026-04-09
+
+### Fixed — Plugin file sync reliability
+
+- **Root cause:** SessionStart hook used `$(dirname "$0")` to find plugin dir — `$0` in hook context is the shell binary, not a plugin path. Commands were never copied for users.
+- **Fix:** Hook now uses `ls -d ~/.claude/plugins/cache/local/great_cto/*/` + `sort -V | tail -1` to find the highest installed version automatically.
+- `/update` Phase 0 added: re-syncs all plugin files (commands, agents, skills, notify.sh) on every `/update` run — recovery mechanism for any future drift.
+
+---
+
+## v1.0.28 — 2026-04-09
+
+### Added — Telegram notifications for CTO gates and incidents
+
+- `skills/great_cto/notify.sh` — curl-based Telegram helper; silent no-op if unconfigured (never blocks pipeline)
+- First-run Telegram setup in `/start` — asks CTO once for bot token + chat ID, stores in `~/.great_cto/preferences.md`
+- `tech-lead`: notifies CTO on `gate:arch` creation (architecture review pending)
+- `devops`: notifies CTO on deploy complete (method, error rate, p95)
+- `l3-support`: notifies CTO on P0 incident (description + ETA)
+- `plugin.json` SessionStart hook: auto-copies and `chmod +x` `notify.sh` on session start
+
+---
+
+## v1.0.27 — 2026-04-09
+
+### Added — 45 gaps applied across remaining 43 project types (PIPELINES.md v1.7 → v1.8)
+
+**Web/Frontend + API:**
+- `web-fullstack`, `spa-frontend`, `ssr-app`: OWASP ZAP scan (A03/A05/A06/A09) + CSP audit + SBOM (CycloneDX) + Core Web Vitals (LCP <2.5s, INP <200ms)
+- `web-fullstack`, `spa-frontend`: GDPR cookie consent + tracking opt-out test
+- `web-fullstack`: Keyboard navigation + contrast ratio ≥4.5:1 (WCAG 2.1 AA)
+- `rest-api`, `graphql-api`, `bff`: OWASP API Top 10 scan (API1 IDOR, API3 field-level auth, API4 rate limiting, API8 misconfiguration)
+- Added to MANDATORY compliance: `web-fullstack`, `spa-frontend`, `ssr-app`, `rest-api`, `graphql-api`, `bff`
+
+**Mobile + Desktop + Extensions:**
+- `mobile`: OWASP MASVS v2 (certificate pinning + local storage encryption + jailbreak detection) + privacy manifest (iOS) + ATT compliance + data safety form (Android, target API ≥34) + touch target audit (WCAG 2.1 mobile)
+- `electron-app`: Electron Security Checklist (nodeIntegration=false, contextIsolation=true, sandbox=true, webviewTag=false, CSP no eval)
+- `library-sdk`: Artifact signing (cosign/GPG) + SBOM + vulnerability disclosure policy + reproducible build test (OpenSSF/SLSA)
+- Added to MANDATORY compliance: `mobile`, `electron-app`, `library-sdk`
+
+**Data + Infrastructure + DevOps:**
+- `infra-iac`: Checkov/tfsec + CIS benchmark compliance (K8s/AWS/GCP) + container image scan (Trivy)
+- `k8s-operator`: CIS K8s 1.8 (pod security + network policies + non-root runtime) + container image scan
+- `devops-tool`: SLSA provenance + artifact signing (cosign) + container image scan
+- `data-warehouse`, `data-pipeline`: Data lineage tracking (OpenLineage/Marquez) + GDPR right-to-erasure verification
+- Added to MANDATORY compliance: `infra-iac`, `k8s-operator`, `data-warehouse`
+- **New Special Rules**: Container image scanning (Trivy, 0 critical CVEs) + SLSA provenance levels
+
+**Realtime + Content + Special:**
+- `embedded-iot`: ETSI EN 303 645 checklist (no default credentials + credential storage + attack surface + OTA signing)
+- `video-streaming`: WebRTC security (DTLS-SRTP + ICE mDNS + TURN auth) per RFC 8826/8827
+- `notification-service`: GDPR consent management + suppression list + DPIA
+- `internal-tool`: Privilege escalation test (unauthorized role transitions + cross-tenant access + permission boundaries)
+- `mcp-server`: Per-caller rate limiting + sandbox isolation verification
+- `game`: Accessibility audit (colorblind mode + subtitles + remappable controls, WCAG 2.1)
+- Added to MANDATORY compliance: `embedded-iot`, `video-streaming`, `notification-service`, `mcp-server`
+
+---
+
+## v1.0.26 — 2026-04-09
+
+### Added — 15 industry standard gaps applied (PIPELINES.md v1.6 → v1.7)
+
+Research against CCSS, FATF, SWC Registry, MiCA, EU AI Act, NIST AI RMF, OWASP LLM Top 10, ISO 42001, PCI-DSS v4.0, OWASP WSTG, OWASP SAMM, DORA, SOC2 Type II, NIST SP 800-218.
+
+**Crypto domain (CCSS / FATF / SWC / MiCA):**
+- **SWC Registry checklist** added to `smart-contract` QA strategy, compliance check, and Gate Prerequisites (SWC-103,104,107,110,113,115,116,124,125 — reentrancy, tx.origin, floating pragma, etc.)
+- **Flash loan + MEV/sandwich attack testing** added to `defi-protocol` QA strategy and Gate Prerequisites
+- **CCSS Level classification** (Level 1/2/3 per component) added to `custody-wallet` compliance check and Gate Prerequisites
+- **Sanctions screening** (OFAC/EU/UNSC, ≤24h update SLA) added to `custody-wallet` and `cex-exchange` compliance check and Gate Prerequisites
+- **Fair order allocation + circuit breaker + PEP screening + 5-year data retention** added to `cex-exchange`
+- **Backup/recovery SLA, key rotation, HSM vendor risk assessment** added to `custody-wallet`
+
+**AI/ML domain (EU AI Act / NIST RMF / OWASP LLM Top 10 / ISO 42001):**
+- **Risk Assessment document** (RISK-ASSESSMENT-*.md) mandatory before deploy for: `ml-training`, `ml-serving`, `ai-agent`, `rag-system`, `anomaly-detection`
+- **Model Card** (MODEL-CARD-*.md: model details, intended use, training data, quantitative analysis, ethical considerations) mandatory for all AI/ML types
+- **Bias/fairness audit** (disparate impact ≥0.8 per protected group) made mandatory (not conditional) for `ml-training`, `ml-serving`, `ai-agent`, `rag-system`, `computer-vision`
+- **Training data poisoning check + data lineage audit** added to `ml-training`
+- **Supply chain audit** (base model/embedding model provenance) added to `ai-agent`, `ml-serving`, `rag-system`
+- **PII output detection** added to `ai-agent` and `rag-system` QA strategy
+- **Production Monitoring SLA** — new section with 12 alert thresholds + incident runbook for AI/ML and financial types
+
+**Payments domain (PCI-DSS v4.0 / OWASP WSTG / DORA / SOC2):**
+- **API security test** (OWASP WSTG payment flows) added to `payment-service` QA strategy and Gate Prerequisites — mandatory per PCI-DSS v4.0
+- **TLS 1.3 cipher audit** added to `payment-service` and `auth-service`
+- **SBOM** (CycloneDX) added to `payment-service`, `auth-service`, `saas-platform`, `e-commerce`
+- **STRIDE threat model** mandatory artifact added to `payment-service`, `auth-service`, `saas-platform`, `e-commerce`
+- **Penetration test frequency** added to Special Rules: annual external + 6-month internal for all regulated types
+- **Incident response drill** extended from `custody-wallet` to: `payment-service`, `auth-service`, `saas-platform`, `e-commerce`, `cex-exchange`
+- **RTO/RPO validation** (RTO ≤4h, RPO ≤1h) added to `payment-service` and `saas-platform`
+- **Availability SLA verification** (≥99.9% for payment/auth, ≥99.5% for SaaS) added to thresholds
+- **Business logic attack tests** (race conditions, transaction replay, IDOR payment records) added to `payment-service`
+
+---
+
+## v1.0.25 — 2026-04-09
+
+### Fixed — 16 issues from full pipeline test (all 65 types) — PIPELINES.md v1.5 → v1.6
+
+#### P0 — Critical (13 types missing Gate Prerequisites)
+- **Added to MANDATORY Gate Prerequisites**: `rest-api`, `graphql-api`, `grpc-service`, `serverless`, `microservices`, `web-fullstack`, `spa-frontend`, `ssr-app`, `static-site`, `docs-site`, `bff` — all 11 web/API/frontend types now have explicit artifact requirements before gate:ship
+- **`feature-flags-service`**: Added to MANDATORY Gate Prerequisites (flag evaluation correctness report + p99 bench + state snapshot before deploy)
+- **Regulated Stack Migration**: `custody-wallet`, `cex-exchange`, `bridge-protocol` now automatically inherit REGULATED_MIGRATION rules when migrating infrastructure — even without explicit `compliance:` field
+
+#### P1 — High (QA gaps and missing coverage)
+- **Added to MANDATORY Gate Prerequisites**: `mobile` (device farm results), `embedded-iot` (OTA rollback + power budget + QEMU), `hardware-driver` (syzkaller + valgrind), `game` (FPS profiling + play session)
+- **QA Environment Requirements**: Added `trading-bot` (48h paper-trade simulation), `bridge-protocol` (formal verification toolchain), `custody-wallet` (staging HSM provisioning)
+- **No Browser QA list**: Added `infra-iac` (plan + policy validation, not browser-testable)
+- **Conflict Matrix**: Added 9 new pairs for crypto/AI composite types (`cex-exchange+payment-service`, `trading-bot+cex-exchange`, `bridge-protocol+infra-iac`, `custody-wallet+cex-exchange`, `computer-vision+web-fullstack`, `anomaly-detection+payment-service`, and 3 more)
+- **Multi-region**: Added `custody-wallet` (primary-only, per-region key ceremony), `cex-exchange` (primary order book, standby reads-only), `bridge-protocol` (per-region relayers, globally distributed guardian HSMs)
+
+#### P2 — Clarity
+- **No classical TDD list**: Added `k8s-operator`, `devops-tool`, `monorepo` with explanations
+- **`library-sdk` semver rule**: tech-lead must classify `patch|minor|major` in ARCH doc; major = migration guide required before publish
+- **`smart-contract` Gate Prerequisites**: now explicitly states "0 Echidna violations, 0 Slither critical/high"
+- **Threshold Cross-Reference**: `custody-wallet` and `bridge-protocol` thresholds now include travel rule (FATF) and economic attack simulation in staging validation method
+
+---
+
+## v1.0.24 — 2026-04-09
+
+### Added — 5 AI/ML/DS project types (60 → 65)
+
+- **`computer-vision`** — image classification, object detection, segmentation (YOLO, Detectron2, OpenCV). QA: mAP + IoU on holdout, latency on target hardware, ONNX/TFLite/CoreML export correctness, edge device smoke. Deploy: model registry → export → OTA (edge) or container (cloud). Rollback: previous model version.
+- **`recommendation-engine`** — collaborative filtering, matrix factorization, two-tower models. QA: NDCG@K + coverage + novelty + cold start test + A/B infrastructure validation + popularity bias audit. Deploy: shadow mode → A/B (5%→20%→50%) → full traffic. Rollback: instant traffic shift to previous model.
+- **`feature-store`** — Feast, Tecton, Hopsworks, point-in-time features. QA: point-in-time correctness (no future data leakage) + online/offline consistency + feature drift detection + backfill validation. Deploy: backfill → consistency validation → enable for new training runs. Rollback: disable feature in registry.
+- **`time-series-forecasting`** — Prophet, N-BEATS, TFT, demand forecasting. QA: walk-forward backtesting (out-of-sample) + MAPE/RMSE/SMAPE + seasonal validation + data leakage check. Deploy: backtest → shadow scoring → gradual replacement. Rollback: restore previous model, check downstream pipelines.
+- **`anomaly-detection`** — fraud detection, log anomaly, AIOps, isolation forest. QA: precision/recall on labeled dataset + FPR on normal traffic + threshold sensitivity + latency under load. Deploy: shadow (alert only) → dry-run (log, no action) → full enforcement. Rollback: disable enforcement, revert threshold config.
+
+### Fixed — 10 P0 bugs in crypto types (from test results)
+
+- **`custody-wallet`**: added withdrawal limit enforcement test, signing audit trail verification, incident response drill (key compromise scenario), cold wallet re-entry recovery test to QA strategy and Gate Prerequisites
+- **`bridge-protocol`**: added Echidna fuzz (≥10k runs) + Slither (inherited from smart-contract), formal verification artifact (light client finality proof), validator collusion simulation; light client finality test added to Gate Prerequisites
+- **`cex-exchange`**: p99 threshold corrected from <10ms → <50ms @5k orders/sec; added fee calculation audit, margin/liquidation engine test (for futures), open orders handling on rollback, race conditions and partial fill test cases
+
+---
+
+## v1.0.23 — 2026-04-09
+
+### Added
+- **3 new crypto project types** in `PIPELINES.md` (57 → 60 types, version 1.3 → 1.4):
+  - `custody-wallet` — MPC/HSM key management, cold/hot wallet, Fireblocks-style. QA: key ceremony test + MPC threshold signing + cold-to-hot sweep + pen test. MANDATORY security gate. Rollback: freeze hot wallet instantly.
+  - `bridge-protocol` — cross-chain lock-and-mint, relayers, light clients. QA: replay attack test + unauthorized mint test + economic attack simulation + TVL cap verification. MANDATORY security gate + formal verification required.
+  - `cex-exchange` — spot/futures trading platform, order book. QA: order matching correctness + cross-account isolation + KYC/AML + regulatory reporting. MANDATORY security gate. Rollback: maintenance mode in <30s.
+- All 3 types added to: Type Detection, QA Strategy, Deploy Method, Special Rules, Threshold Cross-Reference, MANDATORY Gate Prerequisites
+
+---
+
+## v1.0.22 — 2026-04-09
+
+### Added
+- **WebFetch** added to: `tech-lead`, `senior-dev`, `qa-engineer`, `security-officer`, `project-auditor`
+- **WebSearch** added to: `tech-lead`, `security-officer`, `l3-support`, `project-auditor`
+- **Write + Edit** added to `devops` — agent now writes CHANGELOG.md, RELEASE-*.md, STAKEHOLDER-*.md directly
+- **Tool Usage sections** in all agent prompts — explicit instructions on when and why to use each web tool
+
+### Fixed
+- `tech-lead` WebSearch instruction now covers library comparison use case (e.g. `fastify-rate-limit` vs `@fastify/rate-limit`)
+- `senior-dev` retains `disallowedTools: WebSearch` — WebFetch only (targeted docs, not general browsing)
+
+---
+
+## v1.0.21 — 2026-04-09
+
+### Added
+- **Regulated Stack Migration pipeline** in `PIPELINES.md`
+  - Auto-detection via `compliance:` field or fintech/banking keywords
+  - EOL Runtime Reference table: PHP 7.3/7.4, Node 10/12, Python 2.7, Angular 12, Ruby 2.x
+  - 9 additional QA tests: CVE audit (old+new), data integrity checksums, PCI regression, TLS cipher audit, cryptography regression, audit log continuity, session continuity, third-party integration matrix
+  - GATE:ARCH additions: strangler fig plan, maintenance window, rollback SLA, compliance risk statement
+  - GATE:SHIP additions: 6 compliance artifact checks — all must be ✓ before deploy
+  - Stricter canary abort threshold: 0.5% error rate (vs standard 1%)
+  - OLD stack stays live 30 days after 100% cutover
+  - Post-deploy L3 window extended to 72h (vs standard 30 min)
+  - 7 artifact naming conventions documented
+
+---
+
+## v1.0.20 — 2026-04-09
+
+### Changed
+- **`/start`** — now new projects only. Guard added: if PROJECT.md exists → redirects CTO to existing pipeline. If no description → asks one question before proceeding.
+- **`/audit`** — new command for existing repos. Spawns `great_cto-project-auditor` with structured task: stack detection → type classification → gap analysis → Beads tasks → PROJECT.md.
+
+### Fixed
+- `SessionStart` hook now installs `audit.md` to `~/.claude/commands/`
+- SKILL.md intent mapping: `"audit"` now routes to `/audit` command
+
+---
+
+## v1.0.19 — 2026-04-09
+
+### Added
+- **Canary deploy by default** for all web/API types in `devops` agent
+  - Types: `rest-api`, `web-fullstack`, `saas-platform`, `graphql-api`, `grpc-service`, `microservices`, `realtime-system`, `notification-service`, `auth-service`, `payment-service`, `e-commerce`
+  - Rollout: 5% → 5 min hold → 20% → 5 min hold → 100%
+  - Abort: error rate >1% OR p99 +50% vs baseline → auto-rollback + P0 Beads task
+  - Direct deploy (no canary): library/IaC/embedded types
+  - Proxy swap (manual CTO confirmation): `smart-contract`, `defi-protocol`
+- **Post-Deploy L3 Observability Window** — Step 4b in full pipeline
+  - `great_cto-l3-support` spawned after every production deploy
+  - 30 min monitoring window
+  - Reports `Post-deploy: OK` if clean, or triggers P1+ triage immediately
+
+---
+
+## v1.0.18 — 2026-04-09
+
+### Added
+- **`review_mode: strict | auto`** in PROJECT.md
+  - `strict` — adds GATE:CODE checkpoint after code review, before QA
+  - `auto` — skips GATE:CODE (default)
+- **GATE:CODE** — shows CTO PR link, bug counts by severity, top 3 reviewer findings
+- Intent mapping: "strict mode" / "auto mode" phrases update PROJECT.md automatically
+
+---
+
+## v1.0.17 — 2026-04-08
+
+### Fixed
+- `PreToolUse` Bash hook: hardened regex with POSIX anchors, empty input guard, added `rm -r/` and `git push -f` patterns
+- `UserPromptSubmit` hook: replaced shell string interpolation with `python3 subprocess` JSON construction (prevents injection)
+- `PostToolUse` hook: switched to `printf` for atomic log writes, removed unnecessary `path` fallback
+- `senior-dev` timeout: 600s → 900s (was less than 50 turns × ~15s avg)
+
+---
+
+## v1.0.16 — 2026-04-08
+
+### Added
+- **4 new hooks** in `plugin.json`:
+  - `PreToolUse(Bash)` — safety guard: blocks `rm -rf`, `git push --force`, `DROP TABLE`, `curl | python/bash`, `mkfs`, `dd`
+  - `PostToolUse(Write|Edit)` — audit log: every file write logged to `.great_cto/agent-writes.log`
+  - `UserPromptSubmit` — dynamic session title from PROJECT.md (`project (type)`)
+  - `PermissionDenied` — logs denied tools to `.great_cto/permission-denied.log`
+- **`disable-model-invocation: true`** on `digest`, `capture`, `revisit` commands (shell-only, no LLM cost)
+- **Agent timeouts**: `tech-lead` 1200s, `senior-dev` 900s, `devops` 900s, `qa-engineer` 600s, `security-officer` 600s, `l3-support` 600s, `project-auditor` 1800s
+- **`tech-lead` Bash patterns** expanded: added `source`, `awk`, `xargs`, `sort`, `tail`, `head`, `echo`, `export`, `mkdir`, `grep`, `wc`, `date`, `printf`
+- `SessionStart` hook now installs: `digest`, `capture`, `revisit` commands + copies `SKILL.md` to `.great_cto/`
