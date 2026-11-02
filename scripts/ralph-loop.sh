@@ -1,0 +1,240 @@
+#!/usr/bin/env bash
+# great_cto unattended runner — a "ralph loop": run a fresh agent session each
+# iteration, letting work accumulate in the workspace between runs.
+#
+# Adapted from SantanderAI/ralph (Apache-2.0, © 2026 César Gallego Rodríguez)
+# https://github.com/SantanderAI/ralph — the "Ralph Wiggum" technique.
+# This great_cto-native variant drives the continuity through the great_cto
+# workspace (.great_cto/HANDOFF.md + PROJECT.md + lessons.md) instead of a
+# free-form prompt file, so each fresh session resumes exactly where the last
+# one stopped. Closes the roadmap item "headless task-runner — run unattended".
+#
+# SPDX-License-Identifier: Apache-2.0
+
+set -u
+
+LOCAL_DIR=".great_cto"
+ENV_FILE="${LOCAL_DIR}/loop.env"
+LOG_DIR="${LOCAL_DIR}/loop-logs"
+STOP_FILES=("STOP.md" "${LOCAL_DIR}/stop")   # presence of any → clean exit
+
+usage() {
+  cat <<'EOF'
+Usage: ralph-loop.sh MAX_ITERATIONS [PROMPT_FILE]
+
+Runs fresh great_cto agent sessions in a loop from the current directory until
+MAX_ITERATIONS is reached, a STOP signal appears, or there is no work left.
+
+  MAX_ITERATIONS  Positive integer — the iteration cap.
+  PROMPT_FILE     Optional. A file whose contents are the per-iteration prompt.
+                  If omitted, a default great_cto loop-prompt is used (read
+                  HANDOFF + PROJECT, make incremental progress, update HANDOFF,
+                  create STOP.md when done).
+
+Stop the loop any time by creating  ./STOP.md  or  ./.great_cto/stop .
+
+Config (.great_cto/loop.env, created with defaults on first run, re-sourced
+each iteration so edits take effect next loop):
+  LOOP_TOOL        claude | codex | gemini        (default: claude)
+  LOOP_CAPABILITY  low | med | high               (default: high)
+  LOOP_CLAUDE_FLAGS  flags for `claude -p`         (default: --permission-mode acceptEdits)
+  LOOP_KEEP_LOGS   how many iteration logs to keep (default: 30)
+  LOOP_BUDGET_USD  ceiling in USD for ONE run of this loop. Unset = unbounded.
+                   An unmeasurable spend against a set ceiling STOPS the run:
+                   a budget that cannot fire is not a budget.
+EOF
+}
+
+die() { echo "ralph-loop: $*" >&2; exit 1; }
+
+write_default_env() {
+  mkdir -p "$LOCAL_DIR"
+  cat > "$ENV_FILE" <<'EOF'
+# great_cto unattended-loop config. Re-sourced before every iteration.
+LOOP_TOOL=claude
+LOOP_CAPABILITY=high
+LOOP_CLAUDE_FLAGS=--permission-mode acceptEdits
+LOOP_KEEP_LOGS=30
+EOF
+}
+
+# Map low/med/high → model id for the selected tool.
+model_for() {
+  case "$1:$2" in
+    claude:low) echo haiku ;; claude:med) echo sonnet ;; claude:high) echo opus ;;
+    codex:low) echo gpt-5.4-mini ;; codex:med) echo gpt-5.4 ;; codex:high) echo gpt-5.5 ;;
+    gemini:*) echo gemini-2.5-pro ;;
+    *) echo "" ;;
+  esac
+}
+
+# What this run has spent so far, against the ceiling if one is set.
+# Prints a line and returns 1 when the loop must stop. See scripts/lib/run-budget.mjs
+# for why an UNMEASURABLE spend against a ceiling stops rather than continues.
+COST_LOG=".great_cto/cost-history.log"
+BUDGET_BEFORE=""
+
+budget_snapshot() { BUDGET_BEFORE="$(cat "$COST_LOG" 2>/dev/null || printf '')"; }
+
+budget_check() {
+  local repo after out
+  repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  after="$(cat "$COST_LOG" 2>/dev/null || printf '')"
+  out="$(BEFORE="$BUDGET_BEFORE" AFTER="$after" CEILING="${LOOP_BUDGET_USD:-}" node -e '
+    (async () => {
+      const { runBudget } = await import(process.argv[1] + "/scripts/lib/run-budget.mjs");
+      const ceil = process.env.CEILING === "" ? null : Number(process.env.CEILING);
+      const r = runBudget({ ceiling: ceil, before: process.env.BEFORE, after: process.env.AFTER });
+      process.stdout.write((r.stop ? "STOP " : "OK ") + r.sentence + "\n");
+    })()
+  ' "$repo" 2>/dev/null)" || {
+    # The check itself failed. With a ceiling set that is indistinguishable from
+    # an unmeasurable spend, and gets the same answer: stop.
+    if [ -n "${LOOP_BUDGET_USD:-}" ]; then
+      echo "ralph-loop: budget check could not run and a ceiling is set — stopping." >&2
+      return 1
+    fi
+    return 0
+  }
+  case "$out" in
+    STOP*) echo "ralph-loop: ${out#STOP }" >&2; return 1 ;;
+    *)     [ -n "${LOOP_BUDGET_USD:-}" ] && echo "ralph-loop: ${out#OK }" ;;
+  esac
+  return 0
+}
+
+# The state of the world at wake-up: what is stalled, and who can act on it.
+# Prints nothing when nothing is stalled — an empty board should not cost tokens.
+wakeup_scan() {
+  local repo scan
+  repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  scan="$(node -e '
+    (async () => {
+      const { readFileSync } = await import("node:fs");
+      let tasks = null;
+      try {
+        const r = await fetch("http://127.0.0.1:" + (process.env.GREAT_CTO_BOARD_PORT || "3141")
+          + "/api/tasks?project=" + encodeURIComponent(process.cwd()),
+          { signal: AbortSignal.timeout(1500) });
+        if (r.ok) { const b = await r.json(); tasks = Array.isArray(b) ? b : b.tasks; }
+      } catch { /* board not up — falls through to the tasks.md reader */ }
+      if (!Array.isArray(tasks)) {
+        try {
+          const { parseTasksMd } = await import(process.argv[1] + "/packages/board/lib/beads.mjs");
+          tasks = parseTasksMd(process.cwd());
+        } catch { tasks = null; }
+      }
+      const { wakeupScan } = await import(process.argv[1] + "/scripts/lib/wakeup-scan.mjs");
+      const s = wakeupScan(tasks);
+      if (s.state !== "clear") process.stdout.write(s.text + "\n\n");
+    })()
+  ' "$repo" 2>/dev/null)"
+  local rc=$?
+  # A scan that could not run must not read as a board with nothing on it.
+  # If node failed — bad path, missing module, syntax error — the iteration is
+  # told the scan did not happen, rather than being handed silence it will
+  # interpret as "nothing is stalled".
+  if [ $rc -ne 0 ]; then
+    printf '%s\n\n' "STALLED WORK — the scan did NOT run (exit ${rc}). Do not read this as an empty board. Continue the handoff and say in your summary that the scan failed."
+    return 0
+  fi
+  [ -n "$scan" ] && printf '%s\n' "$scan"
+  return 0
+}
+
+# Build the agent invocation for the chosen tool. Prompt is piped on stdin.
+run_agent() {
+  local tool="$1" model="$2" logf="$3"
+  case "$tool" in
+    claude)
+      # shellcheck disable=SC2086
+      claude -p ${LOOP_CLAUDE_FLAGS} ${model:+--model "$model"} 2>&1 | tee "$logf" ;;
+    codex)
+      codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check \
+        ${model:+--model "$model"} 2>&1 | tee "$logf" ;;
+    gemini)
+      gemini ${model:+-m "$model"} 2>&1 | tee "$logf" ;;
+    *) die "unknown LOOP_TOOL: $tool (allowed: claude codex gemini)" ;;
+  esac
+}
+
+default_prompt() {
+  cat <<'EOF'
+You are a great_cto unattended worker running one fresh iteration. Continuity
+lives ONLY in the workspace — you start with no memory of prior iterations.
+
+1. Read `.great_cto/HANDOFF.md` (what the last iteration did + what's next) and
+   `.great_cto/PROJECT.md` (the goal). If HANDOFF.md is absent, read PROJECT.md
+   and `/inbox` to find the next open gate/task.
+2. Make the SMALLEST safe increment of real progress on the next open task —
+   follow the normal great_cto pipeline and its gates. Do not skip reviewers.
+3. Run the relevant tests. Do not leave the tree broken.
+4. Rewrite `.great_cto/HANDOFF.md` as a SHORT pruned map (architect-loop R1): what
+   you changed (files), what's verified, the single next step. Prune stale entries
+   every iteration — it's a table of contents, not a log; detail lives in linked
+   plan/gate/lane files and git history. Not in the repo = didn't happen. This is
+   the only thing the next iteration will see.
+5. If there is genuinely nothing left to do (all gates closed, tests green,
+   nothing open in `/inbox`), create `STOP.md` with a one-line reason so the
+   loop exits cleanly. Never create STOP.md just because the task is hard.
+EOF
+}
+
+main() {
+  [ $# -ge 1 ] || { usage; exit 2; }
+  case "$1" in -h|--help) usage; exit 0 ;; esac
+  local max="$1"; shift
+  [[ "$max" =~ ^[1-9][0-9]*$ ]] || die "MAX_ITERATIONS must be a positive integer"
+
+  local prompt_file="${1:-}"
+  [ -n "$prompt_file" ] && [ ! -f "$prompt_file" ] && die "prompt file not found: $prompt_file"
+
+  command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1 \
+    || die "run from inside a git repository (the workspace the agent edits)"
+
+  [ -f "$ENV_FILE" ] || write_default_env
+  mkdir -p "$LOG_DIR"
+
+  local i
+  for ((i = 1; i <= max; i++)); do
+    for s in "${STOP_FILES[@]}"; do
+      [ -e "$s" ] && { echo "ralph-loop: stop signal ($s) — exiting after $((i-1)) iteration(s)."; exit 0; }
+    done
+
+    # Re-source config each iteration (live reload). Defaults if unset.
+    # shellcheck disable=SC1090
+    [ -f "$ENV_FILE" ] && source "$ENV_FILE"
+    local tool="${LOOP_TOOL:-claude}" cap="${LOOP_CAPABILITY:-high}"
+    : "${LOOP_CLAUDE_FLAGS:=--permission-mode acceptEdits}" "${LOOP_KEEP_LOGS:=30}"
+    local model; model="$(model_for "$tool" "$cap")"
+    command -v "$tool" >/dev/null 2>&1 || die "AI CLI '$tool' not found on PATH"
+
+    local ts logf; ts="$(date +%Y%m%d-%H%M%S)"; logf="${LOG_DIR}/iter-${i}-${ts}.log"
+    echo "═══ ralph-loop iteration ${i}/${max} · ${tool}${model:+/$model} · ${ts} ═══"
+
+    # Wake up, then go and look — not only drain the queue you were already in.
+    #
+    # The prompt below reads HANDOFF.md and falls back to the inbox only "if
+    # HANDOFF.md is absent". It exists from iteration 2 onward, so that fallback
+    # never fires and the loop follows one thread forever while other work sits.
+    # The scan runs FIRST, every iteration, and is prepended to the prompt.
+    #
+    # It separates work the agent may take from work waiting on a person, because
+    # an unattended agent that "handles" a gate has approved its own work. Failure
+    # to scan is not silence: the scan says it could not run, so an iteration
+    # never reports a clean board it did not see.
+    budget_check || break
+    budget_snapshot
+    { wakeup_scan; if [ -n "$prompt_file" ]; then cat "$prompt_file"; else default_prompt; fi; } \
+      | run_agent "$tool" "$model" "$logf"
+    local rc=${PIPESTATUS[1]:-$?}
+    echo "ralph-loop: iteration ${i} exited rc=${rc} (log: ${logf})"
+
+    # Log rotation — keep the newest LOOP_KEEP_LOGS.
+    ls -1t "${LOG_DIR}"/iter-*.log 2>/dev/null | tail -n +"$((LOOP_KEEP_LOGS + 1))" | xargs -r rm -f
+  done
+
+  echo "ralph-loop: reached MAX_ITERATIONS (${max}). Stopping."
+}
+
+main "$@"

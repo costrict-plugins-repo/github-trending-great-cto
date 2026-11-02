@@ -1,0 +1,126 @@
+// Domain pack detection — overlay packs that ride on top of base archetypes.
+// Wave 1-3 (2026-05): voice, clinical, hr-ai, api-platform, lending, clinical-trials,
+// robotics, em-fintech, climate, drug-discovery.
+// Wave 4 (2026-05): digital-health (wearable, mental-health, nutrition AI, physician HITL).
+//
+// A pack is a regulatory/domain overlay that triggers one or more specialist
+// reviewers (agents/{name}-reviewer.md) when its signals appear in stack,
+// dependencies, or README keywords. Detection is deliberately broad — the
+// reviewer agents themselves do the final scope decision via their Step 0 grep.
+
+import type { DetectionResult } from "./detect.js";
+
+export type PackName =
+  | "voice-pack"
+  | "hr-ai-pack"
+  | "api-platform-pack"
+  | "adtech-privacy-pack"
+  | "us-ai-pack";
+
+export interface PackMatch {
+  pack: PackName;
+  reviewers: string[];        // agent names invoked by this pack
+  signals: string[];          // why it triggered (matched stack tokens / keywords)
+  humanGates: string[];       // gate ids this pack introduces
+}
+
+// Reviewer registry — keep in sync with agents/*-reviewer.md and
+// skills/great_cto/packs/*-pack.md.
+const PACK_REVIEWERS: Record<PackName, string[]> = {
+  "voice-pack":            ["voice-ai-reviewer"],
+  "hr-ai-pack":            ["hr-ai-reviewer"],
+  "api-platform-pack":     ["api-platform-reviewer"],
+  "adtech-privacy-pack":   ["adtech-privacy-reviewer", "us-privacy-reviewer"],
+  "us-ai-pack":            ["us-ai-reviewer"],
+};
+
+const PACK_GATES: Record<PackName, string[]> = {
+  "voice-pack":            ["gate:voice-compliance"],
+  "hr-ai-pack":            ["gate:aedt-audit"],
+  "api-platform-pack":     ["gate:api-contract"],
+  "adtech-privacy-pack":   ["gate:tracking-consent"],
+  "us-ai-pack":            ["gate:ai-governance"],
+};
+
+// Trigger signals — stack tokens OR README keywords.
+const SIGNALS: Record<PackName, { stack: string[]; keywords: string[] }> = {
+  "voice-pack": {
+    stack: ["twilio", "vonage", "livekit", "deepgram", "elevenlabs", "whisper", "hume"],
+    keywords: ["voice", "telephony", "ivr", "call-center", "tts", "stt", "speech-to-text", "text-to-speech", "phone", "outbound call", "inbound call", "voice agent"],
+  },
+  "hr-ai-pack": {
+    stack: ["greenhouse", "lever", "ashby", "workday"],
+    // "candidate" alone is too generic (SaMD/predicate-candidate clash); use compound terms.
+    keywords: ["recruit", "hiring", "candidate screening", "candidate evaluation", "candidate ranking", "resume", "ats", "talent acquisition", "performance review", "workforce scheduling", "employee evaluation", "aedt"],
+  },
+  "api-platform-pack": {
+    stack: ["openapi", "graphql", "grpc", "fastify", "trpc"],
+    keywords: ["public api", "partner api", "developer portal", "api key", "webhook", "sdk", "rest api", "graphql api", "openapi"],
+  },
+  "adtech-privacy-pack": {
+    stack: ["fbevents", "facebook-pixel", "meta-pixel", "gtag", "ga4", "google-tag-manager", "gtm", "tiktok-pixel", "fullstory", "hotjar", "logrocket", "mouseflow", "smartlook"],
+    keywords: [
+      "meta pixel", "facebook pixel", "fbevents", "conversions api", "capi",
+      "google analytics", "ga4", "google tag manager", "tiktok pixel", "ad pixel",
+      "tracking pixel", "session replay", "session recording", "heatmap",
+      "fullstory", "hotjar", "logrocket", "retargeting", "behavioral advertising",
+      "vppa", "cipa", "wiretap", "my health my data", "mhmda", "consumer health data",
+    ],
+  },
+  "us-ai-pack": {
+    stack: [],
+    keywords: [
+      "nist ai rmf", "ai rmf", "ai risk management", "colorado ai act", "sb 205",
+      "algorithmic discrimination", "consequential decision", "high-risk ai",
+      "automated decision", "ai impact assessment", "utah ai", "traiga",
+      "ai transparency", "ab 2013", "sb 942", "training data transparency",
+      "ai disclosure", "generative ai disclosure", "deepfake disclosure", "ai governance",
+    ],
+  },
+};
+
+/** Return packs whose signals match the detection result. Deterministic + sorted. */
+export function suggestPacks(d: DetectionResult): PackMatch[] {
+  const matches: PackMatch[] = [];
+  const stackLower = new Set(d.stack.map((s) => s.toLowerCase()));
+  const kwLower = d.readmeKeywords.map((k) => k.toLowerCase());
+
+  for (const pack of Object.keys(SIGNALS) as PackName[]) {
+    const { stack, keywords } = SIGNALS[pack];
+    const matchedStack = stack.filter((s) => stackLower.has(s.toLowerCase()));
+    // Exact-match on README-mined raw tokens. detect.ts emits the same vocabulary,
+    // so kwLower.includes(kw) avoids false-positive substring fuzz
+    // (e.g. "lending" matching pack trigger "ind").
+    const matchedKeywords = keywords.filter((kw) => kwLower.includes(kw));
+    const signals = [...matchedStack, ...matchedKeywords];
+    if (signals.length > 0) {
+      matches.push({
+        pack,
+        reviewers: PACK_REVIEWERS[pack],
+        signals: signals.slice(0, 8), // cap for log readability
+        humanGates: PACK_GATES[pack],
+      });
+    }
+  }
+  matches.sort((a, b) => a.pack.localeCompare(b.pack));
+  return matches;
+}
+
+/** Convenience — flatten matched packs to reviewer agent names (unique, sorted). */
+export function suggestPackReviewers(d: DetectionResult): string[] {
+  const all = new Set<string>();
+  for (const m of suggestPacks(d)) for (const r of m.reviewers) all.add(r);
+  return Array.from(all).sort();
+}
+
+/** Convenience — flatten matched packs to human-gate ids (unique, sorted). */
+export function suggestPackGates(d: DetectionResult): string[] {
+  const all = new Set<string>();
+  for (const m of suggestPacks(d)) for (const g of m.humanGates) all.add(g);
+  return Array.from(all).sort();
+}
+
+/** Registry of all known packs — useful for /doctor / introspection. */
+export function listPacks(): PackName[] {
+  return Object.keys(SIGNALS).sort() as PackName[];
+}

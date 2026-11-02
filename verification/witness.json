@@ -1,0 +1,103 @@
+{
+  "$schema-note": "Each entry names one file and one literal substring that must still be in it. Adding an entry is how a fix with no test of its own keeps a guard. See tests/witness.test.mjs for what this does and does not prove.",
+  "fixes": [
+    {
+      "id": "cross-review-gate-off-by-default",
+      "file": "scripts/hooks/cross-review-gate.mjs",
+      "marker": "process.env.GREAT_CTO_CROSS_REVIEW_GATE === '1'",
+      "why": "The gate is opt-in. Its test file exercises the pure decision function and never this line, so relaxing the comparison to `!== '0'` would turn a Stop hook on for every user with the whole suite green. CLAUDE.md forbids anything new being on by default.",
+      "fixed-in": "3.27.3"
+    },
+    {
+      "id": "board-slug-prefers-registry-over-prefix",
+      "file": "packages/board/public/index.html",
+      "marker": "(allProjects || []).some((p) => p.slug === fromTaskId) ? fromTaskId : ''",
+      "why": "A task id's prefix is a heuristic; bd ids are short, so `acme-storefront` with tasks reading `acme-6f` resolved to `acme`, and the board told the operator in red that a healthy setup was broken. The E2E test covers this but SKIPs when Playwright is absent, and a skip is not a check.",
+      "fixed-in": "3.27.6"
+    },
+    {
+      "id": "screenshots-refuse-a-degraded-page",
+      "file": "scripts/capture-screenshots.mjs",
+      "marker": "'#project-fallback-banner, .degraded-banner'",
+      "why": "Every README screenshot carried a red error banner for releases because nothing looked at the page before photographing it. Deleting this selector restores that silently — the shots still generate, they are just wrong, and nobody re-reads their own README.",
+      "fixed-in": "3.27.6"
+    },
+    {
+      "id": "seed-demo-passes-argument-arrays",
+      "file": "scripts/seed-demo.mjs",
+      "marker": "execFileSync(\"bd\", args",
+      "why": "This interpolated task titles and bd-supplied ids into `cd $ROOT && bd ...` behind hand-rolled escaping that covered double quotes and nothing else. The file has no test of its own, so a return to string commands would be caught by nothing.",
+      "fixed-in": "3.27.6"
+    },
+    {
+      "id": "record-demo-passes-argument-arrays",
+      "file": "scripts/record-demo.mjs",
+      "marker": "execFileSync(\"ffmpeg\", [\"-y\", \"-i\", dstWebm",
+      "why": "Paths reached ffmpeg through a shell here. Like seed-demo this file has no test, and a demo recorder is exactly the kind of script whose regression nobody notices until a path contains a space or a quote.",
+      "fixed-in": "3.27.6"
+    },
+    {
+      "id": "cross-review-derives-only-blocking-verdicts",
+      "file": "scripts/lib/review-contract.mjs",
+      "marker": "verdicts[0] || (findings.some(f => f.severity === 'P0') ? 'BLOCK' : null);",
+      "why": "The previous line ended `: 'PASS'`, which turned an empty body, a refusal and a wrong-format reply into a passing review that the Stop hook then ended the turn on. Restoring the PASS branch is a one-word edit whose damage is silent and downstream. The executable guard moved into the shared legacy adapter with exact, unique verdict validation; behavior is also covered by cross-model-review and review-contract tests.",
+      "fixed-in": "3.27.7"
+    },
+    {
+      "id": "cross-review-gate-requires-an-explicit-pass",
+      "file": "scripts/hooks/cross-review-gate.mjs",
+      "marker": "if (opinion.verdict !== 'PASS') {",
+      "why": "The gate used to treat anything that was not BLOCK as a pass, which is why the laundering one floor below reached it unnoticed. Widening this back to `=== 'BLOCK'` re-opens the same path and no other test would fail.",
+      "fixed-in": "3.27.7"
+    },
+    {
+      "id": "dispatcher-tells-a-launch-from-a-finish",
+      "file": "scripts/hooks/pipeline-dispatcher.mjs",
+      "marker": "if (r.status !== 'async_launched' && r.isAsync !== true) return false;",
+      "why": "Without this the hook reads a backgrounded agent's launch as its completion and tells the reader to record a verdict for work that has not happened. Widening it to a bare `return true` silences the no-verdict check entirely, and only the fail-closed test notices.",
+      "fixed-in": "3.27.7"
+    },
+    {
+      "id": "docs-tests-can-fail-the-gate",
+      "file": "scripts/ci-local.sh",
+      "marker": "no tests/docs — nothing to run\"; exit 0; }; node --test tests/docs/*.test.mjs'",
+      "why": "This step ended in `|| true` for months. On v3.28.1 the README parity check was red inside it while the gate printed ALL GATES GREEN, so a guard added that same day could not fail anything. Restoring the swallow is a one-character edit and every test still passes.",
+      "fixed-in": "3.28.2"
+    },
+    {
+      "id": "subagent-stop-measures-the-agent-not-the-session",
+      "file": "scripts/hooks/subagent-stop-completion.mjs",
+      "marker": "const { path: tp, source } = stopTranscript(payload);",
+      "why": "SubagentStop read transcript_path, which is the session transcript. Every stop measured ~10k turns, the 400-turn guard set each figure aside as unattributed, and September held zero per-agent measured costs while the board looked unmeasured rather than broken. Reverting to transcript_path keeps every older test green.",
+      "fixed-in": "3.28.5"
+    },
+    {
+      "id": "skipped-tests-are-not-all-gates-green",
+      "file": "scripts/ci-local.sh",
+      "marker": "if [ \"$FAIL\" -eq 0 ] && [ \"$SKIP_TOTAL\" -eq 0 ]; then",
+      "why": "step() judged each step by exit code, and node --test exits 0 when tests skip. A board e2e that could not launch a browser printed a check mark and the gate printed ALL GATES GREEN. Dropping the skip total from this condition keeps every exit code the same and the gate reads as fully checked again.",
+      "fixed-in": "3.28.5"
+    },
+    {
+      "id": "a-missing-plugin-directory-deletes-no-agent",
+      "file": "scripts/lib/sync-managed.mjs",
+      "marker": "ships nothing — an empty source is not a reason to delete",
+      "why": "SessionStart pruned every managed agent and command whose source was absent under the plugin directory, without asking whether that directory existed. After install-local --prune deleted the version six open sessions ran from, one session start wiped all 70 agents and 38 of 44 commands. Removing this guard lets an empty source delete everything again.",
+      "fixed-in": "3.28.6"
+    },
+    {
+      "id": "codex-check-shell-quote-is-posix-safe",
+      "file": "scripts/lib/codex-checks.mjs",
+      "marker": "value.replaceAll(\"'\", \"'\\\\''\")",
+      "why": "The offline executor intentionally sequences argv commands through a container shell. Weakening this escaping lets one operator-policy argument become shell syntax instead of one literal value.",
+      "fixed-in": "unreleased"
+    },
+    {
+      "id": "codex-release-root-stays-outside-workspace",
+      "file": "scripts/lib/codex-release.mjs",
+      "marker": "release root must be outside the target workspace",
+      "why": "A release target inside the worker project lets later worker writes mutate or replace the candidate after approval, collapsing the source and publication trust boundaries.",
+      "fixed-in": "unreleased"
+    }
+  ]
+}

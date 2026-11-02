@@ -1,0 +1,495 @@
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { spawnSync } from 'child_process';
+import { planGates } from '../../../scripts/lib/gate-plan.mjs';
+import { GREAT_CTO_DIR, PROJECTS_FILE } from './config.mjs';
+import { isInsideDir, readSafe, parseSafe } from './util.mjs';
+import { log } from './log.mjs';
+
+// Same HOME-boundary policy /api/projects/register enforces (lib/routes.mjs):
+// a raw absolute/tilde path must resolve inside the operator's home directory,
+// no exceptions. Without this, a request like ?project=/etc or ?project=/tmp
+// makes the board read/write project data (.beads, verdicts/, PROJECT.md)
+// at an arbitrary filesystem location the operator never registered. Returns
+// null (not process.cwd()) so callers can distinguish "not a raw path" from
+// "raw path rejected" and fall back explicitly.
+function resolveRawPathWithinHome(slugOrPath) {
+  const raw = slugOrPath.startsWith('~') ? slugOrPath.replace(/^~/, os.homedir()) : slugOrPath;
+  const resolved = path.resolve(raw);
+  return isInsideDir(os.homedir(), resolved) ? resolved : null;
+}
+
+// ── Project registry ───────────────────────────────────────────────────────────
+// Why the registry could not be read, or null when healthy. A corrupt or
+// unreadable projects.json used to yield `{projects: []}` silently, which the UI
+// renders as "you have no projects" — indistinguishable from a fresh install,
+// and a great way to lose a switcher full of work to one bad write.
+let registryDegradation = null;
+function getRegistryDegradation() { return registryDegradation; }
+
+function readProjectsRegistry() {
+  const r = readSafe(PROJECTS_FILE);
+  if (!r.ok) {
+    registryDegradation = r.reason === 'missing' ? null : `projects.json could not be read: ${r.error}`;
+    if (registryDegradation) log.warn(`[projects] ${registryDegradation}`);
+    return { projects: [] };
+  }
+  const parsed = parseSafe(r.text);
+  if (!parsed.ok) {
+    registryDegradation = `projects.json is not valid JSON: ${parsed.error}`;
+    log.warn(`[projects] ${registryDegradation} — the switcher will look empty until this is fixed`);
+    return { projects: [] };
+  }
+  registryDegradation = null;
+  return parsed.value;
+}
+// Pick the best entry among several sharing a slug: prefer one whose path
+// still exists on disk; among several existing (or several missing), prefer
+// the most recently added_at. Never returns a non-existent path when an
+// existing match is available (great_cto-7xfc).
+function pickBestBySlug(candidates) {
+  let best = null;
+  for (const p of candidates) {
+    if (!best) { best = p; continue; }
+    const pExists = existsSafe(p.path);
+    const bestExists = existsSafe(best.path);
+    if (pExists && !bestExists) { best = p; continue; }
+    if (!pExists && bestExists) continue;
+    // Both exist or both missing — prefer most recent added_at.
+    if (String(p.added_at || '') > String(best.added_at || '')) best = p;
+  }
+  return best;
+}
+function existsSafe(p) {
+  try { return !!p && fs.existsSync(p); } catch { return false; }
+}
+// Two directories that share a basename — ~/work/api and ~/personal/api — read
+// as the same slug. Collapsing them lost one project outright, so a colliding
+// name is qualified by its parent instead: api → api@work, api@personal. The
+// slug stays the lookup key, so it still has to be unique; what changed is that
+// uniqueness is now bought by renaming rather than by dropping a project.
+function qualifiedSlug(project, taken) {
+  const parts = String(project.path || '').split(path.sep).filter(Boolean).slice(0, -1).reverse();
+  let candidate = project.slug;
+  for (const parent of parts) {
+    if (!taken.has(candidate)) return candidate;
+    candidate = `${project.slug}@${parent}`;
+  }
+  let n = 2;
+  while (taken.has(candidate)) candidate = `${project.slug}@${n++}`;
+  return candidate;
+}
+
+// Dedupe registry entries before writing, so the registry self-heals on every
+// write regardless of how the duplicate got in (great_cto-7xfc).
+//
+// Identity is the PATH. Entries sharing a slug are only the same project when
+// at most one of their paths still exists — that is a repo that moved, and
+// collapsing it is the original fix. Two live paths are two projects.
+function dedupeProjects(projects) {
+  // Same slug AND same path is one entry written twice. A shared path under two
+  // different slugs is left alone — someone registered an alias deliberately.
+  const exact = new Map();
+  for (const p of projects) {
+    if (!p || !p.slug) continue;
+    const key = `${p.slug}\u0000${p.path || ''}`;
+    const prior = exact.get(key);
+    exact.set(key, prior ? pickBestBySlug([prior, p]) : p);
+  }
+
+  const bySlug = new Map();
+  for (const p of exact.values()) {
+    const group = bySlug.get(p.slug) || [];
+    group.push(p);
+    bySlug.set(p.slug, group);
+  }
+
+  const out = [];
+  const taken = new Set();
+  for (const group of bySlug.values()) {
+    const live = group.filter((p) => existsSafe(p.path));
+    // 0 or 1 live path → one project, possibly one that moved.
+    const keep = live.length > 1 ? live : [pickBestBySlug(group)];
+    for (const p of keep) {
+      const slug = qualifiedSlug(p, taken);
+      taken.add(slug);
+      out.push(slug === p.slug ? p : { ...p, slug });
+    }
+  }
+  return out;
+}
+function writeProjectsRegistry(reg) {
+  fs.mkdirSync(GREAT_CTO_DIR, { recursive: true });
+  const deduped = { ...reg, projects: dedupeProjects(reg.projects || []) };
+  fs.writeFileSync(PROJECTS_FILE, JSON.stringify(deduped, null, 2));
+}
+// Map legacy / informal archetype names to canonical archetype slugs.
+// This lets the board correctly badge old PROJECT.md files (mobile, saas-platform,
+// ai-agent, etc.) without forcing users to rewrite them.
+const ARCHETYPE_ALIASES = {
+  'mobile': 'mobile-app',
+  'mobile-android': 'mobile-app',
+  'mobile-ios': 'mobile-app',
+  'saas-platform': 'enterprise-saas',
+  'saas': 'enterprise-saas',
+  'ai-agent': 'agent-product',
+  'agent': 'agent-product',
+  'rag-system': 'ai-system',
+  'llm-app': 'ai-system',
+  'trading-system': 'fintech',
+  'financial-platform': 'fintech',
+  'neobroker': 'fintech',
+  'neobank': 'fintech',
+  'ml-platform': 'mlops',
+  'ml-training': 'mlops',
+  'ml-serving': 'mlops',
+  'web-fullstack': 'web-service',
+  'web-app': 'web-service',
+  'api': 'web-service',
+  'backend': 'web-service',
+  'cli': 'cli-tool',
+  'sdk': 'library',
+  'npm-library': 'library',
+};
+
+function normalizeArchetype(raw) {
+  if (!raw) return '';
+  // Strip backticks, quotes, surrounding whitespace
+  const clean = raw.replace(/[`'"]/g, '').trim().toLowerCase();
+  // Take first token if comma/plus-separated (e.g. "trading-system + financial-platform")
+  const first = clean.split(/[,+]/)[0].trim();
+  return ARCHETYPE_ALIASES[first] || first;
+}
+
+function extractArchetype(text) {
+  // 1. Canonical: `archetype: foo`
+  let m = text.match(/^archetype:\s*(.+)$/m);
+  if (m) return normalizeArchetype(m[1]);
+  // 2. Legacy yaml-like: `primary: foo`
+  m = text.match(/^primary:\s*(.+)$/m);
+  if (m) return normalizeArchetype(m[1]);
+  // 3. Markdown list (bullet): `- Primary: \`foo\`` or `- primary: foo + bar`
+  m = text.match(/^[-*]\s*Primary:\s*(.+)$/im);
+  if (m) return normalizeArchetype(m[1]);
+  return '';
+}
+
+function readProjectMd(dir) {
+  const p = path.join(dir, '.great_cto', 'PROJECT.md');
+  if (!fs.existsSync(p)) return null;
+  const text = fs.readFileSync(p, 'utf8');
+  const get = k => (text.match(new RegExp(`^${k}:\\s*(.+)$`, 'm')) || [])[1]?.trim() || '';
+  return {
+    slug: get('project') || get('name') || path.basename(dir),
+    archetype: extractArchetype(text) || 'unknown',
+    description: get('description') || '',
+    path: dir,
+    added_at: new Date().toISOString(),
+  };
+}
+// change_tier for a project's working-tree diff (gate-tiering, ADR-003/004): which
+// human gates open for the current change + which judge model runs. Pure planGates()
+// over the project's archetype/size + `git diff --name-only`.
+function getChangeTier(dir) {
+  try {
+    const meta = readProjectMd(dir);
+    if (!meta) return { tier: null, error: 'no PROJECT.md' };
+    const pm = fs.readFileSync(path.join(dir, '.great_cto', 'PROJECT.md'), 'utf8');
+    const size = (pm.match(/^project_size:\s*(\S+)/m) || [])[1] || 'medium';
+    const out = spawnSync('git', ['diff', '--name-only', 'HEAD'], { cwd: dir, encoding: 'utf8', timeout: 5000 });
+    const changedFiles = String(out.stdout || '').split('\n').map(s => s.trim()).filter(Boolean);
+    return planGates({ archetype: meta.archetype, size, changedFiles });
+  } catch (e) {
+    return { tier: 'T2', error: e.message };  // fail-safe: unknown → full gates
+  }
+}
+function isGlobalStateProject(dir) {
+  const canonical = value => { try { return fs.realpathSync(value); } catch { return path.resolve(value); } };
+  const resolved = canonical(dir);
+  const state = canonical(GREAT_CTO_DIR);
+  return isInsideDir(state, resolved) || canonical(path.join(resolved, '.great_cto')) === state;
+}
+
+function autoRegisterProject(dir) {
+  if (isGlobalStateProject(dir)) return null;
+  // The home directory is never a project.
+  //
+  // `~/.great_cto/` is the GLOBAL store — cross-project verdicts, decisions,
+  // secrets — and it is shaped exactly like a project's own `.great_cto/`, same
+  // name and same contents. So the home directory reads as a project, and
+  // auto-registration kept adding it: deleted from the registry, it was back two
+  // minutes later, contributing 124 stages and $93 of $95 to a fleet view that
+  // has 22 real projects.
+  //
+  // Nothing downstream can tell these apart, because they are the same shape.
+  // The distinction is the location, so that is where it belongs.
+  //
+  // The installed plugin is not a project either, for the same reason and by the
+  // same mechanism: `~/.claude/plugins/cache/local/great_cto/2.95.0` ships a
+  // `.great_cto/` because it IS great_cto, so running the board from there
+  // registered the plugin's own copy as a twenty-third project — a version
+  // number in the switcher next to real work.
+  //
+  // Nor is a directory inside a project already registered. `packages/cli` ships
+  // its own `.great_cto/` because the published package carries one, so opening
+  // the board there added it as a separate project reading great_cto's beads —
+  // 228 tasks counted twice, under two names, in a fleet of seventeen.
+  try {
+    // Automatic discovery/cwd must not bypass the raw-path registration
+    // boundary. An explicit isolated discovery scope replaces HOME, never
+    // falls back to it, and is canonicalized before containment checks.
+    const scope = getDiscoveryScope();
+    const boundary = fs.realpathSync(scope.includeClaudeProjects ? os.homedir() : scope.roots[0]);
+    const canonical = fs.realpathSync(dir);
+    if (!isInsideDir(boundary, canonical)) return null;
+    const resolved = path.resolve(dir);
+    if (resolved === path.resolve(os.homedir())) return null;
+    if (isInsideDir(path.join(os.homedir(), '.claude', 'plugins'), resolved)) return null;
+    const enclosing = readProjectsRegistry().projects
+      .find((e) => e.path && path.resolve(e.path) !== resolved && isInsideDir(path.resolve(e.path), resolved));
+    if (enclosing) return null;
+  } catch { return null; } // Unknown scope is not permission to register it.
+
+  const meta = readProjectMd(dir);
+  if (!meta) return null;
+  const reg = readProjectsRegistry();
+  const existingByPath = reg.projects.find(p => {
+    if (p.path === meta.path) return true;
+    try { return fs.realpathSync(p.path) === fs.realpathSync(meta.path); }
+    catch { return false; }
+  });
+  if (existingByPath) return meta; // already registered at this path, nothing to do
+  // Only an entry whose path is GONE is this repo having moved. An entry whose
+  // path still exists is a different project that happens to share a name, and
+  // overwriting its path deleted it from the switcher silently.
+  const existingBySlug = reg.projects.find(p => p.slug === meta.slug && !existsSafe(p.path));
+  if (existingBySlug) {
+    // Repo moved: update the existing entry's path in place instead of
+    // inserting a second entry for the same slug (great_cto-7xfc).
+    existingBySlug.path = meta.path;
+    existingBySlug.archetype = meta.archetype;
+    existingBySlug.description = meta.description;
+    existingBySlug.added_at = meta.added_at;
+  } else {
+    reg.projects.push(meta);
+  }
+  writeProjectsRegistry(reg);
+  return meta;
+}
+
+// Discover great_cto projects across common dev folders + Claude Code's known
+// project list. Runs at server startup AND every /api/projects request, so any
+// project that ran /audit or /start (which writes .great_cto/PROJECT.md) gets
+// auto-registered without the user having to do anything.
+// Fully async — never blocks the event loop.
+function getDiscoveryScope() {
+  const scoped = process.env.GREAT_CTO_DISCOVERY_ROOT;
+  if (scoped) {
+    if (!path.isAbsolute(scoped)) throw new Error('GREAT_CTO_DISCOVERY_ROOT must be absolute');
+    const root = fs.realpathSync(scoped);
+    if (!fs.statSync(root).isDirectory()) throw new Error('GREAT_CTO_DISCOVERY_ROOT must be a directory');
+    return { roots: [root], includeClaudeProjects: false };
+  }
+  const home = os.homedir();
+  return { roots: [
+    path.join(home, 'work'), path.join(home, 'dev'),
+    path.join(home, 'development'), path.join(home, 'code'),
+    path.join(home, 'projects'), path.join(home, 'src'),
+    path.join(home, 'Documents', 'projects'), home,
+  ], includeClaudeProjects: true };
+}
+
+async function discoverProjects() {
+  const fsAsync = fs.promises;
+  const HOME = os.homedir();
+  const seen = new Set();
+  const found = [];
+  // Resolve before scanning. A broken explicit scope must never fall back to
+  // scanning the operator's home or Claude project cache.
+  const scope = getDiscoveryScope();
+
+  async function scanDir(dir, depth) {
+    if (depth < 0 || seen.has(dir) || isInsideDir(GREAT_CTO_DIR, dir)) return;
+    seen.add(dir);
+    try {
+      // Check the dir itself first — but NEVER treat HOME's own .great_cto as a
+      // project: ~/.great_cto is the global config dir, not a project. Without
+      // this guard, $HOME gets registered as a bogus project (great_cto-…).
+      if (dir !== HOME && !isGlobalStateProject(dir)) {
+        try {
+          await fsAsync.access(path.join(dir, '.great_cto', 'PROJECT.md'));
+          found.push(dir);
+          return; // don't descend into a registered project
+        } catch {}
+      }
+      if (depth === 0) return;
+      // Scan children (skip dotfiles + heavyweight dirs)
+      const entries = await fsAsync.readdir(dir, { withFileTypes: true });
+      for (const e of entries) {
+        if (!e.isDirectory()) continue;
+        const name = e.name;
+        if (name.startsWith('.') || name === 'node_modules' || name === 'dist' ||
+            name === 'build' || name === 'target' || name === 'venv' || name === '__pycache__') continue;
+        await scanDir(path.join(dir, name), depth - 1);
+      }
+    } catch {} // permission denied — skip silently
+  }
+
+  // 1) Common dev folders — top-level scan, 1-level deep
+  const roots = scope.roots;
+  for (const root of roots) {
+    try { await fsAsync.access(root); await scanDir(root, 1); } catch {}
+  }
+
+  // 2) Claude Code's known project list (~/.claude/projects/<encoded-path>/)
+  if (scope.includeClaudeProjects) try {
+    const ccProj = path.join(HOME, '.claude', 'projects');
+    await fsAsync.access(ccProj);
+    const entries = await fsAsync.readdir(ccProj);
+    for (const dir of entries) {
+      // Claude encodes paths as -Users-foo-projects-bar — decode to /Users/foo/projects/bar
+      const decoded = '/' + dir.replace(/^-+/, '').replace(/-/g, '/');
+      try {
+        await fsAsync.access(path.join(decoded, '.great_cto', 'PROJECT.md'));
+        if (!isGlobalStateProject(decoded)) found.push(decoded);
+      } catch {}
+    }
+  } catch {}
+
+  // Auto-register everything found
+  for (const dir of found) autoRegisterProject(dir);
+  return found.length;
+}
+
+function listProjects() {
+  // Auto-register cwd if it has PROJECT.md (cheap)
+  autoRegisterProject(process.cwd());
+  const reg = readProjectsRegistry();
+  const HOME = os.homedir();
+  // Show only live projects: drop entries whose path is gone, the global
+  // ~/.great_cto config dir ($HOME itself), and dead registrations whose
+  // .great_cto has no project marker or task source left (no PROJECT.md,
+  // no tasks.md, no .beads → nothing to show, just clutters the switcher).
+  reg.projects = reg.projects.filter(p =>
+    p.path !== HOME && !isGlobalStateProject(p.path) &&
+    fs.existsSync(p.path) &&
+    (fs.existsSync(path.join(p.path, '.great_cto', 'PROJECT.md')) ||
+     fs.existsSync(path.join(p.path, '.great_cto', 'tasks.md')) ||
+     fs.existsSync(path.join(p.path, '.beads'))));
+  // Re-read metadata in case archetype/description changed
+  // Enrich with last_activity (mtime of .beads/interactions.jsonl) so the UI
+  // can sort projects by recent activity instead of slug-alpha.
+  return reg.projects.map(p => {
+    const fresh = readProjectMd(p.path);
+    let lastActivity = null;
+    try {
+      const interactionsFile = path.join(p.path, '.beads', 'interactions.jsonl');
+      if (fs.existsSync(interactionsFile)) {
+        lastActivity = fs.statSync(interactionsFile).mtime.toISOString();
+      }
+    } catch {}
+    return { ...(fresh ? { ...p, ...fresh } : p), last_activity: lastActivity };
+  }).sort((a, b) => {
+    // Recent activity first; projects with no activity sink to the bottom (alphabetic)
+    const ax = a.last_activity || '';
+    const bx = b.last_activity || '';
+    if (ax && bx) return bx.localeCompare(ax);
+    if (ax) return -1;
+    if (bx) return 1;
+    return (a.slug || '').localeCompare(b.slug || '');
+  });
+}
+function resolveProjectCwd(slugOrPath) {
+  if (!slugOrPath) return process.cwd();
+  // If absolute path or starts with ~, it's raw user input — enforce the same
+  // HOME-boundary policy /api/projects/register uses. A path outside HOME
+  // falls back to process.cwd() (same fallback already used below for an
+  // unknown slug) rather than being honored verbatim.
+  if (slugOrPath.startsWith('/') || slugOrPath.startsWith('~')) {
+    const withinHome = resolveRawPathWithinHome(slugOrPath);
+    return withinHome || process.cwd();
+  }
+  // Else look up in registry by slug — among duplicate slugs (great_cto-7xfc),
+  // prefer the entry whose path exists on disk; among several existing (or
+  // several missing), prefer the most recently added_at. Registry entries were
+  // already validated at registration time (register enforces the HOME
+  // boundary before writing), so slug resolution is untouched.
+  const reg = readProjectsRegistry();
+  const matches = reg.projects.filter(p => p.slug === slugOrPath);
+  const found = pickBestBySlug(matches);
+  return found ? found.path : process.cwd();
+}
+
+/**
+ * Same as resolveProjectCwd but returns { cwd, resolved, fallback? } so
+ * callers know whether resolution was authoritative or fell back to the
+ * server's working directory. Used by HTTP handlers to set an explicit
+ * `X-Project-Fallback` response header (BH-5 fix, 2026-05-15).
+ *
+ * resolved values:
+ *   'cwd'      — no project param passed; using server cwd as documented
+ *   'path'     — absolute / tilde path passed, resolved inside HOME, used directly
+ *   'slug'     — slug found in registry
+ *   'fallback' — slug requested but NOT in registry, OR a raw path was requested
+ *                that resolves outside HOME (great_cto-qvg9); using cwd as
+ *                fallback. Caller should warn the user (header + log).
+ */
+function resolveProjectInfo(slugOrPath) {
+  if (!slugOrPath) return { cwd: process.cwd(), resolved: 'cwd' };
+  if (slugOrPath.startsWith('/') || slugOrPath.startsWith('~')) {
+    const withinHome = resolveRawPathWithinHome(slugOrPath);
+    if (withinHome) return { cwd: withinHome, resolved: 'path' };
+    return { cwd: process.cwd(), resolved: 'fallback', requested: slugOrPath };
+  }
+  const reg = readProjectsRegistry();
+  const matches = reg.projects.filter(p => p.slug === slugOrPath);
+  const found = pickBestBySlug(matches);
+  if (found) return { cwd: found.path, resolved: 'slug' };
+
+  // The identifier the board SHOWS and the identifier it RESOLVES were two
+  // different things.
+  //
+  // `listProjects()` derives a display slug at :184 —
+  // `project` / `name` / basename(dir) — while resolution matched only
+  // `p.slug` as stored in the registry. A project listed as `<private-project>`
+  // (basename of its directory) had a different slug on disk, so asking for the
+  // name the UI itself printed resolved to nothing and fell back to the server's
+  // own project: one project's session logs served under another's name. The
+  // fallback header said so, which is why this was a wrong answer rather than a
+  // silent one — but a caller that asks by the name it was given should not have
+  // to read a header to learn it was ignored.
+  //
+  // So the derived identifier is accepted too, and only after the stored one
+  // fails. Basename matching is last because it is the weakest claim: two
+  // directories can share a name, and pickBestBySlug already knows how to
+  // choose between candidates.
+  const byDerived = reg.projects.filter((p) => {
+    if (!p?.path) return false;
+    try { return path.basename(p.path) === slugOrPath || readProjectMd(p.path)?.slug === slugOrPath; }
+    catch { return false; }
+  });
+  const derived = pickBestBySlug(byDerived);
+  if (derived) return { cwd: derived.path, resolved: 'slug' };
+
+  return { cwd: process.cwd(), resolved: 'fallback', requested: slugOrPath };
+}
+
+export {
+  readProjectsRegistry,
+  writeProjectsRegistry,
+  pickBestBySlug,
+  dedupeProjects,
+  ARCHETYPE_ALIASES,
+  normalizeArchetype,
+  extractArchetype,
+  readProjectMd,
+  getChangeTier,
+  autoRegisterProject,
+  getRegistryDegradation,
+  getDiscoveryScope,
+  discoverProjects,
+  listProjects,
+  resolveProjectCwd,
+  resolveProjectInfo,
+};

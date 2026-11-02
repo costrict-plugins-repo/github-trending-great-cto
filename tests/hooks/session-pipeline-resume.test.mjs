@@ -1,0 +1,249 @@
+// This hook runs for every user at every session start. Before the freshness
+// check below it took 847ms — 533ms of that shelling out to `bd` to read gate
+// approval — against ~30ms for every other hook in this plugin. A session-start
+// tax paid by everyone, to answer a question almost nobody is asking.
+//
+// The fix is not a micro-optimisation. A stage that succeeded last week is not
+// work waiting for you, it is something that happened. The hook exists for "you
+// approved a gate two hours ago", and that is what it should answer.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync, execFile } from 'node:child_process';
+import http from 'node:http';
+import { fileURLToPath } from 'node:url';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const HOOK = path.join(ROOT, 'scripts/hooks/session-pipeline-resume.mjs');
+
+function project({ verdictAgeMs = null } = {}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gcto-sr-'));
+  fs.mkdirSync(path.join(dir, '.great_cto', 'verdicts'), { recursive: true });
+  fs.mkdirSync(path.join(dir, 'shared'), { recursive: true });
+  fs.copyFileSync(path.join(ROOT, 'shared/pipeline.toml'), path.join(dir, 'shared/pipeline.toml'));
+  fs.writeFileSync(path.join(dir, '.great_cto', 'PROJECT.md'), 'approval-level: gates-only\n');
+  if (verdictAgeMs !== null) {
+    const f = path.join(dir, '.great_cto', 'verdicts', 'architect.log');
+    fs.writeFileSync(f, `{"v":1,"ts":"${new Date(Date.now() - verdictAgeMs).toISOString()}","agent":"architect","verdict":"APPROVED","cost_usd":0}\n`);
+    const t = new Date(Date.now() - verdictAgeMs);
+    fs.utimesSync(f, t, t);
+  }
+  return dir;
+}
+const clean = (d) => { try { fs.rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }); } catch {} };
+// The hook asks the board on 3141 what is waiting. On the author's machine a
+// board IS running there, serving great_cto — and for a temp fixture it answers
+// with great_cto's gates under a fallback header. Point the hook at a port
+// nothing listens on, so the test measures the hook and not the machine; the
+// fallback case gets its own test below with a server that says so.
+const DEAD_PORT = '1';
+const run = (cwd, env = {}) => {
+  const started = Date.now();
+  const out = execFileSync('node', [HOOK], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+    env: { ...process.env, GREAT_CTO_BOARD_PORT: DEAD_PORT, ...env } });
+  return { out, ms: Date.now() - started };
+};
+
+// Why these assert on the BRANCH rather than on a stopwatch
+// ---------------------------------------------------------
+// Both of these used to assert `ms < 300`. That passed alone and failed at 444ms
+// under `node --test`, which runs a dozen files at once — the assertion was
+// measuring how busy the machine was, not what the hook did. The property that
+// matters is that the hook took the early-out and never shelled out to `bd`; the
+// 300ms was only ever a proxy for that, and a proxy that fails on a loaded
+// laptop is a gate people learn to re-run rather than believe.
+//
+// The trace records which branch ran, so the test below asks directly — and for
+// the idle case, `an idle project records that it ran and found nothing in
+// flight` already asserted exactly that property, without a stopwatch.
+
+test('a directory that is not a great_cto project says nothing', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gcto-plain-'));
+  try {
+    const { out } = run(dir);
+    assert.equal(out.trim(), '');
+    // Nothing is written either — a hook that creates `.great_cto` in whatever
+    // directory a session happens to start in is worse than one that is slow.
+    assert.equal(fs.existsSync(path.join(dir, '.great_cto')), false,
+      'it must not initialise a directory it was only passing through');
+  } finally { clean(dir); }
+});
+
+test('a project with no verdicts at all says nothing', () => {
+  const dir = project();
+  try { assert.equal(run(dir).out.trim(), ''); } finally { clean(dir); }
+});
+
+test('a session must start even when the state is nonsense', () => {
+  // Nothing this hook answers is worth a failed session start.
+  const dir = project({ verdictAgeMs: 60_000 });
+  fs.writeFileSync(path.join(dir, 'shared/pipeline.toml'), 'this is not toml [[[');
+  fs.writeFileSync(path.join(dir, '.great_cto/verdicts/architect.log'), 'not json\n');
+  try {
+    const r = execFileSync('node', [HOOK], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    assert.equal(r.trim(), '');
+  } finally { clean(dir); }
+});
+
+test('a stage behind an unapproved gate is not announced as work waiting', () => {
+  // gate:arch is active at gates-only and no bead approves it, so the honest
+  // answer is silence — the CTO has not said yes.
+  const dir = project({ verdictAgeMs: 60_000 });
+  try { assert.equal(run(dir).out.trim(), ''); } finally { clean(dir); }
+});
+
+// ── a silent run and a run that never happened must not look the same ─────
+//
+// Silence is this hook's normal answer: nothing in flight, a gate unapproved, a
+// transition already dispatched. But without a trace, "stayed silent" and "never
+// ran" are indistinguishable from outside — the same defect this repo spent two
+// days removing everywhere else, where a run that did not happen looked like a
+// run that found nothing.
+
+const traceOf = (dir) => {
+  const p = path.join(dir, '.great_cto', '.session-resume');
+  return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').trim() : null;
+};
+
+test('an idle project records that it ran and found nothing in flight', () => {
+  const dir = project({ verdictAgeMs: 7 * 24 * 3600_000 });
+  try {
+    assert.equal(run(dir).out.trim(), '');
+    const t = traceOf(dir);
+    assert.match(t, /idle/, 'the hook must leave proof it ran');
+    assert.match(t, /history, not work waiting/);
+  } finally { clean(dir); }
+});
+
+test('a project with no verdicts at all records that too', () => {
+  const dir = project();
+  try {
+    run(dir);
+    assert.match(traceOf(dir), /idle no verdicts recorded/);
+  } finally { clean(dir); }
+});
+
+test('a stage behind an unapproved gate records WHY it said nothing', () => {
+  // Not the same as idle: something is in flight, and the CTO has not said yes.
+  const dir = project({ verdictAgeMs: 60_000 });
+  try {
+    assert.equal(run(dir).out.trim(), '');
+    const t = traceOf(dir);
+    assert.match(t, /silent/);
+    assert.ok(!/idle/.test(t), 'an unapproved gate is a different answer from an idle project');
+  } finally { clean(dir); }
+});
+
+test('the trace is overwritten, not grown', () => {
+  // The question is "did it run this session and what did it say", not "how many
+  // times has it ever run".
+  const dir = project({ verdictAgeMs: 60_000 });
+  try {
+    run(dir); run(dir); run(dir);
+    assert.equal(traceOf(dir).split('\n').length, 1);
+  } finally { clean(dir); }
+});
+
+test('a trace that cannot be written does not stop the hook', () => {
+  const dir = project({ verdictAgeMs: 7 * 24 * 3600_000 });
+  try {
+    fs.mkdirSync(path.join(dir, '.great_cto', '.session-resume'), { recursive: true });  // a directory where a file goes
+    assert.equal(run(dir).out.trim(), '', 'still exits cleanly and says nothing');
+  } finally { clean(dir); }
+});
+
+// ── An approval outranks the clock (§1.3) ───────────────────────────────────
+//
+// The freshness shortcut is the first thing this hook does: a pipeline whose
+// newest verdict is over a day old is "history, not work waiting", and the hook
+// returns before reading a single gate. That is right for the common case and
+// wrong for the case the whole mechanism exists to serve — approve a gate on a
+// stage that ran three days ago, and the strongest evidence the pipeline is
+// waiting is the one fact never consulted.
+
+import { recordWake, readWake } from '../../scripts/lib/pipeline-wake.mjs';
+
+test('a stale pipeline is still history when nobody approved anything', () => {
+  const dir = project({ verdictAgeMs: 3 * 24 * 3600_000 });
+  try {
+    run(dir);
+    assert.match(traceOf(dir), /idle .*history, not work waiting/,
+      'without an approval the shortcut must still fire — it pays for itself on every other session');
+  } finally { clean(dir); }
+});
+
+test('an approved gate makes a three-day-old pipeline work waiting again', () => {
+  const dir = project({ verdictAgeMs: 3 * 24 * 3600_000 });
+  try {
+    recordWake(dir, { gate: 'gate:arch — payment service', id: 'proj-1a2b' });
+    run(dir);
+    const trace = traceOf(dir);
+    assert.doesNotMatch(trace, /history, not work waiting/,
+      'the approval must suppress the freshness shortcut');
+    assert.match(trace, /woken by an approval/,
+      'and the trace must say the approval is why it looked');
+  } finally { clean(dir); }
+});
+
+test('an approval is spent once it has been considered', () => {
+  // A wake that survives its own consideration re-announces the same approval at
+  // every session start for a week, and a signal that fires forever stops being
+  // a signal.
+  const dir = project({ verdictAgeMs: 3 * 24 * 3600_000 });
+  try {
+    recordWake(dir, { gate: 'gate:arch', id: 'x' });
+    run(dir);
+    assert.equal(readWake(dir).pending, false, 'considered means spent');
+    run(dir);
+    assert.match(traceOf(dir), /history, not work waiting/,
+      'and the next session falls back to the ordinary shortcut');
+  } finally { clean(dir); }
+});
+
+test('an approval does not override the refusals, only the shortcut', () => {
+  // The gate is still unapproved in beads here; the wake must not manufacture a
+  // dispatch. Everything tickDecision refuses, it still refuses.
+  const dir = project({ verdictAgeMs: 3 * 24 * 3600_000 });
+  try {
+    recordWake(dir, { gate: 'gate:arch', id: 'x' });
+    const { out } = run(dir);
+    assert.equal(out.trim(), '', 'a woken hook that finds nothing dispatchable still says nothing');
+  } finally { clean(dir); }
+});
+
+test('a board answering for ANOTHER project (fallback header) is not a hint about this one', async () => {
+  // A stand-in board: knows no project, serves its own, and says so — exactly
+  // what a real board does for an unregistered directory.
+  //
+  // The hook runs ASYNCHRONOUSLY here. The first version used execFileSync,
+  // which blocks this process's event loop — the very loop the stand-in server
+  // needs to answer — so the hook's 400ms fetch timed out, returned null, and
+  // the test passed without the server ever being asked. Found by the Codex
+  // second opinion on this diff, 2026-09-06. The request count is asserted so
+  // the case cannot pass vacuously again.
+  let asked = 0;
+  const srv = http.createServer((req, res) => {
+    asked += 1;
+    res.writeHead(200, { 'Content-Type': 'application/json', 'X-Project-Resolved': 'fallback', 'X-Project-Serving': 'somebody-else' });
+    res.end(JSON.stringify([{ id: 'x-1', title: 'gate:ship — someone else\'s release', status: 'open', is_gate: true, labels: ['gate'], updated_at: new Date(Date.now() - 3 * 24 * 3600_000).toISOString() }]));
+  });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+  const port = String(srv.address().port);
+  const dir = project({ verdictAgeMs: 7 * 24 * 3600_000 });
+  try {
+    const out = await new Promise((resolve, reject) => {
+      // A generous budget on purpose: this case is about the BRANCH the hook
+      // takes when the answer carries a fallback header, and `asked === 1`
+      // below is what stops it passing vacuously. Under the product's own
+      // 400ms the assertion measures how loaded the machine is instead.
+      execFile('node', [HOOK], { cwd: dir, encoding: 'utf8',
+        env: { ...process.env, GREAT_CTO_BOARD_PORT: port, GREAT_CTO_BOARD_TIMEOUT_MS: '10000' } },
+        (err, stdout) => (err ? reject(err) : resolve(stdout)));
+    });
+    assert.equal(asked, 1, 'the hook asked the stand-in board');
+    assert.equal(out.trim(), '', 'nothing is announced on behalf of another project');
+    assert.match(traceOf(dir), /idle/, 'the hook records that this project is idle');
+  } finally { clean(dir); srv.close(); }
+});

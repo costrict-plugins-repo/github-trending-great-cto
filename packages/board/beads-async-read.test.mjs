@@ -1,0 +1,224 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import { spawnBdRead } from './lib/bd-read-worker.mjs';
+import { bdCache } from './lib/state.mjs';
+const fixture = fileURLToPath(new URL('./fixtures/fake-bd-controlled.mjs', import.meta.url));
+async function setup(t, mode = 'hold') {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'gcto-async-read-'));
+  const cwd = path.join(root, 'project');
+  fs.mkdirSync(path.join(cwd, '.beads'), { recursive: true });
+  process.env.GREAT_CTO_BD_BIN = fixture;
+  process.env.FAKE_BD_CONTROL_ROOT = root;
+  process.env.FAKE_BD_CONTROL_MODE = mode;
+  const mod = await import(`./lib/beads.mjs?async=${Date.now()}-${Math.random()}`);
+  t.after(() => {
+    for (const key of ['GREAT_CTO_BD_BIN', 'FAKE_BD_CONTROL_ROOT', 'FAKE_BD_CONTROL_MODE']) delete process.env[key];
+    bdCache.clear();
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+  return { root, cwd, ...mod };
+}
+async function waitFor(fn, budget = 5000, observe) {
+  const started = performance.now(), end = started + budget;
+  while (!fn() && performance.now() < end) await new Promise(r => setTimeout(r, 25));
+  const found = fn();
+  let context = '';
+  if (!found && observe) {
+    try { context = '; ' + JSON.stringify({ ...observe(), elapsedMs: Math.round(performance.now() - started) }); }
+    catch { context = '; diagnostics unavailable'; }
+  }
+  assert.ok(found, 'fixture observation exceeded its fixed deadline' + context);
+}
+test('fixture failure diagnostics are lazy and never mask the original deadline assertion', async () => {
+  let observations = 0;
+  await waitFor(() => true, 0, () => { observations++; });
+  assert.equal(observations, 0, 'a successful observation must add no diagnostic work');
+  await assert.rejects(waitFor(() => false, 0, () => {
+    observations++; return { phase: 'await-descendant', markerPresent: false };
+  }), error => {
+    assert.equal(error.code, 'ERR_ASSERTION');
+    assert.match(error.message, /fixed deadline.*"phase":"await-descendant".*"markerPresent":false.*"elapsedMs":\d+/);
+    return true;
+  });
+  assert.equal(observations, 1);
+  await assert.rejects(waitFor(() => false, 0, () => { throw Error('diagnostic probe failed'); }), /fixed deadline; diagnostics unavailable/);
+});
+test('concurrent cold readers join one subprocess and wait for real tasks', async t => {
+  const f = await setup(t);
+  let settled = 0;
+  const pending = [f.getTasksAsync(f.cwd), f.getTasksAsync(f.cwd)].map(p => p.then(x => { settled++; return x; }));
+  await waitFor(() => fs.existsSync(path.join(f.root, 'project.started')));
+  assert.equal(settled, 0);
+  assert.equal(fs.readFileSync(path.join(f.root, 'project.started'), 'utf8').trim().split('\n').length, 1);
+  assert.throws(() => f.getTasksCached(f.cwd), /loading/);
+  fs.writeFileSync(path.join(f.root, 'project.release'), 'release');
+  for (const tasks of await Promise.all(pending)) assert.equal(tasks[0].id, 'FIXTURE-1');
+});
+test('a cold read invalidated while in flight refuses rather than returning false empty', async t => {
+  const f = await setup(t);
+  const pending = f.getTasksAsync(f.cwd);
+  const refused = assert.rejects(pending, /snapshot changed/);
+  await waitFor(() => fs.existsSync(path.join(f.root, 'project.started')));
+  f.bdCacheInvalidate(f.cwd);
+  fs.writeFileSync(path.join(f.root, 'project.release'), 'release');
+  await refused;
+  assert.equal(bdCache.has(f.cwd), false);
+});
+test('an invalidation before a read in the same millisecond does not discard the fresh result', async t => {
+  const f = await setup(t);
+  const realNow = Date.now;
+  Date.now = () => 2000000000000;
+  let pending;
+  try {
+    f.bdCacheInvalidate(f.cwd);
+    pending = f.getTasksAsync(f.cwd);
+    await waitFor(() => fs.existsSync(path.join(f.root, 'project.started')));
+    fs.writeFileSync(path.join(f.root, 'project.release'), 'release');
+    assert.equal((await pending)[0].id, 'FIXTURE-1');
+  } finally {
+    fs.writeFileSync(path.join(f.root, 'project.release'), 'release');
+    if (pending) await pending.catch(() => {});
+    Date.now = realNow;
+  }
+});
+test('read deadline escalates to KILL for owned TERM-resistant group', { timeout: 30000 }, async t => {
+  const f = await setup(t, 'hang');
+  const refused = assert.rejects(f.getTasksAsync(f.cwd), /timed out/);
+  await waitFor(() => fs.existsSync(path.join(f.root, 'project.descendant')));
+  const leader = Number(fs.readFileSync(path.join(f.root, 'project.started'), 'utf8').trim());
+  const descendant = Number(fs.readFileSync(path.join(f.root, 'project.descendant'), 'utf8'));
+  await refused;
+  const dead = pid => { try { process.kill(pid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } };
+  await waitFor(() => dead(leader) && dead(descendant));
+  assert.equal(bdCache.has(f.cwd), false);
+  assert.match(f.bdFailureFor(f.cwd), /timed out/);
+});
+test('oversized output refuses without publishing a snapshot', async t => {
+  const f = await setup(t, 'oversize');
+  await assert.rejects(f.getTasksAsync(f.cwd), /output exceeded limit/);
+  assert.equal(bdCache.has(f.cwd), false);
+});
+test('background refreshes are limited to four owned reads', async t => {
+  const f = await setup(t);
+  const dirs = Array.from({ length: 5 }, (_, i) => path.join(f.root, `lane${i}`));
+  for (const dir of dirs) fs.mkdirSync(path.join(dir, '.beads'), { recursive: true });
+  const pending = dirs.map(dir => f.getTasksAsync(dir));
+  try {
+    await waitFor(() => dirs.slice(0, 4).every(dir => fs.existsSync(path.join(f.root, path.basename(dir) + '.started'))));
+    assert.equal(fs.existsSync(path.join(f.root, 'lane4.started')), false);
+  } finally {
+    for (const dir of dirs) fs.writeFileSync(path.join(f.root, path.basename(dir) + '.release'), 'release');
+    for (const tasks of await Promise.all(pending)) assert.equal(tasks[0].id, 'FIXTURE-1');
+  }
+});
+test('concurrent tasks.md-only readers all receive the supported fallback', async t => {
+  const f = await setup(t, 'fail');
+  fs.rmSync(path.join(f.cwd, '.beads'), { recursive: true, force: true });
+  fs.mkdirSync(path.join(f.cwd, '.great_cto'));
+  fs.writeFileSync(path.join(f.cwd, '.great_cto', 'tasks.md'), '# Tasks\n\n- [ ] MD-1: Keep fallback readable\n');
+  const answers = await Promise.all([f.getTasksAsync(f.cwd), f.getTasksAsync(f.cwd), f.getTasksAsync(f.cwd)]);
+  for (const tasks of answers) assert.ok(tasks.length > 0);
+});
+for (const mode of ['hang', 'leader-exit']) test(`actual owner SIGKILL closes ${mode} read through IPC disconnect`, async t => {
+  const f = await setup(t, mode);
+  const owner = spawn(process.execPath, [fileURLToPath(new URL('./fixtures/beads-read-owner.mjs', import.meta.url))], {
+    cwd: f.cwd, env: { ...process.env }, stdio: 'ignore'
+  });
+  let leader, descendant, worker;
+  const dead = pid => { try { process.kill(pid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } };
+  const markers = () => Object.fromEntries(['started', 'descendant', 'worker'].map(name =>
+    [name, fs.existsSync(path.join(f.root, 'project.' + name))]));
+  try {
+    await waitFor(() => fs.existsSync(path.join(f.root, 'project.descendant')), 5000, () => ({
+      phase: 'await-descendant', mode, markers: markers(), ownerPidObserved: Number.isInteger(owner.pid),
+      ownerExited: owner.exitCode !== null || owner.signalCode !== null,
+    }));
+    leader = Number(fs.readFileSync(path.join(f.root, 'project.started'), 'utf8').trim());
+    descendant = Number(fs.readFileSync(path.join(f.root, 'project.descendant'), 'utf8'));
+    worker = Number(fs.readFileSync(path.join(f.root, 'project.worker'), 'utf8'));
+    const exited = once(owner, 'exit');owner.kill('SIGKILL');await exited;
+    await waitFor(() => dead(leader) && dead(descendant) && dead(worker), 5000, () => ({
+      phase: 'await-owned-exit', mode, leaderDead: dead(leader), descendantDead: dead(descendant), workerDead: dead(worker),
+    }));
+  } finally {
+    // Fixed captured fixture PIDs only; cleanup is not the preceding assertion.
+    try { owner.kill('SIGKILL'); } catch {}
+    for (const pid of [leader, descendant, worker]) if (pid && !dead(pid)) { try { process.kill(pid, 'SIGKILL'); } catch {} }
+  }
+});
+for (const mode of ['closed-success', 'closed-fail']) test(`completed ${mode} read terminates closed-pipe descendants`, async t => {
+  const f = await setup(t, mode);
+  const sentinel = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], { stdio: 'ignore' });
+  const dead = pid => { try { process.kill(pid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } };
+  let descendant, worker;
+  let readState = 'not-started';
+  try {
+    const read = f.getTasksAsync(f.cwd);
+    readState = 'pending';
+    read.then(() => { readState = 'resolved'; }, () => { readState = 'rejected'; });
+    const completed = mode === 'closed-fail' ? assert.rejects(read, /exited 1/) : read;
+    await waitFor(() => fs.existsSync(path.join(f.root, 'project.descendant')), 5000, () => ({
+      phase: 'await-descendant', mode, readState,
+      markers: Object.fromEntries(['started', 'descendant', 'worker'].map(name =>
+        [name, fs.existsSync(path.join(f.root, 'project.' + name))])),
+    }));
+    descendant = Number(fs.readFileSync(path.join(f.root, 'project.descendant'), 'utf8'));
+    worker = Number(fs.readFileSync(path.join(f.root, 'project.worker'), 'utf8'));
+    const result = await completed;
+    if (mode === 'closed-success') assert.equal(result[0].id, 'FIXTURE-1');
+    else assert.equal(bdCache.has(f.cwd), false);
+    await waitFor(() => dead(descendant) && dead(worker), 5000, () => ({
+      phase: 'await-owned-exit', mode, readState, descendantDead: dead(descendant), workerDead: dead(worker),
+    }));
+    assert.equal(dead(sentinel.pid), false, 'unrelated process must survive');
+  } finally {
+    // Captured test-owned PIDs only; the assertion above is not cleanup.
+    for (const pid of [descendant, worker]) if (pid && !dead(pid)) { try { process.kill(pid, 'SIGKILL'); } catch {} }
+    const exited = once(sentinel, 'exit');sentinel.kill('SIGKILL');await exited;
+  }
+});
+test('successful worker flushes complete stdout under backpressure before group cleanup', async t => {
+  const f = await setup(t, 'large-success');
+  // Success/flush probe, not the deadline test above. Allow bounded startup
+  // and 2 MiB transport under contention without changing production limits.
+  const worker = spawnBdRead(fixture, { cwd: f.cwd, env: { ...process.env }, detached: process.platform !== 'win32', readDeadlineMs: 10000 });
+  let output = '', result;
+  worker.stdout.on('data', data => output += data);worker.stdout.pause();worker.stderr.resume();
+  worker.on('message', message => { if (message?.type === 'bd-read-result') result = message.code; });
+  const closed = once(worker, 'close');
+  let resume;
+  try {
+    await waitFor(() => fs.existsSync(path.join(f.root, 'project.output-queued')));
+    const queued = JSON.parse(fs.readFileSync(path.join(f.root, 'project.output-queued'), 'utf8'));
+    assert.equal(queued.needsDrain, true, 'actual producer encountered stream backpressure');
+    assert.ok(queued.bytes > 2 * 1024 * 1024);
+    assert.equal(result, undefined, 'paused consumer has not received a completed result');
+    resume = setTimeout(() => worker.stdout.resume(), 100);
+    await closed;
+    assert.equal(result, 0);
+    assert.equal(JSON.parse(output)[0].title.length, 2 * 1024 * 1024);
+  } finally {
+    clearTimeout(resume);
+    // This newly owned read group only, never process searches or other jobs.
+    try { if (process.platform !== 'win32') process.kill(-worker.pid, 'SIGKILL');else worker.kill('SIGKILL'); } catch {}
+  }
+});
+test('queued read expires within the original budget without spawning a fifth group', { timeout: 30000 }, async t => {
+  const f = await setup(t, 'hang');
+  const dirs = Array.from({ length: 5 }, (_, i) => path.join(f.root, `queued${i}`));
+  for (const dir of dirs) fs.mkdirSync(path.join(dir, '.beads'), { recursive: true });
+  const settled = dirs.map(dir => assert.rejects(f.getTasksAsync(dir), /timed out|exited/));
+  await waitFor(() => dirs.slice(0, 4).every(dir => fs.existsSync(path.join(f.root, path.basename(dir) + '.descendant'))));
+  await Promise.all(settled);
+  assert.equal(fs.existsSync(path.join(f.root, 'queued4.started')), false);
+  assert.match(f.bdFailureFor(dirs[4]), /waiting for a slot/);
+  const captured = dirs.slice(0, 4).flatMap(dir => ['started', 'descendant', 'worker'].map(suffix =>
+    Number(fs.readFileSync(path.join(f.root, path.basename(dir) + '.' + suffix), 'utf8').trim())));
+  await waitFor(() => captured.every(pid => { try { process.kill(pid, 0); return false; } catch (e) { return e.code === 'ESRCH'; } }));
+});

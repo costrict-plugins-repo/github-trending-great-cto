@@ -1,0 +1,342 @@
+// Tests for scripts/hooks/auto-attach-reviewers.mjs — RULES pattern matching.
+//
+// Covers the catalog compliance-promise gap: healthcare-allied / insurance-agency /
+// accounting-tax verticals claim "great_cto auto-attaches the right compliance
+// reviewer" — these tests verify that claim is actually true for the reviewer
+// patterns, not just that the reviewer agent files exist.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const HOOK = resolve(__dirname, '../../scripts/hooks/auto-attach-reviewers.mjs');
+
+const { RULES, shouldExclude } = await import(HOOK);
+
+function reviewersFor(path) {
+  if (shouldExclude(path)) return [];
+  return RULES.filter(r => r.pattern.test(path)).map(r => r.reviewer);
+}
+
+// ─── healthcare-reviewer: the gap this change closes ─────────────────────
+
+test('healthcare-reviewer attaches on HIPAA/PHI/clinical-transport signals', () => {
+  assert.ok(reviewersFor('src/hipaa/audit-log.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('src/phi_redaction.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('integrations/hl7/parser.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('integrations/fhir/client.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('ehr/epic-sync.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('billing/superbill-generator.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('claims/icd10-mapper.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('clinical/soap_note.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('legal/BAA-vendor.ts').includes('healthcare-reviewer'));
+});
+
+test('healthcare-reviewer does NOT attach on unrelated or near-miss paths', () => {
+  // Generic wellness/support code that happens to contain "health"/"care"/"claim" —
+  // must NOT fire; these are deliberately excluded from the token list.
+  assert.deepEqual(reviewersFor('src/health-check.ts'), []);
+  assert.deepEqual(reviewersFor('src/care-team.ts'), []);
+  assert.deepEqual(reviewersFor('src/insurance/claims.ts'), []);
+  // Substring false-positive guard: "ehr" inside an unrelated word must not fire.
+  assert.deepEqual(reviewersFor('src/behr/thing.ts'), []);
+  assert.deepEqual(reviewersFor('src/utils/format.ts'), []);
+});
+
+// ─── legal-reviewer: legal-smb vertical (matches insurance-reviewer's shape) ──
+
+test('legal-reviewer attaches on IOLTA/matter/conflict-check/e-filing signals', () => {
+  assert.ok(reviewersFor('src/iolta/trust-ledger.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('src/trust-account/reconcile.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('intake/matter-number.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('intake/conflict-check.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('efile/pacer-client.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('efile/ecf-submit.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('src/retainer-agreement.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('src/attorney-client-log.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('src/upl-guard.ts').includes('legal-reviewer'));
+  assert.ok(reviewersFor('src/docket-sync.ts').includes('legal-reviewer'));
+});
+
+test('legal-reviewer does NOT attach on generic code containing bare legal/law/case/trust tokens', () => {
+  // Deliberately excluded bare tokens — must not collide with license headers,
+  // unrelated "law" words, switch/test "case" terminology, or crypto "trust" code.
+  assert.deepEqual(reviewersFor('src/LICENSE-checker.ts'), []);
+  assert.deepEqual(reviewersFor('src/law-of-large-numbers.ts'), []);
+  assert.deepEqual(reviewersFor('src/test/case-runner.ts'), []);
+  assert.deepEqual(reviewersFor('src/security/trust-boundary.ts'), []);
+  assert.deepEqual(reviewersFor('src/utils/legal-notice.ts'), []);
+});
+
+// ─── regression: reviewers that already had patterns keep working ────────
+
+test('insurance-reviewer still attaches on NAIC/actuarial signals (regression)', () => {
+  assert.ok(reviewersFor('src/naic-filing.ts').includes('insurance-reviewer'));
+  assert.ok(reviewersFor('actuarial/model.ts').includes('insurance-reviewer'));
+});
+
+test('healthcare-reviewer attaches on dental tokens (dental vertical reuses healthcare archetype)', () => {
+  assert.ok(reviewersFor('src/dental/cdt-code.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('src/dental/odontogram.tsx').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('src/dental/perio-chart.ts').includes('healthcare-reviewer'));
+  assert.ok(reviewersFor('billing/dental-claim.ts').includes('healthcare-reviewer'));
+});
+
+test('pci-reviewer still attaches on payment signals (regression)', () => {
+  assert.ok(reviewersFor('src/payments/stripe-webhook.ts').includes('pci-reviewer'));
+});
+
+// ─── accounting-reviewer: GL/GAAP routing (migrated off enterprise-saas-reviewer,
+// closes great_cto-k0uf's partial patch now that a dedicated reviewer exists) ──
+
+test('accounting-reviewer attaches on GL/GAAP/close signals (migrated from enterprise-saas-reviewer)', () => {
+  assert.ok(reviewersFor('accounting/general-ledger.ts').includes('accounting-reviewer'));
+  assert.ok(reviewersFor('finance/gaap-adjustments.ts').includes('accounting-reviewer'));
+  assert.ok(reviewersFor('src/close/month-end-close.ts').includes('accounting-reviewer'));
+  assert.ok(reviewersFor('src/tax-forms/1099-generator.ts').includes('accounting-reviewer'));
+  assert.ok(reviewersFor('src/revrec/asc-606-schedule.ts').includes('accounting-reviewer'));
+  assert.ok(reviewersFor('src/coa/chart-of-accounts.ts').includes('accounting-reviewer'));
+});
+
+test('accounting-reviewer does NOT double-attach with enterprise-saas-reviewer on GL/GAAP tokens (no double-attach, great_cto-k0uf)', () => {
+  const glMatches = reviewersFor('accounting/general-ledger.ts');
+  assert.ok(glMatches.includes('accounting-reviewer'));
+  assert.ok(!glMatches.includes('enterprise-saas-reviewer'));
+
+  const gaapMatches = reviewersFor('finance/gaap-adjustments.ts');
+  assert.ok(gaapMatches.includes('accounting-reviewer'));
+  assert.ok(!gaapMatches.includes('enterprise-saas-reviewer'));
+});
+
+test('enterprise-saas-reviewer still attaches on SSO/SCIM/tenant signals (regression)', () => {
+  assert.ok(reviewersFor('src/sso/saml-handler.ts').includes('enterprise-saas-reviewer'));
+});
+
+// ─── regulated-reviewer: DORA/NIS2/ISO27001 only, no double-attach ────────
+
+test('regulated-reviewer attaches on its exclusive DORA/NIS2/ISO27001 surface', () => {
+  assert.ok(reviewersFor('src/compliance/dora-incident-classifier.ts').includes('regulated-reviewer'));
+  assert.ok(reviewersFor('src/nis2-vuln-disclosure.ts').includes('regulated-reviewer'));
+  assert.ok(reviewersFor('config/iso27001-controls.json').includes('regulated-reviewer'));
+});
+
+test('regulated-reviewer does NOT double-attach alongside healthcare/enterprise-saas on their exclusive tokens', () => {
+  // HIPAA/PHI tokens belong to healthcare-reviewer only — regulated-reviewer's
+  // pattern deliberately excludes hipaa/sox tokens to avoid noisy double-attach.
+  const hipaaMatches = reviewersFor('src/hipaa/audit-log.ts');
+  assert.ok(hipaaMatches.includes('healthcare-reviewer'));
+  assert.ok(!hipaaMatches.includes('regulated-reviewer'));
+
+  const soxMatches = reviewersFor('src/sox.itgc/access-review.ts');
+  assert.ok(soxMatches.includes('enterprise-saas-reviewer'));
+  assert.ok(!soxMatches.includes('regulated-reviewer'));
+});
+
+// ─── rcm-reviewer: healthcare revenue-cycle / medical-billing vertical ────
+
+test('rcm-reviewer attaches on claim-form/coding/remittance signals', () => {
+  assert.ok(reviewersFor('src/billing/cms-1500-generator.ts').includes('rcm-reviewer'));
+  assert.ok(reviewersFor('src/billing/ub-04-claim.ts').includes('rcm-reviewer'));
+  assert.ok(reviewersFor('src/billing/hcpcs-lookup.ts').includes('rcm-reviewer'));
+  assert.ok(reviewersFor('src/remit/era-835-parser.ts').includes('rcm-reviewer'));
+  assert.ok(reviewersFor('src/remittance-advice/post.ts').includes('rcm-reviewer'));
+  assert.ok(reviewersFor('src/claims/prior-auth-check.ts').includes('rcm-reviewer'));
+  assert.ok(reviewersFor('src/claims/denial-code-map.ts').includes('rcm-reviewer'));
+  assert.ok(reviewersFor('src/provider/npi-validate.ts').includes('rcm-reviewer'));
+});
+
+test('rcm-reviewer does NOT attach on generic billing/claims code without RCM-specific tokens', () => {
+  assert.deepEqual(reviewersFor('src/billing/invoice.ts'), []);
+  assert.deepEqual(reviewersFor('src/utils/format.ts'), []);
+});
+
+// ─── procurement-reviewer: source-to-pay vertical ─────────────────────────
+
+test('procurement-reviewer attaches on PO/three-way-match/vendor-screening signals', () => {
+  assert.ok(reviewersFor('src/procurement/purchase-order.ts').includes('procurement-reviewer'));
+  assert.ok(reviewersFor('src/procurement/three-way-match.ts').includes('procurement-reviewer'));
+  assert.ok(reviewersFor('src/sourcing/rfp-submission.ts').includes('procurement-reviewer'));
+  assert.ok(reviewersFor('src/vendor/ofac-screen.ts').includes('procurement-reviewer'));
+  assert.ok(reviewersFor('src/catalog/punchout-session.ts').includes('procurement-reviewer'));
+  assert.ok(reviewersFor('src/catalog/cxml-handler.ts').includes('procurement-reviewer'));
+  assert.ok(reviewersFor('src/procurement/requisition.ts').includes('procurement-reviewer'));
+});
+
+test('procurement-reviewer does NOT attach on generic e-commerce order code', () => {
+  assert.deepEqual(reviewersFor('src/checkout/order.ts'), []);
+  assert.deepEqual(reviewersFor('src/cart/vendor-list.ts'), []);
+});
+
+// ─── msp-reviewer: managed-service-provider vertical ──────────────────────
+
+test('msp-reviewer attaches on MSA/SLA/RMM/PSA/credential-vault signals', () => {
+  assert.ok(reviewersFor('src/contracts/msa-terms.ts').includes('msp-reviewer'));
+  assert.ok(reviewersFor('src/sla/tracker.ts').includes('msp-reviewer'));
+  assert.ok(reviewersFor('src/rmm/script-deploy.ts').includes('msp-reviewer'));
+  assert.ok(reviewersFor('src/psa/ticket-sync.ts').includes('msp-reviewer'));
+  assert.ok(reviewersFor('src/platform/multi-tenant-router.ts').includes('msp-reviewer'));
+  assert.ok(reviewersFor('src/onboarding/managed-service-setup.ts').includes('msp-reviewer'));
+  assert.ok(reviewersFor('src/secrets/credential-vault.ts').includes('msp-reviewer'));
+});
+
+test('msp-reviewer does NOT attach on generic service/tenant code without MSP-specific tokens', () => {
+  assert.deepEqual(reviewersFor('src/services/user-service.ts'), []);
+  assert.deepEqual(reviewersFor('src/utils/format.ts'), []);
+});
+
+// ─── tax-reviewer: tax preparation / IRS e-file vertical ──────────────────
+
+test('tax-reviewer attaches on PTIN/Circular-230/8879/MeF/7216 signals', () => {
+  assert.ok(reviewersFor('src/preparer/ptin-validate.ts').includes('tax-reviewer'));
+  assert.ok(reviewersFor('src/compliance/circular-230-check.ts').includes('tax-reviewer'));
+  assert.ok(reviewersFor('src/efile/form-8879-signature.ts').includes('tax-reviewer'));
+  assert.ok(reviewersFor('src/efile/mef-transmit.ts').includes('tax-reviewer'));
+  assert.ok(reviewersFor('src/safeguards/pub-4557-controls.ts').includes('tax-reviewer'));
+  assert.ok(reviewersFor('src/consent/section-7216-consent.ts').includes('tax-reviewer'));
+  assert.ok(reviewersFor('src/onboarding/tax-prep-intake.ts').includes('tax-reviewer'));
+});
+
+test('tax-reviewer does NOT attach on generic sales-tax/tax-rate commerce code', () => {
+  assert.deepEqual(reviewersFor('src/checkout/tax-rate.ts'), []);
+  assert.deepEqual(reviewersFor('src/pricing/sales-tax-calc.ts'), []);
+});
+
+// ─── no double-attach on a plain, unrelated path ──────────────────────────
+
+test('a plain unrelated file attaches no reviewers', () => {
+  assert.deepEqual(reviewersFor('src/components/Button.tsx'), []);
+  assert.deepEqual(reviewersFor('README.md'), []); // also EXCLUDE-filtered
+});
+
+// mcp-server-reviewer routes on how an MCP server SITS ON DISK, because RULES
+// test file paths. The distinction that matters: consuming a server leaves
+// `.mcp.json` and `.playwright-mcp/` in a repo that never built one, and
+// flagging those would fire the reviewer on almost every project we touch.
+
+test('mcp-server-reviewer attaches where a server is actually built', () => {
+  for (const p of [
+    'mcp-servers/kimi/index.ts',
+    'packages/board/mcp-server.mjs',
+    'packages/cli/src/mcp.ts',
+    'src/mcp_server/tools.py',
+    'server/tools/mcp-server.ts',
+  ]) {
+    assert.ok(reviewersFor(p).includes('mcp-server-reviewer'), p);
+  }
+});
+
+test('mcp-server-reviewer does NOT attach on the leavings of consuming one', () => {
+  for (const p of ['.mcp.json', '.playwright-mcp/trace.zip', 'config/mcp.json']) {
+    assert.ok(!reviewersFor(p).includes('mcp-server-reviewer'),
+      `${p} — using a server is the operator's trust decision, not our review`);
+  }
+});
+
+test('mcp-server-reviewer does not fire on a word that merely starts with mcp', () => {
+  assert.ok(!reviewersFor('src/mcpherson.ts').includes('mcp-server-reviewer'));
+  assert.ok(!reviewersFor('docs/mcp-notes.md').includes('mcp-server-reviewer'));
+});
+
+test('every reviewer in RULES has a prompt file, which is what gets it installed', async () => {
+  const { readFileSync, existsSync } = await import('node:fs');
+  const plugin = readFileSync(new URL('../../.claude-plugin/plugin.json', import.meta.url), 'utf8');
+  for (const { reviewer } of RULES) {
+    const prompt = new URL(`../../agents/${reviewer}.md`, import.meta.url);
+    assert.ok(existsSync(prompt), `${reviewer} is routed to but has no agents/${reviewer}.md`);
+    // SessionStart installs every agents/*.md; there is no list to be missing from.
+    assert.ok(plugin.includes('scripts/lib/sync-managed.mjs'),
+      `${reviewer} is routed to but SessionStart no longer syncs agents into ~/.claude/agents`);
+  }
+});
+
+// ─── rules that cannot fire ────────────────────────────────────────────────
+//
+// A rule is tested against a FILE PATH, after EXCLUDE has removed some paths
+// entirely. Two ways a rule ends up permanently silent, both of which happened:
+//
+//   - it requires two things in one path that no path carries together
+//     (library-reviewer wanted a manifest name AND the word "version", written
+//     as if the rule would see the diff)
+//   - every path it could match is already excluded (EXCLUDE drops all `.md`,
+//     which killed `EVAL-.*\.md$` and `ssp\.md`)
+//
+// Neither shows up as a failure. The reviewer simply never attaches, and the
+// rule list reads as coverage that isn't there.
+
+test('no rule can only match a path EXCLUDE throws away', () => {
+  const offenders = [];
+  for (const r of RULES) {
+    // Tokens ending in `.md` — the one extension EXCLUDE removes wholesale.
+    const mdOnly = (r.pattern.source.match(/[^|()]*\\\.md\$?/g) || []).filter(Boolean);
+    if (mdOnly.length) offenders.push(`${r.reviewer}: ${mdOnly.join(', ')}`);
+  }
+  assert.deepEqual(offenders, [],
+    'these tokens can never fire — EXCLUDE drops every .md path before rules run');
+});
+
+test('no rule bridges two fragments with .* across a path', () => {
+  // `(a|b).*(c|d)` needs both halves in ONE path string. Real paths carry a
+  // name and a location, not a name and a diff word — this shape has never
+  // matched anything in practice.
+  const offenders = RULES.filter(r => /\)\.\*\(/.test(r.pattern.source)).map(r => r.reviewer);
+  assert.deepEqual(offenders, [],
+    'a wildcard bridging two alternation groups is a rule written against a diff, not a path');
+});
+
+test('library-reviewer attaches on a published package manifest', () => {
+  for (const p of ['Cargo.toml', 'pyproject.toml', 'go.mod', 'sdk/api-extractor.json']) {
+    assert.ok(reviewersFor(p).includes('library-reviewer'), p);
+  }
+});
+
+test('library-reviewer does not attach to every project that has a package.json', () => {
+  assert.ok(!reviewersFor('package.json').includes('library-reviewer'),
+    'a reviewer that attaches to everything is one people learn to ignore');
+});
+
+// ─── every rule declares what it catches and what it must not ──────────────
+//
+// The two structural tests above catch two KNOWN shapes of dead rule: a token
+// requiring a `.md` path that EXCLUDE drops, and a `.*` bridging two alternation
+// groups. They are proxies — they would not have caught a third shape.
+//
+// Borrowed from numbat, whose detection rules ship beside a `_tests.yaml` giving
+// a positive case and its nearest miss: `.env` matches, `.env.example` does not.
+// A rule that declares both is checked directly rather than by proxy, and a rule
+// that fires on nothing fails the moment it is written instead of six months on.
+
+test('every rule declares at least one match and one non-match', () => {
+  const bare = RULES.filter(r => !r.cases || !r.cases.match?.length || !r.cases.noMatch?.length)
+    .map(r => r.reviewer);
+  assert.deepEqual(bare, [],
+    'a rule with no cases is a rule nobody has shown to fire — add cases: { match, noMatch }');
+});
+
+test('every declared match actually attaches its reviewer', () => {
+  const broken = [];
+  for (const rule of RULES) {
+    for (const path of rule.cases?.match ?? []) {
+      if (!reviewersFor(path).includes(rule.reviewer)) broken.push(`${rule.reviewer} ← ${path}`);
+    }
+  }
+  assert.deepEqual(broken, [], 'these rules do not fire on the paths they claim to catch');
+});
+
+test('every declared non-match stays clear of its reviewer', () => {
+  const broken = [];
+  for (const rule of RULES) {
+    for (const path of rule.cases?.noMatch ?? []) {
+      if (reviewersFor(path).includes(rule.reviewer)) broken.push(`${rule.reviewer} ← ${path}`);
+    }
+  }
+  assert.deepEqual(broken, [],
+    'these rules fire on the nearest miss — a reviewer attached to everything is one people ignore');
+});
+
+test('no reviewer is declared twice', () => {
+  const seen = new Set();
+  const dupes = RULES.filter(r => seen.size === seen.add(r.reviewer).size).map(r => r.reviewer);
+  assert.deepEqual(dupes, [], 'two rules for one reviewer means one of them is unreachable in the report');
+});

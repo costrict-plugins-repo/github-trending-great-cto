@@ -1,0 +1,481 @@
+import fs from 'fs';
+import path from 'path';
+import { postureOf } from '../../../scripts/lib/agent-posture.mjs';
+import os from 'os';
+import { GREAT_CTO_DIR } from './config.mjs';
+import { readFileSafe } from './util.mjs';
+import { log } from './log.mjs';
+import { readVerdicts } from './verdicts.mjs';
+// Per-agent spending limits. The judge lives in scripts/lib because the pipeline
+// dispatcher enforces the same verdict — one definition, so the board cannot
+// show `within` while the dispatcher holds the stage.
+import { parseAgentBudgets, judgeAgentBudget } from '../../../scripts/lib/agent-budget.mjs';
+import { classifyAgentGroup } from '../../../scripts/lib/agent-groups.mjs';
+
+// ── Agent fleet view (DESIGN-agents-fleet-view §3) ─────────────────────────
+//
+// Single source of truth for the /agents tab. Composes:
+//   • canonical agent files at ~/.claude/agents/great_cto-*.md
+//   • verdict log at ~/.great_cto/verdicts/<agent>.log
+//   • retire sidecar at ~/.claude/agents/great_cto-<slug>.md.retired
+//
+// Domain taxonomy is slug-keyword based (founder Q#3 — picked: derived, not
+// frontmatter, to avoid pipeline-wide migration). Founder may flip to
+// frontmatter-driven later — encapsulated in this function only.
+
+// The agents directory, overridable for tests.
+//
+// getAgentsFleet and getAgentProfile read the real ~/.claude/agents, which left
+// them on the integration path and untested — and the untested part is where the
+// classification bug lived that put 40 of 69 agents in one bucket. An env
+// override is enough to exercise them against a fixture; mocking `fs` would test
+// the mock.
+const AGENTS_DIR = process.env.GREAT_CTO_AGENTS_DIR
+  || path.join(os.homedir(), '.claude', 'agents');
+
+function deriveDomain(slug) {
+  return classifyAgentGroup(slug);
+}
+
+// Founder Q#5 — picked: baked-in regex set (start small, expand later).
+const FAILURE_PATTERNS = [
+  { key: 'rate-limit',          re: /rate[ -]?limit|HTTP 429|too many requests/i },
+  { key: 'precondition',        re: /BLOCKED:.*no\s+(ARCH|PLAN|PROJECT)/i },
+  { key: 'timeout',             re: /timeout|timed out|exceeded.*window/i },
+  { key: 'parse-fail',          re: /JSON\.parse|invalid_json|parse.*fail/i },
+  { key: 'spawn-fail',          re: /spawn(Sync)?\b.*ENOENT|command not found/i },
+];
+
+function clusterFailureModes(verdicts) {
+  const counts = new Map();
+  for (const v of verdicts) {
+    const text = v.raw || '';
+    for (const p of FAILURE_PATTERNS) {
+      if (p.re.test(text)) {
+        const entry = counts.get(p.key) || { key: p.key, count: 0, last_seen: null };
+        entry.count += 1;
+        if (!entry.last_seen || v.ts > entry.last_seen) entry.last_seen = v.ts;
+        counts.set(p.key, entry);
+        break;
+      }
+    }
+  }
+  return [...counts.values()].sort((a, b) => b.count - a.count);
+}
+
+function isRetired(slug) {
+  return fs.existsSync(path.join(AGENTS_DIR, `great_cto-${slug}.md.retired`));
+}
+
+// Verdict status mapping — agents emit a mix of vocabularies:
+//   APPROVED / OK / DONE / PASS → success
+//   BLOCKED / FAIL / FAILED / REJECTED → failure
+//   anything else → neutral
+function isSuccess(verdict) {
+  return /^(APPROVED|OK|DONE|PASS|PASSED)$/i.test(verdict || '');
+}
+function isFailure(verdict) {
+  return /^(BLOCKED|FAIL|FAILED|REJECTED)$/i.test(verdict || '');
+}
+
+function getAgentsFleet(projectCwd) {
+  // Read once per call, not per agent: sixty agents would otherwise re-read and
+  // re-parse the same PROJECT.md sixty times on every board refresh.
+  let agentBudgets = new Map();
+  try {
+    if (projectCwd) {
+      agentBudgets = parseAgentBudgets(
+        fs.readFileSync(path.join(projectCwd, '.great_cto', 'PROJECT.md'), 'utf8')).budgets;
+    }
+  } catch { /* no PROJECT.md, or unreadable — every agent reads as no-limit */ }
+
+  const agents = [];
+  let files = [];
+  try {
+    files = fs.readdirSync(AGENTS_DIR)
+      .filter(f => f.startsWith('great_cto-') && f.endsWith('.md'))
+      .sort();
+  } catch { /* dir missing → empty fleet */ }
+
+  const verdicts = readVerdicts(projectCwd);
+  const now = Date.now();
+  const day30Ms = 30 * 86400_000;
+  const day7Ms = 7 * 86400_000;
+
+  // Group verdicts by agent for one pass.
+  const byAgent = new Map();
+  for (const v of verdicts) {
+    if (!v.agent) continue;
+    if (!byAgent.has(v.agent)) byAgent.set(v.agent, []);
+    byAgent.get(v.agent).push(v);
+  }
+
+  // Fleet metrics from getMetrics agents_cost (estimate-based).
+  // Currently project-scoped; for fleet view we want global, so recompute
+  // a quick aggregate. Time-based estimate using same rates as getMetrics.
+  const HUMAN_RATE_PER_HR = parseFloat(process.env.GREATCTO_HUMAN_RATE_PER_HR || '150');
+  const LLM_RATE_PER_HR   = parseFloat(process.env.GREATCTO_LLM_RATE_PER_HR || '0.30');
+  const DEFAULT_TASK_MIN  = 30;
+
+/**
+ * The agent's tool grant, in the language of consequence.
+ *
+ * FOUR states, because three of them are not "no grant": an unreadable agent
+ * file, a file with no `tools:` line, a grant that is entirely routine, and a
+ * grant that holds something expensive to undo. The board rendered all of them
+ * identically before, because it never saw any of them.
+ */
+function posture(toolsLine, fileReadable) {
+  if (!fileReadable) return { state: 'unreadable', expensive: [], scopedInNameOnly: [], why: 'the agent file could not be read' };
+  if (toolsLine == null) return { state: 'undeclared', expensive: [], scopedInNameOnly: [], why: 'the agent declares no tools: line' };
+  const r = postureOf(toolsLine);
+  return {
+    state: r.unknownTools.length ? 'unclassified' : r.expensive.length ? 'expensive' : 'routine',
+    expensive: r.expensive,
+    scopedInNameOnly: r.scopedInNameOnly,
+    unknownTools: r.unknownTools,
+    why: r.unknownTools.length ? `unclassified grant(s): ${r.unknownTools.join(', ')}` : '',
+  };
+}
+
+  for (const f of files) {
+    const slug = f.replace(/^great_cto-/, '').replace(/\.md$/, '');
+    const fp = path.join(AGENTS_DIR, f);
+    const raw = readFileSafe(fp) || '';
+    const descM = raw.match(/^description:\s*"?([^"\n]+)"?/m);
+    const modelM = raw.match(/^model:\s*(\S+)/m);
+    const toolsM = raw.match(/^tools:\s*(.*)$/m);
+    const colorM = raw.match(/^color:\s*(\S+)/m);
+
+    const vs = byAgent.get(slug) || [];
+    const vs30d = vs.filter(v => v.ts && (now - new Date(v.ts).getTime()) < day30Ms);
+    const vs7d  = vs.filter(v => v.ts && (now - new Date(v.ts).getTime()) < day7Ms);
+
+    const okCount30d   = vs30d.filter(v => isSuccess(v.verdict)).length;
+    const failCount30d = vs30d.filter(v => isFailure(v.verdict)).length;
+    const failCount7d  = vs7d.filter(v => isFailure(v.verdict)).length;
+    const decided = okCount30d + failCount30d;
+    const successRate = decided > 0 ? Math.round((okCount30d / decided) * 100) : null;
+
+    const lastRun = vs[0]?.ts || null;  // verdicts already sorted by readVerdicts caller? if not, scan:
+    let lastRunActual = null;
+    for (const v of vs) {
+      if (v.ts && (!lastRunActual || v.ts > lastRunActual)) lastRunActual = v.ts;
+    }
+
+    // Estimated cost — DEFAULT_TASK_MIN per verdict (no real timing data here).
+    const estLlmUsd   = (vs30d.length * DEFAULT_TASK_MIN / 60) * LLM_RATE_PER_HR;
+    const estHumanUsd = (vs30d.length * DEFAULT_TASK_MIN / 60) * HUMAN_RATE_PER_HR;
+    // NOT a measurement. Both sides are runs x DEFAULT_TASK_MIN x a rate, so this
+    // ratio is HUMAN_RATE/LLM_RATE for every agent that ran at all — 500 by
+    // construction. metrics.mjs nulls its equivalent for exactly this reason;
+    // this one shipped as a per-agent number and read like one. Kept, because
+    // removing a field breaks the board, but labelled at the source.
+    const savingsX = estLlmUsd > 0 ? Math.round(estHumanUsd / estLlmUsd) : null;
+    const realLlmUsd = vs30d.reduce((s, v) => s + (v.cost_usd || 0), 0);
+
+    // Health classification.
+    let health = 'ok';
+    if (vs.length === 0) health = 'unused';
+    else if (!lastRunActual || (now - new Date(lastRunActual).getTime()) > day30Ms) health = 'idle';
+    if (failCount7d >= 3) health = 'failing';
+
+    agents.push({
+      slug,
+      description: descM?.[1]?.trim() || '',
+      // THREE states, not a default. `model: modelM || 'sonnet'` reported every
+      // agent with no `model:` line as pinned to sonnet, so "pinned to sonnet"
+      // and "not pinned at all" were the same string — and an unreadable agent
+      // file produced the same answer a third time. The fleet cannot show what
+      // it cannot distinguish.
+      model: raw ? (modelM?.[1]?.trim() ?? null) : null,
+      model_state: !raw ? 'unreadable' : modelM ? 'pinned' : 'undeclared',
+      // The tool grant, named in the language of consequence rather than listed.
+      // `/api/agents-installed` did not read `tools:` at all, so the board had
+      // nowhere to get it — scripts/lib/agent-posture.mjs has classified these
+      // since 3.24.0 and nothing was consuming it.
+      posture: posture(toolsM?.[1] ?? null, Boolean(raw)),
+      color: colorM?.[1]?.trim() || null,
+      domain: deriveDomain(slug),
+      runs_total: vs.length,
+      runs_30d: vs30d.length,
+      runs_7d: vs7d.length,
+      fail_30d: failCount30d,
+      fail_7d: failCount7d,
+      ok_30d: okCount30d,
+      success_rate: successRate,
+      last_run: lastRunActual,
+      llm_usd_30d_est: Math.round(estLlmUsd * 100) / 100,
+      human_usd_30d_est: Math.round(estHumanUsd),
+      llm_usd_30d_real: realLlmUsd > 0 ? Math.round(realLlmUsd * 100) / 100 : null,
+      savings_x: savingsX,
+      // 'ratio' = the rate ratio, identical for every agent. 'measured' would
+      // require per-run timing, which no path produces today.
+      savings_source: savingsX == null ? null : 'ratio',
+      health,
+      retired: isRetired(slug),
+      // Four states, and only `exceeded` can hold a dispatch — see
+      // scripts/lib/agent-budget.mjs. `llm_usd_30d_real` is null when nothing was
+      // measured, which is exactly what makes the difference between "under the
+      // cap" and "no idea" visible here instead of guessed.
+      budget: judgeAgentBudget({
+        agent: slug,
+        budgets: agentBudgets,
+        spend: realLlmUsd > 0
+          ? { real_llm_usd: Math.round(realLlmUsd * 100) / 100, llm_usd: Math.round(estLlmUsd * 100) / 100 }
+          : { llm_usd: Math.round(estLlmUsd * 100) / 100 },
+      }),
+    });
+  }
+
+  // Summary tiles.
+  const total = agents.length;
+  const active30d = agents.filter(a => a.runs_30d > 0 && !a.retired).length;
+  const retireCandidates = agents.filter(a => a.runs_30d === 0 && !a.retired).length;
+  const failing = agents.filter(a => a.health === 'failing' && !a.retired).length;
+  // MEASURED spend, or none. This tile reported the estimate — verdict count
+  // times a hardcoded rate — under the label "LLM SPEND 30D", while the metrics
+  // page reported its own estimate, derived from TASKS, under the same words.
+  // The two disagreed by more than twofold ($3.90 against $1.65) and neither
+  // said it was estimating, so the board contradicted itself and sounded certain
+  // doing it.
+  //
+  // The estimate stays available per agent as `llm_usd_30d_est`, named as an
+  // estimate. The fleet total claims only what verdicts actually recorded, and
+  // is null when they recorded nothing — the same rule the metrics tile, the
+  // portfolio and the budgets all follow now.
+  const totalReal30d = agents.reduce((s, a) => s + (a.llm_usd_30d_real || 0), 0);
+  const measuredFor = agents.filter((a) => a.llm_usd_30d_real != null).length;
+
+  return {
+    agents,
+    total,
+    summary: {
+      installed: total,
+      active_30d: active30d,
+      retire_candidates: retireCandidates,
+      failing_7d: failing,
+      llm_usd_30d: measuredFor ? Math.round(totalReal30d * 100) / 100 : null,
+      llm_usd_30d_measured_for: measuredFor,
+      llm_usd_30d_agents_with_runs: agents.filter((a) => a.runs_30d > 0).length,
+    },
+  };
+}
+
+/**
+ * One agent's profile and its recent record.
+ *
+ * `cwd` scopes the statistics to a project. Without it the counts came from
+ * every project's verdicts at once, so opening an agent while looking at
+ * one project showed its behaviour across twenty-two projects — a number that is
+ * about the fleet answering a question about this project.
+ *
+ * Omitting `cwd` still means "the whole fleet", which is what the fleet view
+ * itself wants; the defect was the caller, not the default.
+ */
+function getAgentProfile(slug, cwd = null) {
+  const fp = path.join(AGENTS_DIR, `great_cto-${slug}.md`);
+  if (!fs.existsSync(fp)) return null;
+
+  const raw = readFileSafe(fp) || '';
+  const descM = raw.match(/^description:\s*"?([^"\n]+)"?/m);
+  const modelM = raw.match(/^model:\s*(\S+)/m);
+  const colorM = raw.match(/^color:\s*(\S+)/m);
+  const appliesM = raw.match(/^applies_to:\s*\[([^\]]+)\]/m);
+  const applies_to = appliesM
+    ? appliesM[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean)
+    : [];
+  // tools: either an inline CSV (`tools: Read, Bash, Grep`) or a YAML list.
+  const toolsM = raw.match(/^tools:\s*(.+)$/m);
+  let tools = [];
+  if (toolsM && toolsM[1].trim() && !toolsM[1].trim().startsWith('#')) {
+    tools = toolsM[1].split(',').map(s => s.trim()).filter(Boolean)
+      .map(t => /^Bash\(/.test(t) ? 'Bash' : t);   // collapse Bash(...) allowlist to one chip
+    tools = [...new Set(tools)];
+  } else {
+    const listM = raw.match(/^tools:\s*\n((?:\s*-\s*.+\n?)+)/m);
+    if (listM) tools = listM[1].split('\n').map(l => (l.match(/^\s*-\s*(.+)$/) || [])[1]).filter(Boolean).map(s => s.trim());
+  }
+  // skills: a YAML list under `skills:`. Stop before the closing `---` frontmatter delimiter
+  // (otherwise `---` parses as a bogus `--` entry).
+  const skills = [];
+  const skillsM = raw.match(/^skills:\s*\n((?:[ \t]*-[ \t]*.+\n?)+)/m);
+  if (skillsM) for (const line of skillsM[1].split('\n')) { const v = (line.match(/^[ \t]*-[ \t]*(.+)$/) || [])[1]; const t = v && v.trim(); if (t && !/^-+$/.test(t)) skills.push(t); }
+
+  const verdicts = readVerdicts(cwd);
+  const all = verdicts.filter(v => v.agent === slug);
+  const now = Date.now();
+  const day30Ms = 30 * 86400_000;
+  const day7Ms = 7 * 86400_000;
+  const vs30d = all.filter(v => v.ts && (now - new Date(v.ts).getTime()) < day30Ms);
+
+  const okCount30d   = vs30d.filter(v => isSuccess(v.verdict)).length;
+  const failCount30d = vs30d.filter(v => isFailure(v.verdict)).length;
+  const failCount7d  = all.filter(v => v.ts
+    && (now - new Date(v.ts).getTime()) < day7Ms
+    && isFailure(v.verdict)).length;
+  const decided = okCount30d + failCount30d;
+
+  let lastRun = null;
+  for (const v of all) {
+    if (v.ts && (!lastRun || v.ts > lastRun)) lastRun = v.ts;
+  }
+
+  const HUMAN_RATE_PER_HR = parseFloat(process.env.GREATCTO_HUMAN_RATE_PER_HR || '150');
+  const LLM_RATE_PER_HR   = parseFloat(process.env.GREATCTO_LLM_RATE_PER_HR || '0.30');
+  const DEFAULT_TASK_MIN  = 30;
+  const estLlmUsd   = (vs30d.length * DEFAULT_TASK_MIN / 60) * LLM_RATE_PER_HR;
+  const estHumanUsd = (vs30d.length * DEFAULT_TASK_MIN / 60) * HUMAN_RATE_PER_HR;
+  const realLlmUsd = vs30d.reduce((s, v) => s + (v.cost_usd || 0), 0);
+
+  // Recent runs — last 20, newest first.
+  const recent = [...all]
+    .sort((a, b) => (b.ts || '').localeCompare(a.ts || ''))
+    .slice(0, 20)
+    .map(v => ({
+      ts: v.ts,
+      verdict: v.verdict,
+      cost_usd: v.cost_usd,
+      raw: (v.raw || '').slice(0, 200),
+    }));
+
+  // Failure modes — regex-cluster verdicts that look like failures.
+  const failures = all.filter(v => isFailure(v.verdict));
+  const failure_modes = clusterFailureModes(failures);
+
+  let health = 'ok';
+  if (all.length === 0) health = 'unused';
+  else if (!lastRun || (now - new Date(lastRun).getTime()) > day30Ms) health = 'idle';
+  if (failCount7d >= 3) health = 'failing';
+
+  return {
+    slug,
+    description: descM?.[1]?.trim() || '',
+    model: modelM?.[1]?.trim() || 'sonnet',
+    color: colorM?.[1]?.trim() || null,
+    applies_to,
+    tools,
+    skills,
+    domain: deriveDomain(slug),
+    health,
+    retired: isRetired(slug),
+    runs_total: all.length,
+    runs_30d: vs30d.length,
+    ok_30d: okCount30d,
+    fail_30d: failCount30d,
+    success_rate: decided > 0 ? Math.round((okCount30d / decided) * 100) : null,
+    last_run: lastRun,
+    llm_usd_30d_est: Math.round(estLlmUsd * 100) / 100,
+    human_usd_30d_est: Math.round(estHumanUsd),
+    llm_usd_30d_real: realLlmUsd > 0 ? Math.round(realLlmUsd * 100) / 100 : null,
+    savings_x: estLlmUsd > 0 ? Math.round(estHumanUsd / estLlmUsd) : null,
+    recent_runs: recent,
+    failure_modes,
+    file_path: fp,
+  };
+}
+
+function retireAgent(slug) {
+  const fp = path.join(AGENTS_DIR, `great_cto-${slug}.md`);
+  if (!fs.existsSync(fp)) return { ok: false, error: 'agent_not_found' };
+  const marker = `${fp}.retired`;
+  fs.writeFileSync(marker, new Date().toISOString() + '\n');
+  return { ok: true, slug, retired_at: new Date().toISOString() };
+}
+
+function restoreAgent(slug) {
+  const fp = path.join(AGENTS_DIR, `great_cto-${slug}.md`);
+  if (!fs.existsSync(fp)) return { ok: false, error: 'agent_not_found' };
+  const marker = `${fp}.retired`;
+  if (fs.existsSync(marker)) fs.unlinkSync(marker);
+  return { ok: true, slug, restored_at: new Date().toISOString() };
+}
+
+// ── decisions.md (per-project ADR log) ─────────────────────────────────────
+// Append-only architectural decisions log. Triggered on gate approve/reject.
+// One line per decision; pure markdown so users can `cat` / `grep` / view in
+// their editor without tooling.
+//
+// SCOPED PER PROJECT (ADR-008). A gate title carries the project's own words —
+// feature names, client names, internal slugs — so writing it to a file under
+// ~/.great_cto made it readable by agents working on *every other* project.
+// That is a real cross-tenant bleed, and it fired: a private client name reached
+// the global log via this exact path. New writes always go project-local; the
+// legacy global file is read-only history and is never appended to again.
+function decisionsLogPath(cwd) {
+  return cwd
+    ? path.join(cwd, '.great_cto', 'decisions.md')
+    : path.join(GREAT_CTO_DIR, 'decisions.md');
+}
+
+function appendDecisionLog({ ts, project, action, id, title, reason, cwd }) {
+  // No project scope → refuse rather than fall back to the global file. Losing
+  // one log line is strictly better than leaking a project's vocabulary into
+  // every other project's agent context.
+  if (!cwd) {
+    log.warn('[decisions] skipped: no project cwd — refusing to write the global log');
+    return;
+  }
+  const file = decisionsLogPath(cwd);
+  try { fs.mkdirSync(path.dirname(file), { recursive: true }); } catch {}
+  // Initialize header if file doesn't exist
+  if (!fs.existsSync(file)) {
+    const header =
+`# great_cto — decisions log
+
+Append-only architectural decisions for THIS project. One line per
+gate approve/reject. Agents and humans can grep this for "have we decided
+this before?" lookups.
+
+Format: \`- [TIMESTAMP] [PROJECT] [APPROVED|REJECTED] gate-id — title — reason\`
+
+`;
+    fs.writeFileSync(file, header);
+  }
+  const verdict = action === 'approve' ? 'APPROVED' : 'REJECTED';
+  // " — " is the field separator, so it must not survive inside a field. Gate
+  // titles are literally shaped `gate:plan — decompose X`, which used to make the
+  // reader split the title in half and mislabel its tail as the reason. Demote
+  // any in-field separator to a plain hyphen and the separator stays unique.
+  const clean = (s) => (s || '').replace(/\n/g, ' ').replace(/\s+—\s+/g, ' - ');
+  const safeTitle = clean(title).slice(0, 120);
+  const safeReason = clean(reason).slice(0, 200);
+  const line = `- [${ts}] [${project}] [${verdict}] ${id} — ${safeTitle}${safeReason ? ` — ${safeReason}` : ''}\n`;
+  fs.appendFileSync(file, line);
+}
+
+// Reads are scoped the same way writes are: project X's board shows project X's
+// decisions. The legacy global file is deliberately NOT merged in — surfacing it
+// everywhere is the bleed this change removes.
+function readDecisionsLog(limit = 20, cwd) {
+  const file = decisionsLogPath(cwd);
+  if (!fs.existsSync(file)) return [];
+  try {
+    const text = fs.readFileSync(file, 'utf-8');
+    const lines = text.split('\n').filter(l => l.startsWith('- ['));
+    // Newest last → reverse and take last `limit`
+    return lines.slice(-limit).reverse().map(line => {
+      // Parse: - [TS] [PROJECT] [VERDICT] id — title — reason
+      const m = line.match(/^- \[([^\]]+)\] \[([^\]]+)\] \[([^\]]+)\] ([^\s]+)\s+—\s+(.+?)(?:\s+—\s+(.+))?$/);
+      if (!m) return null;
+      return { ts: m[1], project: m[2], verdict: m[3], id: m[4], title: m[5], reason: m[6] || '' };
+    }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+export {
+  deriveDomain,
+  clusterFailureModes,
+  isRetired,
+  isSuccess,
+  isFailure,
+  getAgentsFleet,
+  getAgentProfile,
+  retireAgent,
+  restoreAgent,
+  decisionsLogPath,
+  appendDecisionLog,
+  readDecisionsLog,
+};

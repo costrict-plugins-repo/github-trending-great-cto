@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+// Fixed local test protocol. No shell commands or operator stores.
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+const root = process.env.FAKE_BD_CONTROL_ROOT;
+if (!root || !path.isAbsolute(root)) process.exit(2);
+const key = path.basename(process.cwd());
+const marker = name => path.join(root, `${key}.${name}`);
+if (process.argv.includes('--descendant')) {
+  process.on('SIGTERM', () => {});
+  fs.writeFileSync(marker('descendant'), String(process.pid));
+  setInterval(() => {}, 1000);
+} else {
+  fs.appendFileSync(marker('started'), `${process.pid}\n`);
+  fs.writeFileSync(marker('worker'), String(process.ppid));
+  if (process.env.FAKE_BD_CONTROL_MODE === 'fail') {
+    process.exit(1);
+  } else if (['gate-receipt', 'gate-receipt-race'].includes(process.env.FAKE_BD_CONTROL_MODE)) {
+    const tasks = [{ id: 'FIXTURE-GATE', title: 'gate:ship', labels: ['gate'], status: 'open', priority: 0 }];
+    if (process.env.FAKE_BD_CONTROL_MODE === 'gate-receipt-race') tasks.push({ id: 'NEW-GATE', title: 'gate:plan', labels: ['gate'], status: 'open', priority: 0 });
+    process.stdout.write(JSON.stringify(tasks), () => process.exit(0));
+  } else if (['hang', 'leader-exit'].includes(process.env.FAKE_BD_CONTROL_MODE)) {
+    process.on('SIGTERM', () => {});
+    spawn(process.execPath, [new URL(import.meta.url).pathname, '--descendant'], { stdio: 'inherit' });
+    if (process.env.FAKE_BD_CONTROL_MODE === 'leader-exit') {
+      setInterval(() => { if (fs.existsSync(marker('descendant'))) process.exit(0); }, 25);
+    }
+    setInterval(() => {}, 1000);
+  } else if (process.env.FAKE_BD_CONTROL_MODE === 'large-success') {
+    const payload = JSON.stringify([{ id: 'FIXTURE-1', title: 'x'.repeat(2 * 1024 * 1024), status: 'open', priority: 0 }]);
+    const accepted = process.stdout.write(payload, () => process.exit(0));
+    // Signal queued output, not drain: drain can require the paused consumer
+    // to resume. A completion-callback marker creates a circular wait.
+    fs.writeFileSync(marker('output-queued'), JSON.stringify({ needsDrain: !accepted, bytes: Buffer.byteLength(payload) }));
+  } else if (['closed-success', 'closed-fail'].includes(process.env.FAKE_BD_CONTROL_MODE)) {
+    const descendant = spawn(process.execPath, [new URL(import.meta.url).pathname, '--descendant'], { stdio: 'ignore' });
+    descendant.unref();
+    const ready = setInterval(() => {
+      if (!fs.existsSync(marker('descendant'))) return;
+      clearInterval(ready);
+      process.stdout.write(JSON.stringify([{ id: 'FIXTURE-1', title: 'Fixture task', status: 'open', priority: 0 }]),
+        () => process.exit(process.env.FAKE_BD_CONTROL_MODE === 'closed-fail' ? 1 : 0));
+    }, 25);
+  } else if (process.env.FAKE_BD_CONTROL_MODE === 'oversize') {
+    process.stdout.write(Buffer.alloc(16 * 1024 * 1024 + 1, 120));
+    setInterval(() => {}, 1000);
+  } else {
+    const timer = setInterval(() => {
+      if (!fs.existsSync(marker('release'))) return;
+      clearInterval(timer);
+      process.stdout.write(JSON.stringify([{ id: 'FIXTURE-1', title: 'Fixture task', status: 'open', priority: 0 }]));
+    }, 25);
+  }
+}
